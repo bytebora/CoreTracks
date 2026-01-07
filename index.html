@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#1E40AF">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>TrackFlow • Professional GPS Tracker</title>
+    <title>TrackFlow • Multi-User GPS Tracker</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -48,7 +48,7 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
 
-        /* Top Bar - Compact for Mobile */
+        /* Top Bar */
         .top-bar {
             position: fixed;
             top: env(safe-area-inset-top, 0px);
@@ -100,7 +100,7 @@
             gap: 8px;
         }
 
-        /* Action Button - Compact */
+        /* Action Button */
         .action-btn {
             width: 40px;
             height: 40px;
@@ -122,11 +122,7 @@
             background: rgba(255, 255, 255, 0.2);
         }
 
-        .action-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        /* Status Bar - Compact and Stacked on Mobile */
+        /* Status Bar */
         .status-bar {
             position: fixed;
             top: calc(env(safe-area-inset-top, 0px) + 65px);
@@ -167,7 +163,7 @@
             text-align: center;
         }
 
-        /* GPS Accuracy - Compact */
+        /* GPS Accuracy */
         .accuracy-indicator {
             position: fixed;
             top: calc(env(safe-area-inset-top, 0px) + 65px);
@@ -210,7 +206,7 @@
             justify-content: space-between;
         }
 
-        /* Quick Actions - Smaller and Optimized */
+        /* Quick Actions */
         .quick-actions {
             position: fixed;
             bottom: calc(70px + env(safe-area-inset-bottom, 0px) + 140px);
@@ -222,57 +218,7 @@
             pointer-events: all;
         }
 
-        /* Location Card - Compact */
-        .location-card {
-            position: fixed;
-            bottom: calc(70px + env(safe-area-inset-bottom, 0px) + 140px);
-            right: 12px;
-            border-radius: 16px;
-            padding: 12px;
-            max-width: 160px;
-            z-index: 1000;
-            pointer-events: all;
-        }
-
-        .location-title {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 8px;
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .location-details {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 6px;
-            font-size: 12px;
-        }
-
-        .coord {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .coord-label {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .coord-value {
-            font-family: 'Monaco', 'Consolas', monospace;
-            font-size: 11px;
-            color: white;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        /* Control Panel - Smaller and Optimized for Thumb */
+        /* Control Panel */
         .control-panel {
             position: fixed;
             bottom: calc(70px + env(safe-area-inset-bottom, 0px));
@@ -284,7 +230,7 @@
             pointer-events: all;
         }
 
-        /* Control Button - Mobile Optimized */
+        /* Control Button */
         .control-btn {
             width: 48px;
             height: 48px;
@@ -307,11 +253,6 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
 
-        .control-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-        }
-
         .control-btn.active {
             background: #EF4444;
             animation: pulse 2s infinite;
@@ -328,7 +269,7 @@
             font-size: 20px;
         }
 
-        /* Tracking Controls - Bottom Center, Compact */
+        /* Tracking Controls */
         .tracking-controls {
             position: fixed;
             bottom: calc(70px + env(safe-area-inset-bottom, 0px));
@@ -342,7 +283,7 @@
             pointer-events: all;
         }
 
-        /* Track Button - Mobile Optimized */
+        /* Track Button */
         .track-btn {
             padding: 10px 14px;
             border-radius: 12px;
@@ -364,10 +305,6 @@
             transform: scale(0.95);
         }
 
-        .track-btn:hover {
-            background: rgba(59, 130, 246, 0.2);
-        }
-
         .track-btn.primary {
             background: linear-gradient(135deg, #1E40AF, #3B82F6);
             color: white;
@@ -379,17 +316,13 @@
             border-color: rgba(239, 68, 68, 0.3);
         }
 
-        .track-btn.danger:active {
-            background: rgba(239, 68, 68, 0.3);
-        }
-
         .track-btn:disabled {
             opacity: 0.4;
             cursor: not-allowed;
             transform: none !important;
         }
 
-        /* Bottom Navigation - Thumb-Friendly */
+        /* Bottom Navigation */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -456,7 +389,7 @@
             letter-spacing: 0.3px;
         }
 
-        /* Panels - Mobile Optimized */
+        /* Panels */
         .panel {
             position: fixed;
             top: 0;
@@ -497,7 +430,7 @@
             gap: 10px;
         }
 
-        /* List Items - Mobile Optimized */
+        /* List Items */
         .list-item {
             display: flex;
             justify-content: space-between;
@@ -535,7 +468,72 @@
             gap: 6px;
         }
 
-        /* Toast - Mobile Optimized */
+        /* User Cards */
+        .user-card {
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .user-card:active {
+            transform: scale(0.98);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #1E40AF, #3B82F6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+            font-size: 14px;
+        }
+
+        .user-status {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-online {
+            background: #10B981;
+            animation: pulse 2s infinite;
+        }
+
+        .status-offline {
+            background: #6B7280;
+        }
+
+        /* Toast */
         .toast {
             position: fixed;
             bottom: calc(70px + env(safe-area-inset-bottom, 0px) + 10px);
@@ -563,7 +561,7 @@
             transform: translateX(-50%) translateY(0);
         }
 
-        /* Compass - Smaller */
+        /* Compass */
         .compass {
             position: fixed;
             top: calc(env(safe-area-inset-top, 0px) + 65px);
@@ -600,18 +598,55 @@
             }
         }
 
-        /* Hide elements on very small screens */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Map Type Selector */
+        .map-type-selector {
+            position: fixed;
+            bottom: calc(70px + env(safe-area-inset-bottom, 0px) + 140px);
+            right: 12px;
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: 16px;
+            padding: 10px;
+            display: flex;
+            gap: 8px;
+            z-index: 1000;
+            pointer-events: all;
+        }
+
+        .map-type-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .map-type-btn.active {
+            background: linear-gradient(135deg, #1E40AF, #3B82F6);
+            color: white;
+        }
+
+        .map-type-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Media Queries */
         @media (max-width: 350px) {
-            .location-card {
+            .map-type-selector {
                 display: none;
-            }
-            
-            .quick-actions {
-                display: none;
-            }
-            
-            .accuracy-indicator {
-                min-width: 120px;
             }
             
             .tracking-controls {
@@ -625,7 +660,6 @@
             }
         }
 
-        /* Landscape mode optimizations */
         @media (orientation: landscape) and (max-height: 500px) {
             .top-bar {
                 height: 50px;
@@ -648,7 +682,7 @@
                 bottom: calc(70px + env(safe-area-inset-bottom, 0px) + 100px);
             }
             
-            .location-card {
+            .map-type-selector {
                 bottom: calc(70px + env(safe-area-inset-bottom, 0px) + 100px);
             }
             
@@ -686,11 +720,6 @@
         button:active {
             opacity: 0.8;
         }
-
-        /* Swipe gestures for panels */
-        .panel {
-            touch-action: pan-y;
-        }
     </style>
 </head>
 <body class="no-select">
@@ -712,7 +741,7 @@
             </div>
             <div class="app-logo-text">
                 <h1>TrackFlow</h1>
-                <p>GPS Tracker</p>
+                <p>Multi-User Tracker</p>
             </div>
         </div>
         <div class="top-actions">
@@ -772,22 +801,20 @@
         </button>
     </div>
 
-    <!-- Location Card -->
-    <div class="location-card glass">
-        <div class="location-title">
-            <i class="fas fa-location-dot" style="color: #10B981; font-size: 12px;"></i>
-            <span>Position</span>
-        </div>
-        <div class="location-details">
-            <div class="coord">
-                <span class="coord-label">Lat</span>
-                <span class="coord-value" id="currentLat">0.0000°</span>
-            </div>
-            <div class="coord">
-                <span class="coord-label">Lng</span>
-                <span class="coord-value" id="currentLng">0.0000°</span>
-            </div>
-        </div>
+    <!-- Map Type Selector -->
+    <div class="map-type-selector glass">
+        <button class="map-type-btn" data-type="streets" title="Street Map">
+            <i class="fas fa-road"></i>
+        </button>
+        <button class="map-type-btn" data-type="satellite" title="Satellite">
+            <i class="fas fa-satellite"></i>
+        </button>
+        <button class="map-type-btn" data-type="topo" title="Topographic">
+            <i class="fas fa-mountain"></i>
+        </button>
+        <button class="map-type-btn" data-type="dark" title="Dark Mode">
+            <i class="fas fa-moon"></i>
+        </button>
     </div>
 
     <!-- Control Panel -->
@@ -824,17 +851,17 @@
             </div>
             <span class="nav-label">Map</span>
         </button>
+        <button class="nav-item" id="navUsers">
+            <div class="nav-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <span class="nav-label">Users</span>
+        </button>
         <button class="nav-item" id="navTracking">
             <div class="nav-icon">
                 <i class="fas fa-route"></i>
             </div>
             <span class="nav-label">Track</span>
-        </button>
-        <button class="nav-item" id="navHistory">
-            <div class="nav-icon">
-                <i class="fas fa-history"></i>
-            </div>
-            <span class="nav-label">History</span>
         </button>
         <button class="nav-item" id="navSettings">
             <div class="nav-icon">
@@ -845,6 +872,23 @@
     </nav>
 
     <!-- Panels -->
+    <div class="panel" id="usersPanel">
+        <div class="panel-header">
+            <h2 class="panel-title"><i class="fas fa-users"></i> Tracked Users</h2>
+            <button class="action-btn glass" id="closeUsersPanel" style="background: transparent; border: none;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="usersList">
+            <!-- Users list will be loaded here -->
+        </div>
+        <div style="margin-top: 20px;">
+            <button class="track-btn primary" style="width: 100%;" id="addUserBtn">
+                <i class="fas fa-user-plus"></i> Add User to Track
+            </button>
+        </div>
+    </div>
+
     <div class="panel" id="trackingPanel">
         <div class="panel-header">
             <h2 class="panel-title"><i class="fas fa-route"></i> Tracking</h2>
@@ -861,23 +905,6 @@
             </button>
             <button class="track-btn danger" style="flex: 1;" id="panelStopTracking" disabled>
                 <i class="fas fa-stop"></i> Stop
-            </button>
-        </div>
-    </div>
-
-    <div class="panel" id="historyPanel">
-        <div class="panel-header">
-            <h2 class="panel-title"><i class="fas fa-history"></i> History</h2>
-            <button class="action-btn glass" id="closeHistoryPanel" style="background: transparent; border: none;">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div id="historyList">
-            <!-- History list -->
-        </div>
-        <div style="margin-top: 15px;">
-            <button class="track-btn" style="width: 100%;" id="exportDataBtn">
-                <i class="fas fa-download"></i> Export Data
             </button>
         </div>
     </div>
@@ -912,7 +939,7 @@
                     <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; transition: .4s; border-radius: 50%;"></span>
                 </label>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <div>
                     <div style="font-weight: 500; font-size: 14px;">High Accuracy</div>
                     <div style="font-size: 12px; color: rgba(255, 255, 255, 0.6);">Better GPS, more battery</div>
@@ -923,13 +950,24 @@
                     <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; transition: .4s; border-radius: 50%; transform: translateX(24px);"></span>
                 </label>
             </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-weight: 500; font-size: 14px;">Show Other Users</div>
+                    <div style="font-size: 12px; color: rgba(255, 255, 255, 0.6);">Display tracked users on map</div>
+                </div>
+                <label style="position: relative; width: 48px; height: 24px;">
+                    <input type="checkbox" id="showUsers" checked style="opacity: 0; width: 0; height: 0;">
+                    <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #3B82F6; transition: .4s; border-radius: 24px;"></span>
+                    <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; transition: .4s; border-radius: 50%; transform: translateX(24px);"></span>
+                </label>
+            </div>
         </div>
         <div style="margin-top: 20px;">
             <button class="track-btn primary" style="width: 100%; margin-bottom: 10px;" id="saveSettingsBtn">
                 <i class="fas fa-save"></i> Save Settings
             </button>
             <button class="track-btn danger" style="width: 100%;" id="clearDataBtn">
-                <i class="fas fa-trash"></i> Clear Data
+                <i class="fas fa-trash"></i> Clear All Data
             </button>
         </div>
     </div>
@@ -949,6 +987,32 @@
         let isTracking = false;
         let watchId = null;
         let trackingInterval = null;
+        let currentMapType = 'streets';
+        
+        // Multi-user tracking
+        let trackedUsers = {};
+        let userMarkers = {};
+        let userPolylines = {};
+        
+        // Map tile providers
+        const mapLayers = {
+            streets: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap',
+                maxZoom: 19
+            }),
+            satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '© Esri',
+                maxZoom: 19
+            }),
+            topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenTopoMap',
+                maxZoom: 17
+            }),
+            dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© CartoDB',
+                maxZoom: 19
+            })
+        };
         
         let trackingData = {
             points: [],
@@ -962,13 +1026,22 @@
         let settings = {
             gpsInterval: 3000,
             autoSave: true,
-            highAccuracy: true
+            highAccuracy: true,
+            showUsers: true
         };
         
         let history = [];
         let waypoints = [];
         let photos = [];
         let currentPosition = null;
+        
+        // Demo users (in real app, these would come from a server)
+        const demoUsers = [
+            { id: 'user1', name: 'John Driver', color: '#EF4444', lastSeen: Date.now() - 60000 },
+            { id: 'user2', name: 'Sarah Rider', color: '#10B981', lastSeen: Date.now() - 120000 },
+            { id: 'user3', name: 'Mike Courier', color: '#F59E0B', lastSeen: Date.now() - 180000 },
+            { id: 'user4', name: 'Lisa Traveler', color: '#8B5CF6', lastSeen: Date.now() - 240000 }
+        ];
 
         // Initialize App
         document.addEventListener('DOMContentLoaded', function() {
@@ -981,17 +1054,21 @@
             setupEventListeners();
             startGPS();
             updateTrackingControls();
-            updateHistoryList();
-            showToast('GPS Tracker Ready', 'success');
+            updateUsersList();
+            showToast('Multi-User GPS Tracker Ready', 'success');
+            
+            // Start simulating other users (demo mode)
+            startUserTrackingSimulation();
         }
 
         function initMap() {
             map = L.map('trackingMap').setView([0, 0], 2);
             
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap',
-                maxZoom: 19
-            }).addTo(map);
+            // Add default map layer
+            mapLayers.streets.addTo(map);
+            
+            // Set current map type as active
+            document.querySelector(`[data-type="${currentMapType}"]`).classList.add('active');
             
             trackingPolyline = L.polyline([], {
                 color: '#3B82F6',
@@ -1010,7 +1087,28 @@
                 zIndexOffset: 1000
             }).addTo(map);
             
+            userMarker.bindPopup('<strong>You</strong><br>Current position');
+            
             return Promise.resolve();
+        }
+
+        function changeMapType(type) {
+            // Remove current layer
+            if (mapLayers[currentMapType]) {
+                map.removeLayer(mapLayers[currentMapType]);
+            }
+            
+            // Add new layer
+            currentMapType = type;
+            mapLayers[type].addTo(map);
+            
+            // Update active button
+            document.querySelectorAll('.map-type-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-type="${type}"]`).classList.add('active');
+            
+            showToast(`Map: ${type.charAt(0).toUpperCase() + type.slice(1)}`, 'info');
         }
 
         function startGPS() {
@@ -1080,6 +1178,9 @@
             updatePositionDisplay(latitude, longitude);
             updateAccuracyDisplay(accuracy);
             updateStatsDisplay(speed, altitude);
+            
+            // Update user's position for others (in demo mode)
+            updateUserPosition('currentUser', latitude, longitude);
         }
 
         function handlePositionError(error) {
@@ -1096,6 +1197,261 @@
             }
         }
 
+        // Multi-user tracking functions
+        function updateUserPosition(userId, lat, lng) {
+            if (!trackedUsers[userId]) {
+                // Add new user
+                const user = demoUsers.find(u => u.id === userId) || {
+                    id: userId,
+                    name: `User ${Object.keys(trackedUsers).length + 1}`,
+                    color: getRandomColor(),
+                    lastSeen: Date.now()
+                };
+                
+                trackedUsers[userId] = {
+                    ...user,
+                    position: [lat, lng],
+                    path: [],
+                    lastUpdate: Date.now()
+                };
+                
+                // Create marker for this user
+                userMarkers[userId] = L.marker([lat, lng], {
+                    icon: L.divIcon({
+                        html: `<div style="width: 28px; height: 28px; border-radius: 50%; background: ${user.color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; border: 2px solid white; box-shadow: 0 0 0 2px ${user.color}80;"><i class="fas fa-user"></i></div>`,
+                        className: 'user-marker',
+                        iconSize: [28, 28],
+                        iconAnchor: [14, 14]
+                    }),
+                    zIndexOffset: 500
+                }).addTo(map);
+                
+                userMarkers[userId].bindPopup(`<strong>${user.name}</strong><br>Last seen: Just now`);
+                
+                // Create polyline for this user's path
+                userPolylines[userId] = L.polyline([], {
+                    color: user.color,
+                    weight: 2,
+                    opacity: 0.6,
+                    dashArray: '5, 10'
+                }).addTo(map);
+            } else {
+                // Update existing user
+                trackedUsers[userId].position = [lat, lng];
+                trackedUsers[userId].path.push([lat, lng]);
+                trackedUsers[userId].lastUpdate = Date.now();
+                trackedUsers[userId].lastSeen = Date.now();
+                
+                // Update marker
+                if (userMarkers[userId]) {
+                    userMarkers[userId].setLatLng([lat, lng]);
+                    
+                    // Update popup with distance info
+                    if (currentPosition) {
+                        const { latitude: myLat, longitude: myLng } = currentPosition.coords;
+                        const distance = map.distance([myLat, myLng], [lat, lng]);
+                        const timeAgo = Math.floor((Date.now() - trackedUsers[userId].lastSeen) / 1000);
+                        const timeText = timeAgo < 60 ? `${timeAgo}s ago` : `${Math.floor(timeAgo / 60)}m ago`;
+                        
+                        userMarkers[userId].setPopupContent(
+                            `<strong>${trackedUsers[userId].name}</strong><br>` +
+                            `Distance: ${(distance / 1000).toFixed(1)}km<br>` +
+                            `Last update: ${timeText}`
+                        );
+                    }
+                }
+                
+                // Update polyline
+                if (userPolylines[userId]) {
+                    userPolylines[userId].setLatLngs(trackedUsers[userId].path);
+                }
+            }
+            
+            // Update users list if panel is open
+            if (document.getElementById('usersPanel').classList.contains('active')) {
+                updateUsersList();
+            }
+        }
+
+        function getRandomColor() {
+            const colors = ['#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16', '#F97316'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function startUserTrackingSimulation() {
+            // Simulate other users moving around
+            setInterval(() => {
+                if (!settings.showUsers) return;
+                
+                demoUsers.forEach(user => {
+                    // Update last seen time
+                    const timeSinceLastSeen = Date.now() - user.lastSeen;
+                    
+                    // If user hasn't been seen in a while, simulate movement
+                    if (timeSinceLastSeen > 30000) {
+                        const lat = (Math.random() - 0.5) * 0.02 + (currentPosition?.coords.latitude || 0);
+                        const lng = (Math.random() - 0.5) * 0.02 + (currentPosition?.coords.longitude || 0);
+                        
+                        updateUserPosition(user.id, lat, lng);
+                        user.lastSeen = Date.now();
+                    }
+                });
+            }, 5000);
+            
+            // Periodically clean up old users (inactive for 5 minutes)
+            setInterval(() => {
+                const now = Date.now();
+                Object.keys(trackedUsers).forEach(userId => {
+                    if (userId !== 'currentUser' && (now - trackedUsers[userId].lastUpdate) > 300000) {
+                        // Remove inactive user
+                        if (userMarkers[userId]) {
+                            map.removeLayer(userMarkers[userId]);
+                            delete userMarkers[userId];
+                        }
+                        if (userPolylines[userId]) {
+                            map.removeLayer(userPolylines[userId]);
+                            delete userPolylines[userId];
+                        }
+                        delete trackedUsers[userId];
+                    }
+                });
+            }, 60000);
+        }
+
+        function updateUsersList() {
+            const container = document.getElementById('usersList');
+            const users = Object.values(trackedUsers).filter(u => u.id !== 'currentUser');
+            
+            if (users.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: rgba(255, 255, 255, 0.6);">
+                        <i class="fas fa-users" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem;"></i>
+                        <p>No other users tracked</p>
+                        <p style="font-size: 0.9rem;">Add users to track their locations</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = users.map(user => {
+                const timeAgo = Math.floor((Date.now() - user.lastSeen) / 1000);
+                const timeText = timeAgo < 60 ? `${timeAgo}s ago` : 
+                               timeAgo < 3600 ? `${Math.floor(timeAgo / 60)}m ago` : 
+                               `${Math.floor(timeAgo / 3600)}h ago`;
+                
+                let distanceText = '';
+                if (currentPosition && user.position) {
+                    const { latitude: myLat, longitude: myLng } = currentPosition.coords;
+                    const distance = map.distance([myLat, myLng], user.position);
+                    distanceText = ` • ${(distance / 1000).toFixed(1)}km away`;
+                }
+                
+                return `
+                    <div class="user-card" onclick="focusOnUser('${user.id}')">
+                        <div class="user-avatar" style="background: ${user.color};">
+                            ${user.name.charAt(0)}
+                        </div>
+                        <div class="user-info">
+                            <div class="user-name">${user.name}</div>
+                            <div class="user-status">
+                                <span class="status-dot ${timeAgo < 300 ? 'status-online' : 'status-offline'}"></span>
+                                ${timeText}${distanceText}
+                            </div>
+                        </div>
+                        <div class="list-item-actions">
+                            <button class="action-btn glass" onclick="toggleUserVisibility('${user.id}', event)" style="width: 32px; height: 32px;" title="Hide/Show">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn glass" onclick="removeUser('${user.id}', event)" style="width: 32px; height: 32px; background: rgba(239,68,68,0.2); color: #FCA5A5;" title="Remove">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function focusOnUser(userId) {
+            const user = trackedUsers[userId];
+            if (user && user.position) {
+                map.setView(user.position, 16);
+                if (userMarkers[userId]) {
+                    userMarkers[userId].openPopup();
+                }
+                hideAllPanels();
+                showToast(`Focused on ${user.name}`, 'info');
+            }
+        }
+
+        function toggleUserVisibility(userId, event) {
+            event.stopPropagation();
+            const user = trackedUsers[userId];
+            if (user) {
+                if (userMarkers[userId] && map.hasLayer(userMarkers[userId])) {
+                    map.removeLayer(userMarkers[userId]);
+                    if (userPolylines[userId]) {
+                        map.removeLayer(userPolylines[userId]);
+                    }
+                    showToast(`${user.name} hidden`, 'info');
+                } else {
+                    if (userMarkers[userId]) {
+                        map.addLayer(userMarkers[userId]);
+                    }
+                    if (userPolylines[userId]) {
+                        map.addLayer(userPolylines[userId]);
+                    }
+                    showToast(`${user.name} shown`, 'info');
+                }
+            }
+        }
+
+        function removeUser(userId, event) {
+            event.stopPropagation();
+            if (confirm('Remove this user from tracking?')) {
+                const user = trackedUsers[userId];
+                if (user) {
+                    if (userMarkers[userId]) {
+                        map.removeLayer(userMarkers[userId]);
+                        delete userMarkers[userId];
+                    }
+                    if (userPolylines[userId]) {
+                        map.removeLayer(userPolylines[userId]);
+                        delete userPolylines[userId];
+                    }
+                    delete trackedUsers[userId];
+                    updateUsersList();
+                    showToast(`${user.name} removed`, 'info');
+                }
+            }
+        }
+
+        function addUserToTrack() {
+            const userName = prompt('Enter user name:', `User ${Object.keys(trackedUsers).length + 1}`);
+            if (!userName) return;
+            
+            const userId = `user_${Date.now()}`;
+            const color = getRandomColor();
+            
+            // Create initial position near current location
+            let lat = 0, lng = 0;
+            if (currentPosition) {
+                lat = currentPosition.coords.latitude + (Math.random() - 0.5) * 0.01;
+                lng = currentPosition.coords.longitude + (Math.random() - 0.5) * 0.01;
+            }
+            
+            updateUserPosition(userId, lat, lng);
+            trackedUsers[userId].name = userName;
+            trackedUsers[userId].color = color;
+            
+            // Update marker with new name
+            if (userMarkers[userId]) {
+                userMarkers[userId].setPopupContent(`<strong>${userName}</strong><br>Last seen: Just now`);
+            }
+            
+            updateUsersList();
+            showToast(`Now tracking ${userName}`, 'success');
+        }
+
         function updateCompass(heading) {
             const compass = document.getElementById('compass');
             if (compass) {
@@ -1104,6 +1460,7 @@
         }
 
         function updatePositionDisplay(lat, lng) {
+            // Simplified for mobile
             document.getElementById('currentLat').textContent = Math.abs(lat).toFixed(4) + '°' + (lat >= 0 ? 'N' : 'S');
             document.getElementById('currentLng').textContent = Math.abs(lng).toFixed(4) + '°' + (lng >= 0 ? 'E' : 'W');
         }
@@ -1233,7 +1590,6 @@
             if (settings.autoSave) {
                 history.unshift(session);
                 saveAllData();
-                updateHistoryList();
                 showToast(`Track saved: ${(session.distance / 1000).toFixed(2)}km`, 'success');
             }
             
@@ -1323,84 +1679,26 @@
             `;
         }
 
-        // Waypoint Functions
-        function addWaypoint() {
-            if (!currentPosition) {
-                showToast('Wait for GPS', 'warning');
-                return;
-            }
-
-            const { latitude, longitude } = currentPosition.coords;
-            const name = `Waypoint ${waypoints.length + 1}`;
-            
-            const waypoint = L.marker([latitude, longitude], {
-                icon: L.divIcon({
-                    html: '<div style="background: rgba(245,158,11,0.8); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border: 2px solid white;"><i class="fas fa-flag" style="color: white; font-size: 12px;"></i></div>',
-                    className: 'waypoint-marker',
-                    iconSize: [24, 24],
-                    iconAnchor: [12, 12]
-                })
-            }).addTo(map);
-            
-            waypoint.bindPopup(`<strong>${name}</strong>`);
-            waypoints.push({
-                id: Date.now(),
-                name: name,
-                lat: latitude,
-                lng: longitude,
-                marker: waypoint,
-                timestamp: new Date().toISOString()
-            });
-            
-            saveAllData();
-            showToast(`Waypoint added`, 'success');
-        }
-
-        // Photo Functions
-        function takePhoto() {
-            if (!currentPosition) {
-                showToast('Wait for GPS', 'warning');
-                return;
-            }
-
-            const { latitude, longitude } = currentPosition.coords;
-            const photoMarker = L.marker([latitude, longitude], {
-                icon: L.divIcon({
-                    html: '<div style="background: rgba(239,68,68,0.8); border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border: 2px solid white;"><i class="fas fa-camera" style="color: white; font-size: 10px;"></i></div>',
-                    className: 'photo-marker',
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 10]
-                })
-            }).addTo(map);
-            
-            photos.push({
-                id: Date.now(),
-                lat: latitude,
-                lng: longitude,
-                marker: photoMarker,
-                timestamp: new Date().toISOString()
-            });
-            
-            saveAllData();
-            showToast('Photo marker added', 'success');
-        }
-
         // Data Management
         function loadAllData() {
             try {
                 const savedSettings = localStorage.getItem('trackflow_settings');
-                const savedHistory = localStorage.getItem('trackflow_history');
-                const savedWaypoints = localStorage.getItem('trackflow_waypoints');
-                const savedPhotos = localStorage.getItem('trackflow_photos');
+                const savedTrackedUsers = localStorage.getItem('trackflow_trackedUsers');
                 
                 if (savedSettings) settings = JSON.parse(savedSettings);
-                if (savedHistory) history = JSON.parse(savedHistory);
-                if (savedWaypoints) waypoints = JSON.parse(savedWaypoints);
-                if (savedPhotos) photos = JSON.parse(savedPhotos);
+                if (savedTrackedUsers) {
+                    const users = JSON.parse(savedTrackedUsers);
+                    Object.keys(users).forEach(userId => {
+                        if (userId !== 'currentUser') {
+                            trackedUsers[userId] = users[userId];
+                        }
+                    });
+                }
                 
                 document.getElementById('gpsInterval').value = settings.gpsInterval;
                 document.getElementById('autoSave').checked = settings.autoSave;
                 document.getElementById('highAccuracy').checked = settings.highAccuracy;
+                document.getElementById('showUsers').checked = settings.showUsers;
                 
             } catch (error) {
                 console.error('Error loading data:', error);
@@ -1410,9 +1708,7 @@
         function saveAllData() {
             try {
                 localStorage.setItem('trackflow_settings', JSON.stringify(settings));
-                localStorage.setItem('trackflow_history', JSON.stringify(history));
-                localStorage.setItem('trackflow_waypoints', JSON.stringify(waypoints));
-                localStorage.setItem('trackflow_photos', JSON.stringify(photos));
+                localStorage.setItem('trackflow_trackedUsers', JSON.stringify(trackedUsers));
             } catch (error) {
                 console.error('Error saving data:', error);
             }
@@ -1422,107 +1718,32 @@
             settings.gpsInterval = parseInt(document.getElementById('gpsInterval').value);
             settings.autoSave = document.getElementById('autoSave').checked;
             settings.highAccuracy = document.getElementById('highAccuracy').checked;
+            settings.showUsers = document.getElementById('showUsers').checked;
+            
+            // Show/hide other users based on setting
+            Object.keys(userMarkers).forEach(userId => {
+                if (userId !== 'currentUser') {
+                    if (settings.showUsers) {
+                        if (!map.hasLayer(userMarkers[userId])) {
+                            map.addLayer(userMarkers[userId]);
+                        }
+                        if (userPolylines[userId] && !map.hasLayer(userPolylines[userId])) {
+                            map.addLayer(userPolylines[userId]);
+                        }
+                    } else {
+                        if (map.hasLayer(userMarkers[userId])) {
+                            map.removeLayer(userMarkers[userId]);
+                        }
+                        if (userPolylines[userId] && map.hasLayer(userPolylines[userId])) {
+                            map.removeLayer(userPolylines[userId]);
+                        }
+                    }
+                }
+            });
             
             startGPS();
             saveAllData();
             showToast('Settings saved', 'success');
-        }
-
-        function updateHistoryList() {
-            const container = document.getElementById('historyList');
-            
-            if (history.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 2rem; color: rgba(255, 255, 255, 0.6);">
-                        <i class="fas fa-history" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem;"></i>
-                        <p>No history</p>
-                        <p style="font-size: 0.9rem;">Start tracking to build history</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = history.slice(0, 10).map(session => `
-                <div class="list-item">
-                    <div class="list-item-info">
-                        <div class="list-item-title">${session.name}</div>
-                        <div class="list-item-details">
-                            ${new Date(session.startTime).toLocaleDateString()} • 
-                            ${(session.distance / 1000).toFixed(2)}km
-                        </div>
-                    </div>
-                    <div class="list-item-actions">
-                        <button class="action-btn glass" onclick="viewSession(${session.id})" style="width: 32px; height: 32px;">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="action-btn glass" onclick="deleteSession(${session.id})" style="width: 32px; height: 32px; background: rgba(239,68,68,0.2); color: #FCA5A5;">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function viewSession(sessionId) {
-            const session = history.find(s => s.id === sessionId);
-            if (session) {
-                hideAllPanels();
-                trackingPolyline.setLatLngs(session.points);
-                if (session.points.length > 0) {
-                    const bounds = L.latLngBounds(session.points);
-                    map.fitBounds(bounds.pad(0.1));
-                }
-                showToast(`Viewing: ${session.name}`, 'success');
-            }
-        }
-
-        function deleteSession(sessionId) {
-            if (confirm('Delete this session?')) {
-                const index = history.findIndex(s => s.id === sessionId);
-                if (index > -1) {
-                    history.splice(index, 1);
-                    saveAllData();
-                    updateHistoryList();
-                    showToast('Session deleted', 'info');
-                }
-            }
-        }
-
-        function exportAllData() {
-            const data = {
-                history: history,
-                waypoints: waypoints,
-                photos: photos,
-                settings: settings
-            };
-            
-            const dataStr = JSON.stringify(data, null, 2);
-            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-            
-            const link = document.createElement('a');
-            link.setAttribute('href', dataUri);
-            link.setAttribute('download', `trackflow-data.json`);
-            link.click();
-            
-            showToast('Data exported', 'success');
-        }
-
-        function clearAllData() {
-            if (confirm('⚠️ Delete ALL data?')) {
-                history = [];
-                waypoints.forEach(w => {
-                    if (w.marker) map.removeLayer(w.marker);
-                });
-                waypoints = [];
-                photos.forEach(p => {
-                    if (p.marker) map.removeLayer(p.marker);
-                });
-                photos = [];
-                
-                saveAllData();
-                updateHistoryList();
-                showToast('All data cleared', 'info');
-            }
         }
 
         // Panel Functions
@@ -1532,7 +1753,7 @@
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
             document.getElementById('nav' + panelId.charAt(0).toUpperCase() + panelId.slice(1)).classList.add('active');
             
-            if (panelId === 'history') updateHistoryList();
+            if (panelId === 'users') updateUsersList();
             if (panelId === 'tracking') updateActiveTrackingInfo();
         }
 
@@ -1560,6 +1781,14 @@
             document.getElementById('zoomIn').addEventListener('click', () => map.zoomIn());
             document.getElementById('zoomOut').addEventListener('click', () => map.zoomOut());
             
+            // Map Type Selector
+            document.querySelectorAll('.map-type-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const type = btn.getAttribute('data-type');
+                    changeMapType(type);
+                });
+            });
+            
             // Recording Control
             document.getElementById('recordToggle').addEventListener('click', function() {
                 if (isTracking) {
@@ -1570,10 +1799,6 @@
                     startTracking();
                 }
             });
-            
-            // Photo & Waypoint
-            document.getElementById('takePhoto').addEventListener('click', takePhoto);
-            document.getElementById('addWaypoint').addEventListener('click', addWaypoint);
             
             // Fullscreen
             document.getElementById('fullscreenToggle').addEventListener('click', () => {
@@ -1605,19 +1830,36 @@
             // Panel Buttons
             document.getElementById('panelStartTracking').addEventListener('click', startTracking);
             document.getElementById('panelStopTracking').addEventListener('click', stopTracking);
-            document.getElementById('exportDataBtn').addEventListener('click', exportAllData);
+            document.getElementById('addUserBtn').addEventListener('click', addUserToTrack);
             document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
-            document.getElementById('clearDataBtn').addEventListener('click', clearAllData);
+            document.getElementById('clearDataBtn').addEventListener('click', () => {
+                if (confirm('⚠️ Clear all tracked users?')) {
+                    Object.keys(userMarkers).forEach(userId => {
+                        if (userId !== 'currentUser') {
+                            map.removeLayer(userMarkers[userId]);
+                            if (userPolylines[userId]) {
+                                map.removeLayer(userPolylines[userId]);
+                            }
+                        }
+                    });
+                    trackedUsers = {};
+                    userMarkers = {};
+                    userPolylines = {};
+                    saveAllData();
+                    updateUsersList();
+                    showToast('All users cleared', 'info');
+                }
+            });
             
             // Panel Close Buttons
+            document.getElementById('closeUsersPanel').addEventListener('click', hideAllPanels);
             document.getElementById('closeTrackingPanel').addEventListener('click', hideAllPanels);
-            document.getElementById('closeHistoryPanel').addEventListener('click', hideAllPanels);
             document.getElementById('closeSettingsPanel').addEventListener('click', hideAllPanels);
             
             // Navigation
             document.getElementById('navMap').addEventListener('click', hideAllPanels);
+            document.getElementById('navUsers').addEventListener('click', () => showPanel('users'));
             document.getElementById('navTracking').addEventListener('click', () => showPanel('tracking'));
-            document.getElementById('navHistory').addEventListener('click', () => showPanel('history'));
             document.getElementById('navSettings').addEventListener('click', () => showPanel('settings'));
             
             // Handle fullscreen changes
