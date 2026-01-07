@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#1A56DB">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -27,11 +27,13 @@
             --glass-border: rgba(255, 255, 255, 0.2);
         }
 
+        /* Reset & Base */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
+            -webkit-overflow-scrolling: touch;
         }
 
         html, body {
@@ -42,6 +44,13 @@
             background: var(--dark);
             color: white;
             overflow: hidden;
+            position: fixed;
+            touch-action: manipulation;
+        }
+
+        /* Prevent pull-to-refresh on mobile */
+        body {
+            overscroll-behavior-y: contain;
         }
 
         .glass {
@@ -67,6 +76,8 @@
             padding: 20px;
             z-index: 2000;
             transition: opacity 0.3s ease;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .login-container.hidden {
@@ -74,92 +85,97 @@
             pointer-events: none;
         }
 
+        .login-wrapper {
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            margin: auto;
+        }
+
         .login-logo {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
             animation: fadeInUp 0.6s ease;
         }
 
         .login-logo-icon {
-            width: 100px;
-            height: 100px;
-            border-radius: 24px;
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 48px;
-            margin: 0 auto 20px;
+            font-size: 36px;
+            margin: 0 auto 15px;
             box-shadow: 0 12px 32px rgba(26, 86, 219, 0.3);
         }
 
         .login-title {
-            font-size: 32px;
+            font-size: 28px;
             font-weight: 800;
             background: linear-gradient(135deg, #fff, #E5E7EB);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 8px;
+            letter-spacing: -0.5px;
         }
 
         .login-subtitle {
             color: rgba(255, 255, 255, 0.7);
             font-size: 14px;
             font-weight: 400;
+            line-height: 1.4;
         }
 
         .role-selector {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 25px;
             width: 100%;
-            max-width: 400px;
             animation: fadeInUp 0.6s ease 0.2s both;
         }
 
         .role-btn {
-            flex: 1;
-            padding: 20px;
-            border-radius: 16px;
+            padding: 16px;
+            border-radius: 14px;
             background: rgba(255, 255, 255, 0.05);
             border: 2px solid rgba(255, 255, 255, 0.1);
             color: white;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
-        .role-btn:hover {
-            transform: translateY(-4px);
-            background: rgba(255, 255, 255, 0.1);
-            border-color: var(--primary);
+        .role-btn:active {
+            transform: scale(0.98);
         }
 
         .role-btn.active {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             border-color: rgba(255, 255, 255, 0.2);
-            transform: translateY(-4px);
-            box-shadow: 0 8px 32px rgba(26, 86, 219, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(26, 86, 219, 0.3);
         }
 
         .role-icon {
-            font-size: 32px;
+            font-size: 24px;
         }
 
         .login-form {
             width: 100%;
-            max-width: 400px;
             animation: fadeInUp 0.6s ease 0.4s both;
         }
 
         .input-group {
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         .input-label {
@@ -172,13 +188,14 @@
 
         .login-input {
             width: 100%;
-            padding: 16px 20px;
+            padding: 14px 16px;
             border-radius: 12px;
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.15);
             color: white;
             font-size: 16px;
             transition: all 0.3s ease;
+            -webkit-appearance: none;
         }
 
         .login-input:focus {
@@ -190,7 +207,7 @@
 
         .login-btn {
             width: 100%;
-            padding: 18px;
+            padding: 16px;
             border-radius: 12px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             border: none;
@@ -203,16 +220,31 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
-            margin-top: 10px;
-        }
-
-        .login-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(26, 86, 219, 0.3);
+            margin-top: 8px;
+            position: relative;
+            overflow: hidden;
         }
 
         .login-btn:active {
             transform: translateY(0);
+        }
+
+        .login-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .login-btn:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
         }
 
         /* Interface Common */
@@ -223,6 +255,7 @@
             right: 0;
             bottom: 0;
             display: none;
+            overflow: hidden;
         }
 
         .interface.active {
@@ -238,137 +271,160 @@
             z-index: 1;
         }
 
-        /* Top Bar */
+        /* Top Bar - Mobile Optimized */
         .top-bar {
             position: fixed;
-            top: env(safe-area-inset-top, 0px);
+            top: 0;
             left: 0;
             right: 0;
-            height: 70px;
-            padding: 0 20px;
+            height: 60px;
+            padding: 0 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             z-index: 1000;
             pointer-events: all;
             background: linear-gradient(to bottom, rgba(17, 24, 39, 0.95), rgba(17, 24, 39, 0.8));
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
         }
 
         .app-logo {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
+            min-width: 0;
         }
 
         .app-logo-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 20px;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .app-logo-text {
+            min-width: 0;
         }
 
         .app-logo-text h1 {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 700;
             color: white;
             line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .app-logo-text p {
-            font-size: 11px;
+            font-size: 10px;
             color: rgba(255, 255, 255, 0.6);
             letter-spacing: 0.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .top-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             align-items: center;
+            flex-shrink: 0;
         }
 
         .action-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.15);
             color: white;
-            font-size: 18px;
+            font-size: 16px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
-        }
-
-        .action-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-            transform: scale(1.05);
+            position: relative;
         }
 
         .action-btn:active {
             transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.15);
         }
 
-        /* Status Cards */
+        /* Status Cards - Mobile Optimized */
         .status-cards {
             position: fixed;
-            top: calc(env(safe-area-inset-top, 0px) + 80px);
-            left: 20px;
-            right: 20px;
+            top: 70px;
+            left: 12px;
+            right: 12px;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+            gap: 8px;
             z-index: 1000;
+            pointer-events: all;
         }
 
         .status-card {
-            padding: 16px;
-            border-radius: 16px;
+            padding: 12px;
+            border-radius: 14px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
+            min-height: 70px;
         }
 
         .status-card-icon {
-            font-size: 20px;
+            font-size: 16px;
             opacity: 0.8;
         }
 
         .status-card-value {
-            font-size: 24px;
+            font-size: 18px;
             font-weight: 700;
             color: white;
             line-height: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .status-card-label {
-            font-size: 12px;
+            font-size: 10px;
             color: rgba(255, 255, 255, 0.7);
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        /* Student Management */
+        /* Student Management - Mobile Optimized */
         .student-management {
             position: fixed;
-            bottom: 0;
+            top: 0;
             left: 0;
             right: 0;
-            background: rgba(17, 24, 39, 0.95);
-            backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 1000;
-            padding: 20px;
+            bottom: 0;
+            background: rgba(17, 24, 39, 0.98);
+            backdrop-filter: blur(30px);
+            z-index: 2000;
+            padding: 20px 16px;
+            padding-top: calc(env(safe-area-inset-top, 0px) + 20px);
             transform: translateY(100%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            max-height: 80vh;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
         }
 
         .student-management.active {
@@ -380,6 +436,8 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .student-management-title {
@@ -388,17 +446,19 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            color: white;
         }
 
         .student-actions {
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 10px;
             margin-bottom: 20px;
         }
 
         .student-action-btn {
-            padding: 12px 20px;
-            border-radius: 10px;
+            padding: 14px;
+            border-radius: 12px;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.15);
             color: white;
@@ -407,12 +467,14 @@
             cursor: pointer;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
             transition: all 0.2s ease;
+            text-align: center;
         }
 
-        .student-action-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
+        .student-action-btn:active {
+            transform: scale(0.98);
         }
 
         .student-action-btn.primary {
@@ -420,14 +482,15 @@
         }
 
         .student-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 80px;
         }
 
         .student-item {
             padding: 16px;
-            border-radius: 12px;
+            border-radius: 14px;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
@@ -436,13 +499,13 @@
             transition: all 0.2s ease;
         }
 
-        .student-item:hover {
+        .student-item:active {
             background: rgba(255, 255, 255, 0.08);
         }
 
         .student-avatar {
-            width: 48px;
-            height: 48px;
+            width: 44px;
+            height: 44px;
             border-radius: 12px;
             background: linear-gradient(135deg, var(--info), var(--secondary));
             display: flex;
@@ -450,7 +513,7 @@
             justify-content: center;
             color: white;
             font-weight: 600;
-            font-size: 18px;
+            font-size: 16px;
             flex-shrink: 0;
         }
 
@@ -461,9 +524,12 @@
 
         .student-name {
             font-weight: 600;
-            font-size: 15px;
+            font-size: 14px;
             margin-bottom: 4px;
             color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .student-details {
@@ -471,16 +537,21 @@
             color: rgba(255, 255, 255, 0.6);
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .student-status {
-            padding: 4px 12px;
+            padding: 6px 10px;
             border-radius: 20px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .status-waiting {
@@ -505,7 +576,8 @@
 
         .student-actions-buttons {
             display: flex;
-            gap: 8px;
+            gap: 6px;
+            flex-shrink: 0;
         }
 
         .student-action-icon {
@@ -522,65 +594,76 @@
             transition: all 0.2s ease;
         }
 
-        .student-action-icon:hover {
+        .student-action-icon:active {
+            transform: scale(0.95);
             background: rgba(255, 255, 255, 0.15);
         }
 
-        /* Parent Interface */
+        /* Parent Interface - Mobile Optimized */
         .parent-info-card {
             position: fixed;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            padding: 20px;
-            border-radius: 20px;
+            bottom: 16px;
+            left: 12px;
+            right: 12px;
+            padding: 16px;
+            border-radius: 18px;
             z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+            pointer-events: all;
         }
 
         .child-info {
             display: flex;
             align-items: center;
-            gap: 16px;
-            padding: 16px;
-            border-radius: 16px;
+            gap: 12px;
+            padding: 14px;
+            border-radius: 14px;
             background: rgba(255, 255, 255, 0.05);
+            margin-bottom: 12px;
         }
 
         .child-details {
             flex: 1;
+            min-width: 0;
         }
 
         .child-name {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .child-school {
-            font-size: 14px;
+            font-size: 12px;
             color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 8px;
+            margin-bottom: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .child-location {
-            font-size: 13px;
+            font-size: 12px;
             color: rgba(255, 255, 255, 0.6);
             display: flex;
             align-items: center;
             gap: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .child-actions {
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 10px;
         }
 
         .child-action-btn {
-            padding: 12px 20px;
-            border-radius: 10px;
+            padding: 14px;
+            border-radius: 12px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             border: none;
             color: white;
@@ -589,73 +672,81 @@
             cursor: pointer;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
             transition: all 0.2s ease;
         }
 
-        .child-action-btn:hover {
-            transform: translateY(-2px);
+        .child-action-btn:active {
+            transform: scale(0.98);
         }
 
         .child-action-btn.secondary {
             background: rgba(255, 255, 255, 0.1);
         }
 
-        /* Bus Info Panel */
+        /* Bus Info Panel - Mobile Optimized */
         .bus-info-panel {
             position: fixed;
-            bottom: 100px;
-            left: 20px;
-            right: 20px;
-            padding: 20px;
-            border-radius: 20px;
+            top: 70px;
+            left: 12px;
+            right: 12px;
+            padding: 16px;
+            border-radius: 18px;
             z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+            pointer-events: all;
         }
 
         .bus-header {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
+            margin-bottom: 16px;
         }
 
         .bus-icon {
-            width: 56px;
-            height: 56px;
-            border-radius: 16px;
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 24px;
+            font-size: 20px;
             flex-shrink: 0;
         }
 
         .bus-details {
             flex: 1;
+            min-width: 0;
         }
 
         .bus-name {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .bus-status {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 14px;
+            gap: 6px;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .status-indicator {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             display: inline-block;
+            flex-shrink: 0;
         }
 
         .status-online {
@@ -670,50 +761,57 @@
         .bus-metrics {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+            gap: 10px;
         }
 
         .metric-item {
             text-align: center;
-            padding: 12px;
+            padding: 10px;
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
+            border-radius: 10px;
         }
 
         .metric-value {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
             color: var(--primary);
             margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .metric-label {
-            font-size: 11px;
+            font-size: 10px;
             color: rgba(255, 255, 255, 0.6);
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        /* Map Controls */
+        /* Map Controls - Mobile Optimized */
         .map-controls {
             position: fixed;
-            bottom: 100px;
-            right: 20px;
+            bottom: 200px;
+            right: 12px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             z-index: 1000;
+            pointer-events: all;
         }
 
         .map-control-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 14px;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
             background: var(--glass-bg);
             backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
             color: white;
-            font-size: 18px;
+            font-size: 16px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -721,8 +819,8 @@
             transition: all 0.2s ease;
         }
 
-        .map-control-btn:hover {
-            transform: scale(1.1);
+        .map-control-btn:active {
+            transform: scale(0.95);
             background: rgba(255, 255, 255, 0.15);
         }
 
@@ -730,19 +828,15 @@
             background: var(--primary);
         }
 
-        .map-control-btn:active {
-            transform: scale(0.95);
-        }
-
-        /* Modal */
+        /* Modal - Mobile Optimized */
         .modal {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -750,6 +844,7 @@
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s ease;
+            padding: 20px;
         }
 
         .modal.active {
@@ -758,23 +853,26 @@
         }
 
         .modal-content {
-            width: 90%;
+            width: 100%;
             max-width: 500px;
-            max-height: 90vh;
+            max-height: 85vh;
             overflow-y: auto;
-            border-radius: 24px;
-            padding: 30px;
+            border-radius: 20px;
+            padding: 24px;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
         }
 
         .modal-header {
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             text-align: center;
         }
 
         .modal-title {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
             margin-bottom: 8px;
+            color: white;
         }
 
         .modal-subtitle {
@@ -783,7 +881,7 @@
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         .form-label {
@@ -791,6 +889,7 @@
             margin-bottom: 8px;
             font-weight: 500;
             color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
         }
 
         .form-input {
@@ -802,6 +901,7 @@
             color: white;
             font-size: 15px;
             transition: all 0.2s ease;
+            -webkit-appearance: none;
         }
 
         .form-input:focus {
@@ -811,31 +911,30 @@
         }
 
         .form-actions {
-            display: flex;
-            gap: 12px;
-            margin-top: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 24px;
         }
 
         .btn {
-            padding: 14px 24px;
-            border-radius: 10px;
+            padding: 14px;
+            border-radius: 12px;
             font-size: 15px;
             font-weight: 500;
             cursor: pointer;
             border: none;
             transition: all 0.2s ease;
-            flex: 1;
             text-align: center;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
         }
 
         .btn-primary {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(26, 86, 219, 0.3);
         }
 
         .btn-secondary {
@@ -844,47 +943,45 @@
             border: 1px solid rgba(255, 255, 255, 0.15);
         }
 
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        /* Toast Notifications */
+        /* Toast Notifications - Mobile Optimized */
         .toast-container {
             position: fixed;
-            bottom: 20px;
-            left: 20px;
+            bottom: 16px;
+            left: 12px;
+            right: 12px;
             z-index: 4000;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            max-width: 400px;
+            gap: 8px;
+            pointer-events: none;
         }
 
         .toast {
-            padding: 16px 20px;
+            padding: 14px 16px;
             border-radius: 14px;
             background: var(--glass-bg);
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(30px);
             border: 1px solid var(--glass-border);
             display: flex;
             align-items: center;
             gap: 12px;
-            animation: slideInLeft 0.3s ease;
-            transform: translateX(-100%);
+            animation: slideInUp 0.3s ease;
+            transform: translateY(100px);
             opacity: 0;
+            pointer-events: all;
         }
 
         .toast.show {
-            transform: translateX(0);
+            transform: translateY(0);
             opacity: 1;
         }
 
         .toast.hiding {
-            animation: slideOutLeft 0.3s ease forwards;
+            animation: slideOutDown 0.3s ease forwards;
         }
 
         .toast-icon {
-            font-size: 20px;
+            font-size: 18px;
             flex-shrink: 0;
         }
 
@@ -906,6 +1003,103 @@
             cursor: pointer;
             padding: 4px;
             font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        /* Map Theme Selector - Mobile Optimized */
+        .map-theme-selector {
+            position: fixed;
+            top: 70px;
+            right: 12px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px;
+            border-radius: 14px;
+            display: none;
+        }
+
+        .theme-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: 2px solid white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-size: cover;
+        }
+
+        .theme-btn:active {
+            transform: scale(0.95);
+        }
+
+        .theme-btn.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.3);
+        }
+
+        /* Notification Badge */
+        .notification-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: var(--danger);
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Trip Status */
+        .trip-status {
+            position: fixed;
+            top: 70px;
+            left: 12px;
+            z-index: 1000;
+            padding: 10px 16px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .trip-to-school {
+            background: rgba(14, 159, 110, 0.15);
+            color: var(--success);
+        }
+
+        .trip-from-school {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--info);
+        }
+
+        /* Close Button */
+        .close-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:active {
+            transform: scale(0.95);
         }
 
         /* Animations */
@@ -925,176 +1119,198 @@
             50% { opacity: 0.5; }
         }
 
-        @keyframes slideInLeft {
+        @keyframes slideInUp {
             from {
-                transform: translateX(-100%);
+                transform: translateY(100px);
                 opacity: 0;
             }
             to {
-                transform: translateX(0);
+                transform: translateY(0);
                 opacity: 1;
             }
         }
 
-        @keyframes slideOutLeft {
+        @keyframes slideOutDown {
             to {
-                transform: translateX(-100%);
+                transform: translateY(100px);
                 opacity: 0;
             }
         }
 
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 1;
+            }
+            20% {
+                transform: scale(25, 25);
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: scale(40, 40);
+            }
         }
 
-        /* Responsive */
-        @media (max-width: 768px) {
+        /* Mobile Specific Optimizations */
+        @media (max-width: 360px) {
             .status-cards {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: 1fr;
+                top: 65px;
             }
             
             .bus-metrics {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .student-list {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .status-cards {
                 grid-template-columns: 1fr;
             }
             
             .child-actions {
-                flex-direction: column;
+                grid-template-columns: 1fr;
+            }
+            
+            .role-selector {
+                grid-template-columns: 1fr;
             }
         }
 
-        /* Map Theme Selector */
-        .map-theme-selector {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+        @media (max-height: 600px) {
+            .status-cards {
+                top: 65px;
+            }
+            
+            .bus-info-panel {
+                top: 65px;
+            }
+            
+            .parent-info-card {
+                bottom: 12px;
+            }
+            
+            .map-controls {
+                bottom: 180px;
+            }
         }
 
-        .theme-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            border: 2px solid white;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            background-size: cover;
+        /* Landscape Mode */
+        @media (orientation: landscape) {
+            .login-wrapper {
+                max-height: 90vh;
+                overflow-y: auto;
+                padding: 10px;
+            }
+            
+            .role-selector {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .status-cards {
+                top: 65px;
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .map-controls {
+                bottom: 100px;
+            }
         }
 
-        .theme-btn:hover {
-            transform: scale(1.1);
+        /* Tablet */
+        @media (min-width: 768px) {
+            .status-cards {
+                max-width: 400px;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+            
+            .map-controls {
+                right: 20px;
+                bottom: 220px;
+            }
+            
+            .parent-info-card {
+                max-width: 400px;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+            
+            .bus-info-panel {
+                max-width: 400px;
+                left: 50%;
+                transform: translateX(-50%);
+            }
         }
 
-        .theme-btn.active {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.3);
+        /* Fix Leaflet Scroll */
+        .leaflet-container {
+            width: 100%;
+            height: 100%;
+            -webkit-overflow-scrolling: touch;
         }
 
-        /* Notification Badge */
-        .notification-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: var(--danger);
-            color: white;
-            font-size: 10px;
-            font-weight: 600;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .leaflet-control-attribution {
+            font-size: 9px !important;
         }
 
-        /* Trip Status */
-        .trip-status {
-            position: fixed;
-            top: 80px;
-            left: 20px;
-            z-index: 1000;
-            padding: 12px 20px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 500;
+        /* Safe Area Insets */
+        .safe-area-top {
+            padding-top: env(safe-area-inset-top, 0px);
         }
 
-        .trip-to-school {
-            background: rgba(14, 159, 110, 0.15);
-            color: var(--success);
-        }
-
-        .trip-from-school {
-            background: rgba(59, 130, 246, 0.15);
-            color: var(--info);
+        .safe-area-bottom {
+            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
     </style>
 </head>
 <body>
     <!-- Login Screen -->
     <div class="login-container glass" id="loginScreen">
-        <div class="login-logo">
-            <div class="login-logo-icon">
-                <i class="fas fa-bus-alt"></i>
-            </div>
-            <h1 class="login-title">SchoolBus Tracker Pro</h1>
-            <p class="login-subtitle">Safe & Real-Time Student Transportation Tracking</p>
-        </div>
-        
-        <div class="role-selector">
-            <button class="role-btn glass active" id="driverRoleBtn">
-                <div class="role-icon">
-                    <i class="fas fa-user-tie"></i>
+        <div class="login-wrapper">
+            <div class="login-logo">
+                <div class="login-logo-icon">
+                    <i class="fas fa-bus-alt"></i>
                 </div>
-                Driver
-            </button>
-            <button class="role-btn glass" id="parentRoleBtn">
-                <div class="role-icon">
-                    <i class="fas fa-user-friends"></i>
+                <h1 class="login-title">SchoolBus Tracker Pro</h1>
+                <p class="login-subtitle">Safe & Real-Time Student Transportation Tracking</p>
+            </div>
+            
+            <div class="role-selector">
+                <button class="role-btn glass active" id="driverRoleBtn">
+                    <div class="role-icon">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <span>Driver</span>
+                </button>
+                <button class="role-btn glass" id="parentRoleBtn">
+                    <div class="role-icon">
+                        <i class="fas fa-user-friends"></i>
+                    </div>
+                    <span>Parent</span>
+                </button>
+            </div>
+            
+            <div class="login-form">
+                <div class="input-group">
+                    <label class="input-label" id="loginLabel">Driver ID</label>
+                    <input type="text" class="login-input glass" id="loginInput" 
+                           placeholder="Enter your Driver ID" value="DRIVER-2024">
                 </div>
-                Parent
-            </button>
-        </div>
-        
-        <div class="login-form">
-            <div class="input-group">
-                <label class="input-label" id="loginLabel">Driver ID</label>
-                <input type="text" class="login-input glass" id="loginInput" 
-                       placeholder="Enter your Driver ID" value="DRIVER-2024">
-            </div>
-            <div class="input-group">
-                <label class="input-label">Bus Number</label>
-                <input type="text" class="login-input glass" id="busNumber" 
-                       placeholder="e.g., BUS-001" value="BUS-001">
-            </div>
-            <div class="input-group" id="parentExtra" style="display: none;">
-                <label class="input-label">Parent Name</label>
-                <input type="text" class="login-input glass" id="parentName" 
-                       placeholder="Your full name" value="John Smith">
-                <div style="margin-top: 10px;">
-                    <label class="input-label">Child's Student ID</label>
-                    <input type="text" class="login-input glass" id="studentId" 
-                           placeholder="e.g., STU-2024-001" value="STU-2024-001">
+                <div class="input-group">
+                    <label class="input-label">Bus Number</label>
+                    <input type="text" class="login-input glass" id="busNumber" 
+                           placeholder="e.g., BUS-001" value="BUS-001">
                 </div>
+                <div class="input-group" id="parentExtra" style="display: none;">
+                    <label class="input-label">Parent Name</label>
+                    <input type="text" class="login-input glass" id="parentName" 
+                           placeholder="Your full name" value="John Smith">
+                    <div style="margin-top: 12px;">
+                        <label class="input-label">Child's Student ID</label>
+                        <input type="text" class="login-input glass" id="studentId" 
+                               placeholder="e.g., STU-2024-001" value="STU-2024-001">
+                    </div>
+                </div>
+                <button class="login-btn" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> Start Tracking
+                </button>
             </div>
-            <button class="login-btn" id="loginBtn">
-                <i class="fas fa-sign-in-alt"></i> Start Tracking
-            </button>
         </div>
     </div>
 
@@ -1102,20 +1318,20 @@
     <div class="interface" id="driverInterface">
         <div class="map-container" id="driverMap"></div>
         
-        <div class="top-bar glass">
+        <div class="top-bar glass safe-area-top">
             <div class="app-logo">
                 <div class="app-logo-icon">
                     <i class="fas fa-bus-alt"></i>
                 </div>
                 <div class="app-logo-text">
                     <h1 id="driverBusName">BUS-001</h1>
-                    <p>Driver Dashboard • <span id="currentTime">00:00</span></p>
+                    <p>Driver • <span id="currentTime">00:00</span></p>
                 </div>
             </div>
             <div class="top-actions">
                 <button class="action-btn glass" id="notificationsBtn" title="Notifications">
                     <i class="fas fa-bell"></i>
-                    <span class="notification-badge" id="notificationCount">0</span>
+                    <span class="notification-badge" id="notificationCount" style="display: none;">0</span>
                 </button>
                 <button class="action-btn glass" id="mapThemesBtn" title="Map Themes">
                     <i class="fas fa-layer-group"></i>
@@ -1150,7 +1366,7 @@
             </div>
         </div>
 
-        <div class="trip-status trip-to-school" id="tripStatus">
+        <div class="trip-status trip-to-school glass" id="tripStatus" style="display: none;">
             <i class="fas fa-school"></i>
             <span>Trip: To School</span>
         </div>
@@ -1168,20 +1384,20 @@
             <button class="map-control-btn glass" id="showStudents" title="Manage Students">
                 <i class="fas fa-user-graduate"></i>
             </button>
-            <button class="map-control-btn glass active" id="startTrip" title="Start Trip">
+            <button class="map-control-btn glass" id="startTrip" title="Start Trip">
                 <i class="fas fa-play"></i>
             </button>
         </div>
 
-        <div class="map-theme-selector" id="mapThemeSelector" style="display: none;">
+        <div class="map-theme-selector glass" id="mapThemeSelector">
             <div class="theme-btn active" data-theme="standard" 
-                 style="background: linear-gradient(45deg, #4CAF50, #2196F3);"></div>
+                 style="background: linear-gradient(45deg, #4CAF50, #2196F3);" title="Standard Map"></div>
             <div class="theme-btn" data-theme="dark" 
-                 style="background: linear-gradient(45deg, #333, #666);"></div>
+                 style="background: linear-gradient(45deg, #333, #666);" title="Dark Map"></div>
             <div class="theme-btn" data-theme="satellite" 
-                 style="background: linear-gradient(45deg, #8BC34A, #689F38);"></div>
+                 style="background: linear-gradient(45deg, #8BC34A, #689F38);" title="Satellite Map"></div>
             <div class="theme-btn" data-theme="light" 
-                 style="background: linear-gradient(45deg, #fff, #e0e0e0);"></div>
+                 style="background: linear-gradient(45deg, #fff, #e0e0e0);" title="Light Map"></div>
         </div>
     </div>
 
@@ -1189,20 +1405,20 @@
     <div class="interface" id="parentInterface">
         <div class="map-container" id="parentMap"></div>
         
-        <div class="top-bar glass">
+        <div class="top-bar glass safe-area-top">
             <div class="app-logo">
                 <div class="app-logo-icon">
                     <i class="fas fa-bus-alt"></i>
                 </div>
                 <div class="app-logo-text">
                     <h1>SchoolBus Tracker</h1>
-                    <p>Parent View • <span id="parentTime">00:00</span></p>
+                    <p>Parent • <span id="parentTime">00:00</span></p>
                 </div>
             </div>
             <div class="top-actions">
                 <button class="action-btn glass" id="parentNotificationsBtn" title="Notifications">
                     <i class="fas fa-bell"></i>
-                    <span class="notification-badge" id="parentNotificationCount">0</span>
+                    <span class="notification-badge" id="parentNotificationCount" style="display: none;">0</span>
                 </button>
                 <button class="action-btn glass" id="parentMapThemesBtn" title="Map Themes">
                     <i class="fas fa-layer-group"></i>
@@ -1255,7 +1471,7 @@
                         <span id="childLocation">Waiting at Maple Street</span>
                     </div>
                 </div>
-                <div class="child-status status-waiting" id="childStatusBadge">
+                <div class="student-status status-waiting" id="childStatusBadge">
                     WAITING
                 </div>
             </div>
@@ -1286,29 +1502,37 @@
                 <i class="fas fa-map-marker-alt"></i>
             </button>
         </div>
+
+        <div class="map-theme-selector glass" id="parentMapThemeSelector" style="display: none;">
+            <div class="theme-btn active" data-theme="standard" 
+                 style="background: linear-gradient(45deg, #4CAF50, #2196F3);" title="Standard Map"></div>
+            <div class="theme-btn" data-theme="dark" 
+                 style="background: linear-gradient(45deg, #333, #666);" title="Dark Map"></div>
+            <div class="theme-btn" data-theme="satellite" 
+                 style="background: linear-gradient(45deg, #8BC34A, #689F38);" title="Satellite Map"></div>
+            <div class="theme-btn" data-theme="light" 
+                 style="background: linear-gradient(45deg, #fff, #e0e0e0);" title="Light Map"></div>
+        </div>
     </div>
 
-    <!-- Student Management Modal -->
-    <div class="modal" id="studentModal">
-        <div class="modal-content glass">
-            <div class="modal-header">
-                <h2 class="modal-title">Manage Students</h2>
-                <p class="modal-subtitle">Add, remove, or update student information</p>
-            </div>
-            <div class="student-actions">
-                <button class="student-action-btn primary" id="addStudentBtn">
-                    <i class="fas fa-plus"></i> Add Student
-                </button>
-                <button class="student-action-btn" id="importStudentsBtn">
-                    <i class="fas fa-file-import"></i> Import CSV
-                </button>
-            </div>
-            <div class="student-list" id="studentListContainer">
-                <!-- Students will be loaded here -->
-            </div>
-            <div class="form-actions">
-                <button class="btn btn-secondary" id="closeStudentModal">Close</button>
-            </div>
+    <!-- Student Management -->
+    <div class="student-management glass" id="studentManagement">
+        <div class="student-management-header">
+            <h2 class="student-management-title"><i class="fas fa-user-graduate"></i> Student Management</h2>
+            <button class="close-btn" id="closeStudentManagement">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="student-actions">
+            <button class="student-action-btn primary" id="addStudentBtn">
+                <i class="fas fa-plus"></i> Add Student
+            </button>
+            <button class="student-action-btn" id="importStudentsBtn">
+                <i class="fas fa-file-import"></i> Import CSV
+            </button>
+        </div>
+        <div class="student-list" id="studentListContainer">
+            <!-- Students will be loaded here -->
         </div>
     </div>
 
@@ -1376,17 +1600,19 @@
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Enhanced Application State
+        // Application State
         const appState = {
             userRole: 'driver',
             driverId: '',
             busNumber: '',
             parentName: '',
             studentId: '',
-            currentTrip: 'to_school', // 'to_school' or 'from_school'
+            currentTrip: 'to_school',
             tripActive: false,
             notifications: [],
-            mapTheme: 'standard'
+            mapTheme: 'standard',
+            studentsOnBoard: 0,
+            totalStudents: 0
         };
 
         // MQTT Configuration
@@ -1425,7 +1651,17 @@
                 coordinates: [40.7138, -74.0070],
                 school: 'Westwood Elementary'
             },
-            // Add more students as needed
+            'STU-2024-003': {
+                id: 'STU-2024-003',
+                name: 'Olivia Brown',
+                grade: '3rd Grade',
+                avatar: 'O',
+                contact: '+1234567892',
+                location: 'Pine Road',
+                status: 'waiting',
+                coordinates: [40.7148, -74.0080],
+                school: 'Westwood Elementary'
+            }
         };
 
         // Map Themes
@@ -1456,8 +1692,9 @@
         let busStops = [];
         let currentPosition = null;
         let watchId = null;
-        let routePolyline = null;
         let stopMarkers = [];
+        let isMapThemeVisible = false;
+        let isParentMapThemeVisible = false;
 
         // Initialize Application
         document.addEventListener('DOMContentLoaded', initApp);
@@ -1466,6 +1703,17 @@
             setupLogin();
             updateClock();
             setInterval(updateClock, 1000);
+            
+            // Prevent pull-to-refresh
+            document.body.addEventListener('touchmove', function(e) {
+                if (document.getElementById('studentManagement').classList.contains('active') ||
+                    document.getElementById('addStudentModal').classList.contains('active') ||
+                    document.getElementById('notificationsModal').classList.contains('active')) {
+                    // Allow scrolling in modals
+                    return;
+                }
+                e.preventDefault();
+            }, { passive: false });
         }
 
         function setupLogin() {
@@ -1473,23 +1721,32 @@
             const parentBtn = document.getElementById('parentRoleBtn');
             const loginBtn = document.getElementById('loginBtn');
 
-            driverBtn.addEventListener('click', () => {
-                appState.userRole = 'driver';
-                driverBtn.classList.add('active');
-                parentBtn.classList.remove('active');
-                document.getElementById('loginLabel').textContent = 'Driver ID';
-                document.getElementById('parentExtra').style.display = 'none';
-            });
-
-            parentBtn.addEventListener('click', () => {
-                appState.userRole = 'parent';
-                parentBtn.classList.add('active');
-                driverBtn.classList.remove('active');
-                document.getElementById('loginLabel').textContent = 'Parent Name';
-                document.getElementById('parentExtra').style.display = 'block';
-            });
-
+            driverBtn.addEventListener('click', handleRoleSelect);
+            parentBtn.addEventListener('click', handleRoleSelect);
             loginBtn.addEventListener('click', handleLogin);
+        }
+
+        function handleRoleSelect(e) {
+            const isDriver = e.currentTarget.id === 'driverRoleBtn';
+            appState.userRole = isDriver ? 'driver' : 'parent';
+            
+            document.getElementById('driverRoleBtn').classList.toggle('active', isDriver);
+            document.getElementById('parentRoleBtn').classList.toggle('active', !isDriver);
+            
+            const loginLabel = document.getElementById('loginLabel');
+            const parentExtra = document.getElementById('parentExtra');
+            
+            if (isDriver) {
+                loginLabel.textContent = 'Driver ID';
+                parentExtra.style.display = 'none';
+                document.getElementById('loginInput').placeholder = 'Enter Driver ID';
+                document.getElementById('loginInput').value = 'DRIVER-2024';
+            } else {
+                loginLabel.textContent = 'Parent Name';
+                parentExtra.style.display = 'block';
+                document.getElementById('loginInput').placeholder = 'Your full name';
+                document.getElementById('loginInput').value = 'John Smith';
+            }
         }
 
         function handleLogin() {
@@ -1533,30 +1790,47 @@
             document.getElementById('loginScreen').classList.add('hidden');
             document.querySelectorAll('.interface').forEach(el => el.classList.remove('active'));
             document.getElementById(`${interfaceType}Interface`).classList.add('active');
+            updateDashboard();
         }
 
         function initDriverInterface() {
             initMap('driverMap');
             setupDriverControls();
-            updateDriverDashboard();
             startGPS();
         }
 
         function initParentInterface() {
             initMap('parentMap');
             setupParentControls();
-            updateParentDashboard();
             
             const student = studentDatabase[appState.studentId];
             if (student) {
                 updateChildInfo(student);
             }
+            
+            // Start demo updates for parent
+            startParentDemoUpdates();
         }
 
         function initMap(mapId) {
             const defaultCoords = [40.7128, -74.0060];
             
-            map = L.map(mapId).setView(defaultCoords, 13);
+            map = L.map(mapId, {
+                zoomControl: false,
+                dragging: true,
+                tap: true,
+                touchZoom: true,
+                scrollWheelZoom: false,
+                doubleClickZoom: true,
+                boxZoom: false,
+                keyboard: false,
+                inertia: true,
+                inertiaDeceleration: 3000,
+                inertiaMaxSpeed: 1500,
+                easeLinearity: 0.2,
+                worldCopyJump: false,
+                maxBoundsViscosity: 1.0
+            }).setView(defaultCoords, 13);
             
             // Set initial map theme
             setMapTheme(appState.mapTheme);
@@ -1568,7 +1842,8 @@
                     className: 'bus-marker',
                     iconSize: [50, 50],
                     iconAnchor: [25, 25]
-                })
+                }),
+                zIndexOffset: 1000
             }).addTo(map);
             
             // Initialize bus path
@@ -1576,7 +1851,8 @@
                 color: '#1A56DB',
                 weight: 4,
                 opacity: 0.8,
-                lineJoin: 'round'
+                lineJoin: 'round',
+                smoothFactor: 1
             }).addTo(map);
             
             // Add bus stops
@@ -1594,16 +1870,25 @@
                 const themeConfig = MAP_THEMES[theme];
                 L.tileLayer(themeConfig.url, {
                     attribution: themeConfig.attribution,
-                    maxZoom: 19
+                    maxZoom: 19,
+                    minZoom: 3,
+                    detectRetina: true
                 }).addTo(map);
                 
                 appState.mapTheme = theme;
+                
+                // Update theme buttons
+                document.querySelectorAll('.theme-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.theme === theme);
+                });
             }
         }
 
         function addBusStopsToMap() {
             // Clear existing stops
-            stopMarkers.forEach(marker => map.removeLayer(marker));
+            if (stopMarkers) {
+                stopMarkers.forEach(marker => map.removeLayer(marker));
+            }
             stopMarkers = [];
             
             Object.values(studentDatabase).forEach(student => {
@@ -1639,14 +1924,12 @@
             document.getElementById('startTrip').addEventListener('click', toggleTrip);
             
             // Map themes
-            document.getElementById('mapThemesBtn').addEventListener('click', toggleMapThemes);
-            document.querySelectorAll('.theme-btn').forEach(btn => {
+            document.getElementById('mapThemesBtn').addEventListener('click', toggleMapThemeSelector);
+            document.querySelectorAll('#mapThemeSelector .theme-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const theme = this.dataset.theme;
                     setMapTheme(theme);
-                    document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    document.getElementById('mapThemeSelector').style.display = 'none';
+                    hideMapThemeSelector();
                 });
             });
             
@@ -1655,6 +1938,17 @@
             
             // Logout
             document.getElementById('driverLogout').addEventListener('click', logout);
+            
+            // Student management close
+            document.getElementById('closeStudentManagement').addEventListener('click', hideStudentManagement);
+            
+            // Add student
+            document.getElementById('addStudentBtn').addEventListener('click', showAddStudentModal);
+            document.getElementById('importStudentsBtn').addEventListener('click', importStudents);
+            
+            // Add student modal
+            document.getElementById('addStudentForm').addEventListener('submit', handleAddStudent);
+            document.getElementById('cancelAddStudent').addEventListener('click', hideAddStudentModal);
         }
 
         function setupParentControls() {
@@ -1666,17 +1960,28 @@
             document.getElementById('showStops').addEventListener('click', toggleStops);
             
             // Child actions
-            document.getElementById('markPickedBtn').addEventListener('click', () => markChildStatus('picked'));
+            document.getElementById('markPickedBtn').addEventListener('click', () => markChildStatus('onbus'));
             document.getElementById('markDroppedBtn').addEventListener('click', () => markChildStatus('dropped'));
             
             // Map themes
-            document.getElementById('parentMapThemesBtn').addEventListener('click', toggleMapThemes);
+            document.getElementById('parentMapThemesBtn').addEventListener('click', toggleParentMapThemeSelector);
+            document.querySelectorAll('#parentMapThemeSelector .theme-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const theme = this.dataset.theme;
+                    setMapTheme(theme);
+                    hideParentMapThemeSelector();
+                });
+            });
             
             // Notifications
             document.getElementById('parentNotificationsBtn').addEventListener('click', showNotifications);
             
             // Logout
             document.getElementById('parentLogout').addEventListener('click', logout);
+            
+            // Notifications modal
+            document.getElementById('clearNotifications').addEventListener('click', clearNotifications);
+            document.getElementById('closeNotifications').addEventListener('click', hideNotificationsModal);
         }
 
         function startGPS() {
@@ -1692,8 +1997,13 @@
                     handlePositionError,
                     options
                 );
+                
+                // Initial position
+                navigator.geolocation.getCurrentPosition(handlePositionUpdate, handlePositionError, options);
             } else {
                 showToast('GPS not available on this device', 'error');
+                // Start demo updates for testing
+                startDemoUpdates();
             }
         }
 
@@ -1712,7 +2022,7 @@
             busPath.setLatLngs(currentPath);
             
             // Update dashboard
-            updateDriverDashboard(speed);
+            updateDashboard(speed);
             
             // Publish location
             publishLocation(latitude, longitude, speed, heading);
@@ -1730,6 +2040,9 @@
         function publishLocation(lat, lng, speed, heading) {
             if (!mqttClient) return;
             
+            const studentsOnBoard = Object.values(studentDatabase).filter(s => s.status === 'onbus').length;
+            const totalStudents = Object.keys(studentDatabase).length;
+            
             const locationData = {
                 type: 'location',
                 busNumber: appState.busNumber,
@@ -1740,7 +2053,8 @@
                 heading: heading || 0,
                 trip: appState.currentTrip,
                 tripActive: appState.tripActive,
-                studentsOnBoard: Object.values(studentDatabase).filter(s => s.status === 'onbus').length
+                studentsOnBoard: studentsOnBoard,
+                totalStudents: totalStudents
             };
             
             mqttClient.publish(
@@ -1749,7 +2063,7 @@
             );
         }
 
-        function updateDriverDashboard(speed = 0) {
+        function updateDashboard(speed = 0) {
             const studentsOnBoard = Object.values(studentDatabase).filter(s => s.status === 'onbus').length;
             const totalStudents = Object.keys(studentDatabase).length;
             
@@ -1768,7 +2082,8 @@
             // Update trip status
             const tripStatus = document.getElementById('tripStatus');
             if (appState.tripActive) {
-                tripStatus.className = `trip-status trip-${appState.currentTrip.replace('_', '-')}`;
+                tripStatus.style.display = 'flex';
+                tripStatus.className = `trip-status trip-${appState.currentTrip.replace('_', '-')} glass`;
                 tripStatus.innerHTML = `
                     <i class="fas fa-${appState.currentTrip === 'to_school' ? 'school' : 'home'}"></i>
                     <span>Trip: ${appState.currentTrip === 'to_school' ? 'To School' : 'From School'}</span>
@@ -1779,9 +2094,13 @@
             
             // Update bus name
             document.getElementById('driverBusName').textContent = appState.busNumber;
+            
+            // Update counts
+            appState.studentsOnBoard = studentsOnBoard;
+            appState.totalStudents = totalStudents;
         }
 
-        function updateParentDashboard() {
+        function updateParentDashboard(data = null) {
             const student = studentDatabase[appState.studentId];
             if (!student) return;
             
@@ -1795,11 +2114,51 @@
             
             // Update status badge
             const statusBadge = document.getElementById('childStatusBadge');
-            statusBadge.className = `child-status status-${student.status}`;
+            statusBadge.className = `student-status status-${student.status}`;
             statusBadge.textContent = student.status.toUpperCase();
             
             // Update bus info
             document.getElementById('parentBusName').textContent = appState.busNumber;
+            
+            if (data) {
+                // Update metrics from received data
+                if (data.speed !== undefined) {
+                    document.getElementById('parentSpeed').textContent = 
+                        Math.round(data.speed * 3.6) + ' km/h';
+                }
+                
+                if (data.eta) {
+                    document.getElementById('eta').textContent = data.eta;
+                }
+                
+                if (data.distance) {
+                    document.getElementById('distanceAway').textContent = data.distance;
+                }
+                
+                // Update bus status
+                const statusText = document.getElementById('busStatusText');
+                const statusDot = document.getElementById('busStatusDot');
+                
+                if (data.tripActive) {
+                    statusText.textContent = `Online • ${data.trip === 'to_school' ? 'To School' : 'From School'}`;
+                    statusDot.className = 'status-indicator status-online';
+                } else {
+                    statusText.textContent = 'Offline';
+                    statusDot.className = 'status-indicator status-offline';
+                }
+            }
+        }
+
+        function updateChildInfo(student) {
+            document.getElementById('childFullName').textContent = student.name;
+            document.getElementById('childSchool').textContent = `${student.school} • ${student.grade}`;
+            document.getElementById('childAvatar').textContent = student.avatar;
+            document.getElementById('childLocation').textContent = 
+                student.status === 'onbus' ? 'On the bus' : `Waiting at ${student.location}`;
+            
+            const statusBadge = document.getElementById('childStatusBadge');
+            statusBadge.className = `student-status status-${student.status}`;
+            statusBadge.textContent = student.status.toUpperCase();
         }
 
         function toggleTrip() {
@@ -1831,6 +2190,9 @@
                     : 'Bus has started the trip from school';
                 sendTripAlert('trip_started', alertMsg);
             }
+            
+            // Update trip status display
+            updateDashboard();
             
             // Publish trip status
             publishTripStatus();
@@ -1865,7 +2227,9 @@
                 timestamp: Date.now(),
                 trip: appState.currentTrip,
                 active: appState.tripActive,
-                driver: appState.driverId
+                driver: appState.driverId,
+                studentsOnBoard: appState.studentsOnBoard,
+                totalStudents: appState.totalStudents
             };
             
             mqttClient.publish(
@@ -1922,8 +2286,16 @@
             
             // Update UI if this is the parent's child
             if (appState.userRole === 'parent' && studentId === appState.studentId) {
-                updateParentDashboard();
+                updateChildInfo(student);
             }
+            
+            // Update student list if visible
+            if (document.getElementById('studentManagement').classList.contains('active')) {
+                loadStudentList();
+            }
+            
+            // Update dashboard
+            updateDashboard();
             
             // Publish student status
             publishStudentStatus(studentId, status);
@@ -1981,18 +2353,16 @@
             if (appState.userRole !== 'parent') return;
             
             updateStudentStatus(appState.studentId, status);
-            showToast(`Marked as ${status.replace('_', ' ')}`, 'success');
+            showToast(`Marked as ${status === 'onbus' ? 'picked up' : 'dropped off'}`, 'success');
         }
 
         function showStudentManagement() {
             loadStudentList();
-            document.getElementById('studentModal').classList.add('active');
-            
-            // Setup event listeners
-            document.getElementById('addStudentBtn').addEventListener('click', showAddStudentModal);
-            document.getElementById('closeStudentModal').addEventListener('click', () => {
-                document.getElementById('studentModal').classList.remove('active');
-            });
+            document.getElementById('studentManagement').classList.add('active');
+        }
+
+        function hideStudentManagement() {
+            document.getElementById('studentManagement').classList.remove('active');
         }
 
         function loadStudentList() {
@@ -2030,14 +2400,11 @@
 
         function showAddStudentModal() {
             document.getElementById('addStudentModal').classList.add('active');
-            
-            const form = document.getElementById('addStudentForm');
-            form.onsubmit = handleAddStudent;
-            
-            document.getElementById('cancelAddStudent').addEventListener('click', () => {
-                document.getElementById('addStudentModal').classList.remove('active');
-                form.reset();
-            });
+        }
+
+        function hideAddStudentModal() {
+            document.getElementById('addStudentModal').classList.remove('active');
+            document.getElementById('addStudentForm').reset();
         }
 
         function handleAddStudent(e) {
@@ -2062,21 +2429,24 @@
             
             // Update UI
             loadStudentList();
+            updateDashboard();
             
             // Close modal
-            document.getElementById('addStudentModal').classList.remove('active');
-            document.getElementById('addStudentForm').reset();
+            hideAddStudentModal();
             
             showToast(`Added student: ${newStudent.name}`, 'success');
+        }
+
+        function importStudents() {
+            showToast('Import feature coming soon!', 'info');
         }
 
         function editStudent(studentId) {
             const student = studentDatabase[studentId];
             if (!student) return;
             
-            // For simplicity, we'll just remove and re-add
-            // In a real app, you'd have an edit modal
-            showToast(`Edit ${student.name} (feature coming soon)`, 'info');
+            // For simplicity, we'll just show an edit modal
+            showToast(`Editing ${student.name} - feature coming soon!`, 'info');
         }
 
         function removeStudent(studentId) {
@@ -2087,76 +2457,33 @@
                 delete studentDatabase[studentId];
                 loadStudentList();
                 addBusStopsToMap();
+                updateDashboard();
                 showToast(`Removed student: ${student.name}`, 'success');
             }
         }
 
-        function showNotifications() {
-            const modal = document.getElementById('notificationsModal');
-            const list = document.getElementById('notificationsList');
-            
-            list.innerHTML = appState.notifications.length > 0 
-                ? appState.notifications.map(n => `
-                    <div class="student-item">
-                        <div style="flex: 1;">
-                            <div class="student-name">${n.title}</div>
-                            <div class="student-details">${n.message}</div>
-                            <div class="student-details" style="font-size: 11px; opacity: 0.6;">
-                                ${new Date(n.timestamp).toLocaleTimeString()}
-                            </div>
-                        </div>
-                    </div>
-                `).join('')
-                : '<div style="text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.6);">No notifications</div>';
-            
-            modal.classList.add('active');
-            
-            document.getElementById('clearNotifications').onclick = clearNotifications;
-            document.getElementById('closeNotifications').onclick = () => {
-                modal.classList.remove('active');
-            };
-        }
-
-        function addNotification(title, message, type = 'info') {
-            const notification = {
-                id: Date.now(),
-                title,
-                message,
-                type,
-                timestamp: Date.now(),
-                read: false
-            };
-            
-            appState.notifications.unshift(notification);
-            
-            // Keep only last 50 notifications
-            if (appState.notifications.length > 50) {
-                appState.notifications.pop();
-            }
-            
-            // Update notification badge
-            updateNotificationBadge();
-        }
-
-        function clearNotifications() {
-            appState.notifications = [];
-            updateNotificationBadge();
-            showNotifications();
-        }
-
-        function updateNotificationBadge() {
-            const unreadCount = appState.notifications.filter(n => !n.read).length;
-            const badges = document.querySelectorAll('.notification-badge');
-            
-            badges.forEach(badge => {
-                badge.textContent = unreadCount > 0 ? unreadCount : '';
-                badge.style.display = unreadCount > 0 ? 'flex' : 'none';
-            });
-        }
-
-        function toggleMapThemes() {
+        function toggleMapThemeSelector() {
             const selector = document.getElementById('mapThemeSelector');
-            selector.style.display = selector.style.display === 'none' ? 'flex' : 'none';
+            isMapThemeVisible = !isMapThemeVisible;
+            selector.style.display = isMapThemeVisible ? 'flex' : 'none';
+        }
+
+        function hideMapThemeSelector() {
+            const selector = document.getElementById('mapThemeSelector');
+            isMapThemeVisible = false;
+            selector.style.display = 'none';
+        }
+
+        function toggleParentMapThemeSelector() {
+            const selector = document.getElementById('parentMapThemeSelector');
+            isParentMapThemeVisible = !isParentMapThemeVisible;
+            selector.style.display = isParentMapThemeVisible ? 'flex' : 'none';
+        }
+
+        function hideParentMapThemeSelector() {
+            const selector = document.getElementById('parentMapThemeSelector');
+            isParentMapThemeVisible = false;
+            selector.style.display = 'none';
         }
 
         function toggleRoute() {
@@ -2192,47 +2519,60 @@
                 const { latitude, longitude } = currentPosition.coords;
                 map.setView([latitude, longitude], 16);
                 busMarker.openPopup();
+                showToast('Centered on bus', 'info');
+            } else {
+                showToast('Waiting for GPS signal', 'info');
             }
         }
 
         function connectToMQTT() {
             const clientId = `schoolbus_${appState.userRole}_${Date.now()}`;
             
-            mqttClient = mqtt.connect(MQTT_CONFIG.broker, {
-                clientId: clientId,
-                clean: true,
-                connectTimeout: 4000,
-                reconnectPeriod: 1000
-            });
+            try {
+                mqttClient = mqtt.connect(MQTT_CONFIG.broker, {
+                    clientId: clientId,
+                    clean: true,
+                    connectTimeout: 4000,
+                    reconnectPeriod: 1000
+                });
 
-            mqttClient.on('connect', () => {
-                console.log('MQTT Connected');
-                showToast('Connected to tracking service', 'success');
+                mqttClient.on('connect', () => {
+                    console.log('MQTT Connected');
+                    showToast('Connected to tracking service', 'success');
+                    
+                    // Subscribe based on role
+                    if (appState.userRole === 'driver') {
+                        mqttClient.subscribe(`${MQTT_CONFIG.topics.commands}${appState.busNumber}`);
+                    } else {
+                        mqttClient.subscribe(`${MQTT_CONFIG.topics.location}${appState.busNumber}`);
+                        mqttClient.subscribe(`${MQTT_CONFIG.topics.status}${appState.busNumber}`);
+                        mqttClient.subscribe(`${MQTT_CONFIG.topics.students}${appState.busNumber}/${appState.studentId}`);
+                        mqttClient.subscribe(`${MQTT_CONFIG.topics.alerts}${appState.busNumber}/${appState.studentId}`);
+                    }
+                });
+
+                mqttClient.on('message', (topic, message) => {
+                    try {
+                        const data = JSON.parse(message.toString());
+                        handleMQTTMessage(topic, data);
+                    } catch (error) {
+                        console.error('MQTT Parse Error:', error);
+                    }
+                });
+
+                mqttClient.on('error', (err) => {
+                    console.error('MQTT Error:', err);
+                    showToast('Connection error', 'error');
+                });
                 
-                // Subscribe based on role
-                if (appState.userRole === 'driver') {
-                    mqttClient.subscribe(`${MQTT_CONFIG.topics.commands}${appState.busNumber}`);
-                } else {
-                    mqttClient.subscribe(`${MQTT_CONFIG.topics.location}${appState.busNumber}`);
-                    mqttClient.subscribe(`${MQTT_CONFIG.topics.status}${appState.busNumber}`);
-                    mqttClient.subscribe(`${MQTT_CONFIG.topics.students}${appState.busNumber}/${appState.studentId}`);
-                    mqttClient.subscribe(`${MQTT_CONFIG.topics.alerts}${appState.busNumber}/${appState.studentId}`);
-                }
-            });
-
-            mqttClient.on('message', (topic, message) => {
-                try {
-                    const data = JSON.parse(message.toString());
-                    handleMQTTMessage(topic, data);
-                } catch (error) {
-                    console.error('MQTT Parse Error:', error);
-                }
-            });
-
-            mqttClient.on('error', (err) => {
-                console.error('MQTT Error:', err);
-                showToast('Connection error', 'error');
-            });
+                mqttClient.on('close', () => {
+                    showToast('Disconnected from tracking service', 'warning');
+                });
+                
+            } catch (error) {
+                console.error('MQTT Connection Error:', error);
+                showToast('Failed to connect to tracking service', 'error');
+            }
         }
 
         function handleMQTTMessage(topic, data) {
@@ -2265,40 +2605,34 @@
             if (currentPath.length > 50) currentPath.shift();
             busPath.setLatLngs(currentPath);
             
-            // Update info
-            document.getElementById('parentSpeed').textContent = 
-                Math.round((data.speed || 0) * 3.6) + ' km/h';
-            
-            // Update ETA and distance
-            updateETA(data.coordinates);
+            // Update parent dashboard with metrics
+            updateParentDashboard({
+                speed: data.speed || 0,
+                eta: calculateETA(data.timestamp),
+                distance: calculateDistance([lat, lng]),
+                trip: data.trip,
+                tripActive: data.tripActive
+            });
         }
 
-        function updateETA(busCoords) {
-            // In a real app, calculate based on route and traffic
-            // For demo, use random values
-            const etaMinutes = Math.floor(Math.random() * 30) + 5;
-            const now = new Date();
-            now.setMinutes(now.getMinutes() + etaMinutes);
-            
-            document.getElementById('eta').textContent = 
-                now.getHours().toString().padStart(2, '0') + ':' + 
-                now.getMinutes().toString().padStart(2, '0');
-            
-            document.getElementById('distanceAway').textContent = 
-                (Math.random() * 5).toFixed(1) + ' km';
+        function calculateETA(timestamp) {
+            const now = Date.now();
+            const arrival = new Date(timestamp + 15 * 60000); // Add 15 minutes
+            return arrival.getHours().toString().padStart(2, '0') + ':' + 
+                   arrival.getMinutes().toString().padStart(2, '0');
+        }
+
+        function calculateDistance(busCoords) {
+            // Simple distance calculation (would use user location in real app)
+            const distance = Math.random() * 5 + 1;
+            return distance.toFixed(1) + ' km';
         }
 
         function updateBusStatus(data) {
-            const statusText = document.getElementById('busStatusText');
-            const statusDot = document.getElementById('busStatusDot');
-            
-            if (data.active) {
-                statusText.textContent = `Online • ${data.trip === 'to_school' ? 'To School' : 'From School'}`;
-                statusDot.className = 'status-indicator status-online';
-            } else {
-                statusText.textContent = 'Offline';
-                statusDot.className = 'status-indicator status-offline';
-            }
+            updateParentDashboard({
+                trip: data.trip,
+                tripActive: data.active
+            });
         }
 
         function updateStudentFromMQTT(data) {
@@ -2306,7 +2640,7 @@
             if (!student) return;
             
             student.status = data.status;
-            updateParentDashboard();
+            updateChildInfo(student);
             
             // Show notification
             if (data.studentId === appState.studentId) {
@@ -2330,6 +2664,73 @@
             }
         }
 
+        function showNotifications() {
+            const modal = document.getElementById('notificationsModal');
+            const list = document.getElementById('notificationsList');
+            
+            list.innerHTML = appState.notifications.length > 0 
+                ? appState.notifications.map(n => `
+                    <div class="student-item">
+                        <div style="flex: 1;">
+                            <div class="student-name">${n.title}</div>
+                            <div class="student-details">${n.message}</div>
+                            <div class="student-details" style="font-size: 11px; opacity: 0.6;">
+                                ${new Date(n.timestamp).toLocaleTimeString()}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')
+                : '<div style="text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.6);">No notifications</div>';
+            
+            modal.classList.add('active');
+        }
+
+        function hideNotificationsModal() {
+            document.getElementById('notificationsModal').classList.remove('active');
+        }
+
+        function addNotification(title, message, type = 'info') {
+            const notification = {
+                id: Date.now(),
+                title,
+                message,
+                type,
+                timestamp: Date.now(),
+                read: false
+            };
+            
+            appState.notifications.unshift(notification);
+            
+            // Keep only last 20 notifications
+            if (appState.notifications.length > 20) {
+                appState.notifications.pop();
+            }
+            
+            // Update notification badge
+            updateNotificationBadge();
+        }
+
+        function clearNotifications() {
+            appState.notifications = [];
+            updateNotificationBadge();
+            hideNotificationsModal();
+            showToast('Notifications cleared', 'success');
+        }
+
+        function updateNotificationBadge() {
+            const unreadCount = appState.notifications.filter(n => !n.read).length;
+            const badges = document.querySelectorAll('.notification-badge');
+            
+            badges.forEach(badge => {
+                if (unreadCount > 0) {
+                    badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            });
+        }
+
         function handlePositionError(error) {
             let message = 'Unable to get location';
             
@@ -2346,6 +2747,87 @@
             }
             
             showToast(message, 'error');
+            
+            // Start demo updates for testing
+            startDemoUpdates();
+        }
+
+        function startDemoUpdates() {
+            if (appState.userRole === 'driver') {
+                // Demo position updates for driver
+                let demoLat = 40.7128;
+                let demoLng = -74.0060;
+                let demoIndex = 0;
+                
+                const demoInterval = setInterval(() => {
+                    if (!currentPosition) {
+                        demoLat += 0.0001;
+                        demoLng += 0.0001;
+                        demoIndex++;
+                        
+                        const demoPosition = {
+                            coords: {
+                                latitude: demoLat,
+                                longitude: demoLng,
+                                speed: 8 + Math.random() * 4,
+                                heading: (demoIndex * 10) % 360
+                            }
+                        };
+                        
+                        handlePositionUpdate(demoPosition);
+                        
+                        // Auto-pickup demo students
+                        if (demoIndex % 10 === 0) {
+                            const waitingStudents = Object.values(studentDatabase).filter(s => s.status === 'waiting');
+                            if (waitingStudents.length > 0) {
+                                const randomStudent = waitingStudents[0];
+                                updateStudentStatus(randomStudent.id, 'onbus');
+                            }
+                        }
+                    } else {
+                        clearInterval(demoInterval);
+                    }
+                }, 2000);
+            }
+        }
+
+        function startParentDemoUpdates() {
+            // Demo updates for parent interface
+            let demoIndex = 0;
+            
+            const demoInterval = setInterval(() => {
+                if (appState.userRole === 'parent') {
+                    demoIndex++;
+                    
+                    // Simulate bus movement
+                    const demoLat = 40.7128 + Math.sin(demoIndex * 0.01) * 0.01;
+                    const demoLng = -74.0060 + Math.cos(demoIndex * 0.01) * 0.01;
+                    
+                    updateBusPosition({
+                        coordinates: [demoLat, demoLng],
+                        speed: 10 + Math.random() * 5,
+                        timestamp: Date.now(),
+                        trip: appState.currentTrip,
+                        tripActive: true
+                    });
+                    
+                    // Update student status occasionally
+                    if (demoIndex % 15 === 0) {
+                        const student = studentDatabase[appState.studentId];
+                        if (student && student.status === 'waiting') {
+                            updateStudentStatus(student.id, 'onbus');
+                        }
+                    }
+                    
+                    // Send occasional alerts
+                    if (demoIndex % 30 === 0) {
+                        addNotification('System', 'Bus is running on schedule', 'info');
+                    }
+                }
+            }, 3000);
+            
+            // Store interval for cleanup
+            window.parentDemoInterval = demoInterval;
         }
 
         function updateClock() {
@@ -2370,9 +2852,21 @@
                 mqttClient = null;
             }
             
+            if (window.parentDemoInterval) {
+                clearInterval(window.parentDemoInterval);
+                window.parentDemoInterval = null;
+            }
+            
             // Reset UI
             document.getElementById('loginScreen').classList.remove('hidden');
             document.querySelectorAll('.interface').forEach(el => el.classList.remove('active'));
+            document.getElementById('studentManagement').classList.remove('active');
+            document.getElementById('addStudentModal').classList.remove('active');
+            document.getElementById('notificationsModal').classList.remove('active');
+            
+            // Hide map theme selectors
+            hideMapThemeSelector();
+            hideParentMapThemeSelector();
             
             // Reset state
             appState.userRole = 'driver';
@@ -2381,6 +2875,12 @@
             appState.parentName = '';
             appState.studentId = '';
             appState.tripActive = false;
+            appState.notifications = [];
+            appState.studentsOnBoard = 0;
+            appState.totalStudents = 0;
+            
+            // Reset form
+            document.getElementById('addStudentForm').reset();
             
             showToast('Logged out', 'info');
         }
@@ -2411,13 +2911,19 @@
             // Close button
             toast.querySelector('.toast-close').onclick = () => hideToast(toast);
             
-            // Auto-hide
+            // Auto-hide after 5 seconds
             setTimeout(() => hideToast(toast), 5000);
         }
 
         function hideToast(toast) {
-            toast.classList.add('hiding');
-            setTimeout(() => toast.remove(), 300);
+            if (toast && toast.parentNode) {
+                toast.classList.add('hiding');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.remove();
+                    }
+                }, 300);
+            }
         }
 
         // Global functions for student actions
@@ -2425,14 +2931,15 @@
         window.removeStudent = removeStudent;
         window.markChildStatus = markChildStatus;
 
-        // Initial demo setup
+        // Initialize with some demo data
         setTimeout(() => {
-            if (appState.userRole === 'driver') {
-                // Simulate some students on bus for demo
-                updateStudentStatus('STU-2024-001', 'onbus');
-                updateStudentStatus('STU-2024-002', 'onbus');
-            }
-        }, 2000);
+            // Add initial notifications
+            addNotification('Welcome', 'SchoolBus Tracker Pro is ready!', 'info');
+            addNotification('System', 'GPS tracking activated', 'success');
+            
+            // Update dashboard initially
+            updateDashboard();
+        }, 1000);
     </script>
 </body>
 </html>
