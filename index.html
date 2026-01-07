@@ -3,14 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#1E40AF">
+    <meta name="theme-color" content="#1A56DB">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>TrackFlow • Multi-User GPS Tracker</title>
+    <title>SchoolBus Tracker Pro • Real-Time Bus Tracking</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
-        /* Reset & Base */
+        :root {
+            --primary: #1A56DB;
+            --primary-dark: #1E40AF;
+            --secondary: #7E3AF2;
+            --success: #0E9F6E;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --info: #3B82F6;
+            --dark: #111827;
+            --light: #F9FAFB;
+            --gray-100: #F3F4F6;
+            --gray-800: #1F2937;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -22,15 +38,198 @@
             height: 100%;
             width: 100%;
             overscroll-behavior: none;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: #0F172A;
-            color: #FFFFFF;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+            background: var(--dark);
+            color: white;
             overflow: hidden;
-            touch-action: none;
         }
 
-        /* Full Screen Map */
-        #trackingMap {
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Login Screen */
+        .login-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, var(--dark) 0%, var(--gray-800) 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 2000;
+            transition: opacity 0.3s ease;
+        }
+
+        .login-container.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .login-logo-icon {
+            width: 100px;
+            height: 100px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+            margin: 0 auto 20px;
+            box-shadow: 0 12px 32px rgba(26, 86, 219, 0.3);
+        }
+
+        .login-title {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, #E5E7EB);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .login-subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        .role-selector {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 30px;
+            width: 100%;
+            max-width: 400px;
+            animation: fadeInUp 0.6s ease 0.2s both;
+        }
+
+        .role-btn {
+            flex: 1;
+            padding: 20px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .role-btn:hover {
+            transform: translateY(-4px);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary);
+        }
+
+        .role-btn.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 32px rgba(26, 86, 219, 0.3);
+        }
+
+        .role-icon {
+            font-size: 32px;
+        }
+
+        .login-form {
+            width: 100%;
+            max-width: 400px;
+            animation: fadeInUp 0.6s ease 0.4s both;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 16px 20px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 18px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(26, 86, 219, 0.3);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Interface Common */
+        .interface {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: none;
+        }
+
+        .interface.active {
+            display: block;
+        }
+
+        .map-container {
             position: fixed;
             top: 0;
             left: 0;
@@ -39,204 +238,65 @@
             z-index: 1;
         }
 
-        /* Glass Effect */
-        .glass {
-            background: rgba(30, 41, 59, 0.85);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-
         /* Top Bar */
         .top-bar {
             position: fixed;
             top: env(safe-area-inset-top, 0px);
             left: 0;
             right: 0;
-            height: 60px;
-            padding: 0 12px;
+            height: 70px;
+            padding: 0 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             z-index: 1000;
             pointer-events: all;
+            background: linear-gradient(to bottom, rgba(17, 24, 39, 0.95), rgba(17, 24, 39, 0.8));
         }
 
         .app-logo {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
         .app-logo-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #1E40AF, #3B82F6);
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 18px;
-            box-shadow: 0 3px 8px rgba(30, 64, 175, 0.3);
+            font-size: 20px;
         }
 
         .app-logo-text h1 {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 700;
             color: white;
             line-height: 1.2;
         }
 
         .app-logo-text p {
-            font-size: 10px;
+            font-size: 11px;
             color: rgba(255, 255, 255, 0.6);
             letter-spacing: 0.5px;
         }
 
         .top-actions {
             display: flex;
-            gap: 8px;
+            gap: 10px;
+            align-items: center;
         }
 
-        /* Action Button */
         .action-btn {
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             border-radius: 12px;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .action-btn:active {
-            transform: scale(0.95);
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        /* Status Bar */
-        .status-bar {
-            position: fixed;
-            top: calc(env(safe-area-inset-top, 0px) + 65px);
-            left: 12px;
-            right: 12px;
-            border-radius: 16px;
-            padding: 12px;
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            z-index: 1000;
-            pointer-events: all;
-        }
-
-        .status-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            padding: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-        }
-
-        .status-value {
-            font-size: 20px;
-            font-weight: 700;
-            color: white;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-            line-height: 1.2;
-        }
-
-        .status-label {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.6);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            text-align: center;
-        }
-
-        /* GPS Accuracy */
-        .accuracy-indicator {
-            position: fixed;
-            top: calc(env(safe-area-inset-top, 0px) + 65px);
-            right: 12px;
-            border-radius: 16px;
-            padding: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            z-index: 1000;
-            pointer-events: all;
-            min-width: 140px;
-        }
-
-        .accuracy-visual {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            flex: 1;
-        }
-
-        .accuracy-bar {
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
-            overflow: hidden;
-        }
-
-        .accuracy-fill {
-            height: 100%;
-            background: #10B981;
-            border-radius: 2px;
-            transition: width 0.3s ease;
-        }
-
-        .accuracy-text {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.6);
-            display: flex;
-            justify-content: space-between;
-        }
-
-        /* Quick Actions */
-        .quick-actions {
-            position: fixed;
-            bottom: calc(70px + env(safe-area-inset-bottom, 0px) + 140px);
-            left: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            z-index: 1000;
-            pointer-events: all;
-        }
-
-        /* Control Panel */
-        .control-panel {
-            position: fixed;
-            bottom: calc(70px + env(safe-area-inset-bottom, 0px));
-            right: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            z-index: 1000;
-            pointer-events: all;
-        }
-
-        /* Control Button */
-        .control-btn {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
-            background: linear-gradient(135deg, #1E40AF, #3B82F6);
-            border: 2px solid rgba(255, 255, 255, 0.2);
             color: white;
             font-size: 18px;
             cursor: pointer;
@@ -244,185 +304,85 @@
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-            -webkit-tap-highlight-color: transparent;
         }
 
-        .control-btn:active {
-            transform: scale(0.92);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.05);
         }
 
-        .control-btn.active {
-            background: #EF4444;
-            animation: pulse 2s infinite;
-        }
-
-        .control-btn.secondary {
-            background: rgba(30, 41, 59, 0.8);
-            color: white;
-        }
-
-        .control-btn.large {
-            width: 52px;
-            height: 52px;
-            font-size: 20px;
-        }
-
-        /* Tracking Controls */
-        .tracking-controls {
-            position: fixed;
-            bottom: calc(70px + env(safe-area-inset-bottom, 0px));
-            left: 50%;
-            transform: translateX(-50%);
-            border-radius: 16px;
-            padding: 8px;
-            display: flex;
-            gap: 6px;
-            z-index: 1000;
-            pointer-events: all;
-        }
-
-        /* Track Button */
-        .track-btn {
-            padding: 10px 14px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: white;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.2s ease;
-            white-space: nowrap;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .track-btn:active {
+        .action-btn:active {
             transform: scale(0.95);
         }
 
-        .track-btn.primary {
-            background: linear-gradient(135deg, #1E40AF, #3B82F6);
-            color: white;
-        }
-
-        .track-btn.danger {
-            background: rgba(239, 68, 68, 0.2);
-            color: #FCA5A5;
-            border-color: rgba(239, 68, 68, 0.3);
-        }
-
-        .track-btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        /* Bottom Navigation */
-        .bottom-nav {
+        /* Status Cards */
+        .status-cards {
             position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(15, 23, 42, 0.98);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            padding: 8px;
-            z-index: 1001;
-            height: 70px;
+            top: calc(env(safe-area-inset-top, 0px) + 80px);
+            left: 20px;
+            right: 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            z-index: 1000;
         }
 
-        .nav-item {
-            flex: 1;
+        .status-card {
+            padding: 16px;
+            border-radius: 16px;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 6px;
-            border: none;
-            background: none;
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 11px;
-            gap: 4px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border-radius: 10px;
-            -webkit-tap-highlight-color: transparent;
+            gap: 8px;
         }
 
-        .nav-item:active {
-            transform: scale(0.95);
+        .status-card-icon {
+            font-size: 20px;
+            opacity: 0.8;
         }
 
-        .nav-item.active {
-            color: #3B82F6;
-            background: rgba(59, 130, 246, 0.15);
-        }
-
-        .nav-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            background: rgba(255, 255, 255, 0.05);
-            transition: all 0.2s ease;
-        }
-
-        .nav-item.active .nav-icon {
-            background: linear-gradient(135deg, #1E40AF, #3B82F6);
+        .status-card-value {
+            font-size: 24px;
+            font-weight: 700;
             color: white;
-            transform: translateY(-2px);
+            line-height: 1;
         }
 
-        .nav-label {
-            font-weight: 500;
-            font-size: 10px;
-            letter-spacing: 0.3px;
+        .status-card-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        /* Panels */
-        .panel {
+        /* Student Management */
+        .student-management {
             position: fixed;
-            top: 0;
+            bottom: 0;
             left: 0;
             right: 0;
-            bottom: 0;
-            background: rgba(15, 23, 42, 0.98);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            z-index: 1500;
-            padding: calc(60px + env(safe-area-inset-top, 0px)) 12px calc(70px + env(safe-area-inset-bottom, 0px));
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
+            background: rgba(17, 24, 39, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            padding: 20px;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 80vh;
             overflow-y: auto;
-            display: none;
-            -webkit-overflow-scrolling: touch;
         }
 
-        .panel.active {
-            transform: translateX(0);
-            display: block;
+        .student-management.active {
+            transform: translateY(0);
         }
 
-        .panel-header {
+        .student-management-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .panel-title {
+        .student-management-title {
             font-size: 20px;
             font-weight: 600;
             display: flex;
@@ -430,203 +390,131 @@
             gap: 10px;
         }
 
-        /* List Items */
-        .list-item {
+        .student-actions {
             display: flex;
-            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .student-action-btn {
+            padding: 12px 20px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
             align-items: center;
-            padding: 12px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: 8px;
+            gap: 8px;
             transition: all 0.2s ease;
         }
 
-        .list-item:active {
-            transform: scale(0.98);
-            background: rgba(59, 130, 246, 0.1);
+        .student-action-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
         }
 
-        .list-item-info {
-            flex: 1;
+        .student-action-btn.primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
         }
 
-        .list-item-title {
-            font-weight: 600;
-            margin-bottom: 4px;
-            font-size: 14px;
+        .student-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
         }
 
-        .list-item-details {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .list-item-actions {
-            display: flex;
-            gap: 6px;
-        }
-
-        /* User Cards */
-        .user-card {
-            padding: 12px;
+        .student-item {
+            padding: 16px;
             border-radius: 12px;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: 8px;
             display: flex;
             align-items: center;
             gap: 12px;
             transition: all 0.2s ease;
         }
 
-        .user-card:active {
-            transform: scale(0.98);
-            background: rgba(59, 130, 246, 0.1);
+        .student-item:hover {
+            background: rgba(255, 255, 255, 0.08);
         }
 
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #1E40AF, #3B82F6);
+        .student-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--info), var(--secondary));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-weight: 600;
-            font-size: 16px;
+            font-size: 18px;
+            flex-shrink: 0;
         }
 
-        .user-info {
+        .student-info {
             flex: 1;
+            min-width: 0;
         }
 
-        .user-name {
+        .student-name {
             font-weight: 600;
-            margin-bottom: 2px;
-            font-size: 14px;
+            font-size: 15px;
+            margin-bottom: 4px;
+            color: white;
         }
 
-        .user-status {
+        .student-details {
             font-size: 12px;
             color: rgba(255, 255, 255, 0.6);
             display: flex;
-            align-items: center;
-            gap: 4px;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
-        .status-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            display: inline-block;
+        .student-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .status-online {
-            background: #10B981;
-            animation: pulse 2s infinite;
+        .status-waiting {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
         }
 
-        .status-offline {
-            background: #6B7280;
+        .status-picked {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--info);
         }
 
-        /* Toast */
-        .toast {
-            position: fixed;
-            bottom: calc(70px + env(safe-area-inset-bottom, 0px) + 10px);
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: rgba(30, 41, 59, 0.95);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            color: white;
-            padding: 12px 16px;
-            border-radius: 14px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-            z-index: 3000;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            max-width: 320px;
-            width: calc(100% - 24px);
-            transition: transform 0.3s ease-out;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            pointer-events: all;
+        .status-onbus {
+            background: rgba(14, 159, 110, 0.15);
+            color: var(--success);
         }
 
-        .toast.show {
-            transform: translateX(-50%) translateY(0);
+        .status-dropped {
+            background: rgba(124, 58, 237, 0.15);
+            color: var(--secondary);
         }
 
-        /* Compass */
-        .compass {
-            position: fixed;
-            top: calc(env(safe-area-inset-top, 0px) + 65px);
-            left: 12px;
-            width: 60px;
-            height: 60px;
-            pointer-events: none;
-            z-index: 1000;
-        }
-
-        .compass-inner {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: rgba(30, 41, 59, 0.85);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            color: #3B82F6;
-            transition: transform 0.1s linear;
-        }
-
-        /* Animations */
-        @keyframes pulse {
-            0%, 100% { 
-                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-            }
-            50% { 
-                box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
-            }
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Map Type Selector */
-        .map-type-selector {
-            position: fixed;
-            bottom: calc(70px + env(safe-area-inset-bottom, 0px) + 140px);
-            right: 12px;
-            background: rgba(30, 41, 59, 0.85);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border-radius: 16px;
-            padding: 10px;
+        .student-actions-buttons {
             display: flex;
             gap: 8px;
-            z-index: 1000;
-            pointer-events: all;
         }
 
-        .map-type-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
+        .student-action-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
             background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border: none;
             color: white;
-            font-size: 16px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -634,1278 +522,1917 @@
             transition: all 0.2s ease;
         }
 
-        .map-type-btn.active {
-            background: linear-gradient(135deg, #1E40AF, #3B82F6);
-            color: white;
+        .student-action-icon:hover {
+            background: rgba(255, 255, 255, 0.15);
         }
 
-        .map-type-btn:active {
+        /* Parent Interface */
+        .parent-info-card {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            padding: 20px;
+            border-radius: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .child-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .child-details {
+            flex: 1;
+        }
+
+        .child-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .child-school {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 8px;
+        }
+
+        .child-location {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .child-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .child-action-btn {
+            padding: 12px 20px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .child-action-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .child-action-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Bus Info Panel */
+        .bus-info-panel {
+            position: fixed;
+            bottom: 100px;
+            left: 20px;
+            right: 20px;
+            padding: 20px;
+            border-radius: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .bus-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .bus-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .bus-details {
+            flex: 1;
+        }
+
+        .bus-name {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .bus-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-online {
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        .status-offline {
+            background: var(--danger);
+        }
+
+        .bus-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .metric-item {
+            text-align: center;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+        .metric-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Map Controls */
+        .map-controls {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .map-control-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 14px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .map-control-btn:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .map-control-btn.active {
+            background: var(--primary);
+        }
+
+        .map-control-btn:active {
             transform: scale(0.95);
         }
 
-        /* Media Queries */
-        @media (max-width: 350px) {
-            .map-type-selector {
-                display: none;
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border-radius: 24px;
+            padding: 30px;
+        }
+
+        .modal-header {
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .modal-subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 15px;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 14px 24px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            flex: 1;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(26, 86, 219, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 4000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 400px;
+        }
+
+        .toast {
+            padding: 16px 20px;
+            border-radius: 14px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideInLeft 0.3s ease;
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast.hiding {
+            animation: slideOutLeft 0.3s ease forwards;
+        }
+
+        .toast-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .toast-success .toast-icon { color: var(--success); }
+        .toast-error .toast-icon { color: var(--danger); }
+        .toast-warning .toast-icon { color: var(--warning); }
+        .toast-info .toast-icon { color: var(--info); }
+
+        .toast-message {
+            flex: 1;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            padding: 4px;
+            font-size: 14px;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
             }
-            
-            .tracking-controls {
-                flex-wrap: wrap;
-                width: 90%;
-            }
-            
-            .track-btn {
-                font-size: 11px;
-                padding: 8px 10px;
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
 
-        @media (orientation: landscape) and (max-height: 500px) {
-            .top-bar {
-                height: 50px;
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
             }
-            
-            .status-bar {
-                top: calc(env(safe-area-inset-top, 0px) + 55px);
-                grid-template-columns: repeat(4, 1fr);
-            }
-            
-            .accuracy-indicator {
-                top: calc(env(safe-area-inset-top, 0px) + 55px);
-            }
-            
-            .compass {
-                top: calc(env(safe-area-inset-top, 0px) + 55px);
-            }
-            
-            .quick-actions {
-                bottom: calc(70px + env(safe-area-inset-bottom, 0px) + 100px);
-            }
-            
-            .map-type-selector {
-                bottom: calc(70px + env(safe-area-inset-bottom, 0px) + 100px);
-            }
-            
-            .bottom-nav {
-                height: 60px;
-            }
-            
-            .control-panel {
-                bottom: calc(60px + env(safe-area-inset-bottom, 0px));
-            }
-            
-            .tracking-controls {
-                bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+            to {
+                transform: translateX(0);
+                opacity: 1;
             }
         }
 
-        /* Hide scrollbar for map */
-        .leaflet-container {
-            scrollbar-width: none;
+        @keyframes slideOutLeft {
+            to {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
         }
 
-        .leaflet-container::-webkit-scrollbar {
-            display: none;
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
-        /* Prevent text selection */
-        .no-select {
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
+        /* Responsive */
+        @media (max-width: 768px) {
+            .status-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .bus-metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .student-list {
+                grid-template-columns: 1fr;
+            }
         }
 
-        /* Better touch feedback */
-        button:active {
-            opacity: 0.8;
+        @media (max-width: 480px) {
+            .status-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .child-actions {
+                flex-direction: column;
+            }
+        }
+
+        /* Map Theme Selector */
+        .map-theme-selector {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .theme-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            border: 2px solid white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-size: cover;
+        }
+
+        .theme-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .theme-btn.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.3);
+        }
+
+        /* Notification Badge */
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger);
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Trip Status */
+        .trip-status {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            z-index: 1000;
+            padding: 12px 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+        }
+
+        .trip-to-school {
+            background: rgba(14, 159, 110, 0.15);
+            color: var(--success);
+        }
+
+        .trip-from-school {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--info);
         }
     </style>
 </head>
-<body class="no-select">
-    <!-- Full Screen Map -->
-    <div id="trackingMap"></div>
-
-    <!-- Compass -->
-    <div class="compass">
-        <div class="compass-inner glass" id="compass">
-            <i class="fas fa-location-arrow"></i>
-        </div>
-    </div>
-
-    <!-- Top Bar -->
-    <div class="top-bar glass">
-        <div class="app-logo">
-            <div class="app-logo-icon">
-                <i class="fas fa-satellite"></i>
+<body>
+    <!-- Login Screen -->
+    <div class="login-container glass" id="loginScreen">
+        <div class="login-logo">
+            <div class="login-logo-icon">
+                <i class="fas fa-bus-alt"></i>
             </div>
-            <div class="app-logo-text">
-                <h1>TrackFlow</h1>
-                <p>Multi-User Tracker</p>
-            </div>
+            <h1 class="login-title">SchoolBus Tracker Pro</h1>
+            <p class="login-subtitle">Safe & Real-Time Student Transportation Tracking</p>
         </div>
-        <div class="top-actions">
-            <button class="action-btn glass" id="themeToggle" title="Theme">
-                <i class="fas fa-moon"></i>
+        
+        <div class="role-selector">
+            <button class="role-btn glass active" id="driverRoleBtn">
+                <div class="role-icon">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                Driver
             </button>
-            <button class="action-btn glass" id="fullscreenToggle" title="Fullscreen">
-                <i class="fas fa-expand"></i>
+            <button class="role-btn glass" id="parentRoleBtn">
+                <div class="role-icon">
+                    <i class="fas fa-user-friends"></i>
+                </div>
+                Parent
             </button>
         </div>
-    </div>
-
-    <!-- Status Bar -->
-    <div class="status-bar glass">
-        <div class="status-item">
-            <div class="status-value" id="currentSpeed">0 km/h</div>
-            <div class="status-label">Speed</div>
-        </div>
-        <div class="status-item">
-            <div class="status-value" id="distanceTraveled">0.00 km</div>
-            <div class="status-label">Distance</div>
-        </div>
-        <div class="status-item">
-            <div class="status-value" id="trackingTime">00:00</div>
-            <div class="status-label">Duration</div>
-        </div>
-        <div class="status-item">
-            <div class="status-value" id="currentAltitude">0 m</div>
-            <div class="status-label">Altitude</div>
-        </div>
-    </div>
-
-    <!-- GPS Accuracy -->
-    <div class="accuracy-indicator glass">
-        <i class="fas fa-crosshairs" style="color: #10B981; font-size: 14px;"></i>
-        <div class="accuracy-visual">
-            <div class="accuracy-bar">
-                <div class="accuracy-fill" id="accuracyBar" style="width: 80%"></div>
+        
+        <div class="login-form">
+            <div class="input-group">
+                <label class="input-label" id="loginLabel">Driver ID</label>
+                <input type="text" class="login-input glass" id="loginInput" 
+                       placeholder="Enter your Driver ID" value="DRIVER-2024">
             </div>
-            <div class="accuracy-text">
-                <span>GPS</span>
-                <span id="accuracyText">8m</span>
+            <div class="input-group">
+                <label class="input-label">Bus Number</label>
+                <input type="text" class="login-input glass" id="busNumber" 
+                       placeholder="e.g., BUS-001" value="BUS-001">
             </div>
+            <div class="input-group" id="parentExtra" style="display: none;">
+                <label class="input-label">Parent Name</label>
+                <input type="text" class="login-input glass" id="parentName" 
+                       placeholder="Your full name" value="John Smith">
+                <div style="margin-top: 10px;">
+                    <label class="input-label">Child's Student ID</label>
+                    <input type="text" class="login-input glass" id="studentId" 
+                           placeholder="e.g., STU-2024-001" value="STU-2024-001">
+                </div>
+            </div>
+            <button class="login-btn" id="loginBtn">
+                <i class="fas fa-sign-in-alt"></i> Start Tracking
+            </button>
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="quick-actions">
-        <button class="action-btn glass" id="centerMap" title="Center">
-            <i class="fas fa-crosshairs"></i>
-        </button>
-        <button class="action-btn glass" id="zoomIn" title="Zoom In">
-            <i class="fas fa-plus"></i>
-        </button>
-        <button class="action-btn glass" id="zoomOut" title="Zoom Out">
-            <i class="fas fa-minus"></i>
-        </button>
-    </div>
-
-    <!-- Map Type Selector -->
-    <div class="map-type-selector glass">
-        <button class="map-type-btn" data-type="streets" title="Street Map">
-            <i class="fas fa-road"></i>
-        </button>
-        <button class="map-type-btn" data-type="satellite" title="Satellite">
-            <i class="fas fa-satellite"></i>
-        </button>
-        <button class="map-type-btn" data-type="topo" title="Topographic">
-            <i class="fas fa-mountain"></i>
-        </button>
-        <button class="map-type-btn" data-type="dark" title="Dark Mode">
-            <i class="fas fa-moon"></i>
-        </button>
-    </div>
-
-    <!-- Control Panel -->
-    <div class="control-panel">
-        <button class="control-btn large" id="recordToggle" title="Record">
-            <i class="fas fa-circle" id="recordIcon"></i>
-        </button>
-        <button class="control-btn secondary glass" id="takePhoto" title="Photo">
-            <i class="fas fa-camera"></i>
-        </button>
-        <button class="control-btn secondary glass" id="addWaypoint" title="Waypoint">
-            <i class="fas fa-map-pin"></i>
-        </button>
-    </div>
-
-    <!-- Tracking Controls -->
-    <div class="tracking-controls glass">
-        <button class="track-btn primary" id="startTracking">
-            <i class="fas fa-play"></i> Start
-        </button>
-        <button class="track-btn" id="pauseTracking" disabled>
-            <i class="fas fa-pause"></i> Pause
-        </button>
-        <button class="track-btn danger" id="stopTracking" disabled>
-            <i class="fas fa-stop"></i> Stop
-        </button>
-    </div>
-
-    <!-- Bottom Navigation -->
-    <nav class="bottom-nav">
-        <button class="nav-item active" id="navMap">
-            <div class="nav-icon">
-                <i class="fas fa-map"></i>
+    <!-- Driver Interface -->
+    <div class="interface" id="driverInterface">
+        <div class="map-container" id="driverMap"></div>
+        
+        <div class="top-bar glass">
+            <div class="app-logo">
+                <div class="app-logo-icon">
+                    <i class="fas fa-bus-alt"></i>
+                </div>
+                <div class="app-logo-text">
+                    <h1 id="driverBusName">BUS-001</h1>
+                    <p>Driver Dashboard • <span id="currentTime">00:00</span></p>
+                </div>
             </div>
-            <span class="nav-label">Map</span>
-        </button>
-        <button class="nav-item" id="navUsers">
-            <div class="nav-icon">
-                <i class="fas fa-users"></i>
+            <div class="top-actions">
+                <button class="action-btn glass" id="notificationsBtn" title="Notifications">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge" id="notificationCount">0</span>
+                </button>
+                <button class="action-btn glass" id="mapThemesBtn" title="Map Themes">
+                    <i class="fas fa-layer-group"></i>
+                </button>
+                <button class="action-btn glass" id="driverLogout" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
             </div>
-            <span class="nav-label">Users</span>
-        </button>
-        <button class="nav-item" id="navTracking">
-            <div class="nav-icon">
+        </div>
+
+        <div class="status-cards">
+            <div class="status-card glass" style="background: linear-gradient(135deg, rgba(26, 86, 219, 0.2), rgba(30, 64, 175, 0.1));">
+                <div class="status-card-icon">
+                    <i class="fas fa-tachometer-alt"></i>
+                </div>
+                <div class="status-card-value" id="currentSpeed">0 km/h</div>
+                <div class="status-card-label">Current Speed</div>
+            </div>
+            <div class="status-card glass" style="background: linear-gradient(135deg, rgba(14, 159, 110, 0.2), rgba(16, 185, 129, 0.1));">
+                <div class="status-card-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="status-card-value" id="studentsCount">0/0</div>
+                <div class="status-card-label">Students On Board</div>
+            </div>
+            <div class="status-card glass" style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(139, 92, 246, 0.1));">
+                <div class="status-card-icon">
+                    <i class="fas fa-map-marker-alt"></i>
+                </div>
+                <div class="status-card-value" id="nextStopName">--</div>
+                <div class="status-card-label">Next Stop</div>
+            </div>
+        </div>
+
+        <div class="trip-status trip-to-school" id="tripStatus">
+            <i class="fas fa-school"></i>
+            <span>Trip: To School</span>
+        </div>
+
+        <div class="map-controls">
+            <button class="map-control-btn glass" id="centerMap" title="Center on Bus">
+                <i class="fas fa-crosshairs"></i>
+            </button>
+            <button class="map-control-btn glass" id="zoomIn" title="Zoom In">
+                <i class="fas fa-plus"></i>
+            </button>
+            <button class="map-control-btn glass" id="zoomOut" title="Zoom Out">
+                <i class="fas fa-minus"></i>
+            </button>
+            <button class="map-control-btn glass" id="showStudents" title="Manage Students">
+                <i class="fas fa-user-graduate"></i>
+            </button>
+            <button class="map-control-btn glass active" id="startTrip" title="Start Trip">
+                <i class="fas fa-play"></i>
+            </button>
+        </div>
+
+        <div class="map-theme-selector" id="mapThemeSelector" style="display: none;">
+            <div class="theme-btn active" data-theme="standard" 
+                 style="background: linear-gradient(45deg, #4CAF50, #2196F3);"></div>
+            <div class="theme-btn" data-theme="dark" 
+                 style="background: linear-gradient(45deg, #333, #666);"></div>
+            <div class="theme-btn" data-theme="satellite" 
+                 style="background: linear-gradient(45deg, #8BC34A, #689F38);"></div>
+            <div class="theme-btn" data-theme="light" 
+                 style="background: linear-gradient(45deg, #fff, #e0e0e0);"></div>
+        </div>
+    </div>
+
+    <!-- Parent Interface -->
+    <div class="interface" id="parentInterface">
+        <div class="map-container" id="parentMap"></div>
+        
+        <div class="top-bar glass">
+            <div class="app-logo">
+                <div class="app-logo-icon">
+                    <i class="fas fa-bus-alt"></i>
+                </div>
+                <div class="app-logo-text">
+                    <h1>SchoolBus Tracker</h1>
+                    <p>Parent View • <span id="parentTime">00:00</span></p>
+                </div>
+            </div>
+            <div class="top-actions">
+                <button class="action-btn glass" id="parentNotificationsBtn" title="Notifications">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge" id="parentNotificationCount">0</span>
+                </button>
+                <button class="action-btn glass" id="parentMapThemesBtn" title="Map Themes">
+                    <i class="fas fa-layer-group"></i>
+                </button>
+                <button class="action-btn glass" id="parentLogout" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="bus-info-panel glass">
+            <div class="bus-header">
+                <div class="bus-icon">
+                    <i class="fas fa-bus"></i>
+                </div>
+                <div class="bus-details">
+                    <div class="bus-name" id="parentBusName">BUS-001</div>
+                    <div class="bus-status">
+                        <span class="status-indicator status-online" id="busStatusDot"></span>
+                        <span id="busStatusText">Online • To School</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bus-metrics">
+                <div class="metric-item">
+                    <div class="metric-value" id="parentSpeed">0 km/h</div>
+                    <div class="metric-label">Speed</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value" id="eta">--:--</div>
+                    <div class="metric-label">ETA</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value" id="distanceAway">0 km</div>
+                    <div class="metric-label">Distance</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="parent-info-card glass">
+            <div class="child-info">
+                <div class="student-avatar" id="childAvatar">
+                    E
+                </div>
+                <div class="child-details">
+                    <div class="child-name" id="childFullName">Emma Johnson</div>
+                    <div class="child-school" id="childSchool">Westwood Elementary • Grade 5</div>
+                    <div class="child-location">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span id="childLocation">Waiting at Maple Street</span>
+                    </div>
+                </div>
+                <div class="child-status status-waiting" id="childStatusBadge">
+                    WAITING
+                </div>
+            </div>
+            <div class="child-actions">
+                <button class="child-action-btn" id="markPickedBtn">
+                    <i class="fas fa-check-circle"></i> Mark as Picked
+                </button>
+                <button class="child-action-btn secondary" id="markDroppedBtn">
+                    <i class="fas fa-home"></i> Mark as Dropped
+                </button>
+            </div>
+        </div>
+
+        <div class="map-controls">
+            <button class="map-control-btn glass" id="parentCenterMap" title="Center on Bus">
+                <i class="fas fa-crosshairs"></i>
+            </button>
+            <button class="map-control-btn glass" id="parentZoomIn" title="Zoom In">
+                <i class="fas fa-plus"></i>
+            </button>
+            <button class="map-control-btn glass" id="parentZoomOut" title="Zoom Out">
+                <i class="fas fa-minus"></i>
+            </button>
+            <button class="map-control-btn glass active" id="showRoute" title="Show Route">
                 <i class="fas fa-route"></i>
-            </div>
-            <span class="nav-label">Track</span>
-        </button>
-        <button class="nav-item" id="navSettings">
-            <div class="nav-icon">
-                <i class="fas fa-cog"></i>
-            </div>
-            <span class="nav-label">Settings</span>
-        </button>
-    </nav>
-
-    <!-- Panels -->
-    <div class="panel" id="usersPanel">
-        <div class="panel-header">
-            <h2 class="panel-title"><i class="fas fa-users"></i> Tracked Users</h2>
-            <button class="action-btn glass" id="closeUsersPanel" style="background: transparent; border: none;">
-                <i class="fas fa-times"></i>
             </button>
-        </div>
-        <div id="usersList">
-            <!-- Users list will be loaded here -->
-        </div>
-        <div style="margin-top: 20px;">
-            <button class="track-btn primary" style="width: 100%;" id="addUserBtn">
-                <i class="fas fa-user-plus"></i> Add User to Track
+            <button class="map-control-btn glass active" id="showStops" title="Show Stops">
+                <i class="fas fa-map-marker-alt"></i>
             </button>
         </div>
     </div>
 
-    <div class="panel" id="trackingPanel">
-        <div class="panel-header">
-            <h2 class="panel-title"><i class="fas fa-route"></i> Tracking</h2>
-            <button class="action-btn glass" id="closeTrackingPanel" style="background: transparent; border: none;">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div id="activeTrackingInfo">
-            <!-- Active tracking info -->
-        </div>
-        <div style="margin-top: 20px; display: flex; gap: 10px;">
-            <button class="track-btn primary" style="flex: 1;" id="panelStartTracking">
-                <i class="fas fa-play"></i> Start
-            </button>
-            <button class="track-btn danger" style="flex: 1;" id="panelStopTracking" disabled>
-                <i class="fas fa-stop"></i> Stop
-            </button>
+    <!-- Student Management Modal -->
+    <div class="modal" id="studentModal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h2 class="modal-title">Manage Students</h2>
+                <p class="modal-subtitle">Add, remove, or update student information</p>
+            </div>
+            <div class="student-actions">
+                <button class="student-action-btn primary" id="addStudentBtn">
+                    <i class="fas fa-plus"></i> Add Student
+                </button>
+                <button class="student-action-btn" id="importStudentsBtn">
+                    <i class="fas fa-file-import"></i> Import CSV
+                </button>
+            </div>
+            <div class="student-list" id="studentListContainer">
+                <!-- Students will be loaded here -->
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-secondary" id="closeStudentModal">Close</button>
+            </div>
         </div>
     </div>
 
-    <div class="panel" id="settingsPanel">
-        <div class="panel-header">
-            <h2 class="panel-title"><i class="fas fa-cog"></i> Settings</h2>
-            <button class="action-btn glass" id="closeSettingsPanel" style="background: transparent; border: none;">
-                <i class="fas fa-times"></i>
-            </button>
+    <!-- Add Student Modal -->
+    <div class="modal" id="addStudentModal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h2 class="modal-title">Add New Student</h2>
+                <p class="modal-subtitle">Enter student details</p>
+            </div>
+            <form id="addStudentForm">
+                <div class="form-group">
+                    <label class="form-label">Student ID</label>
+                    <input type="text" class="form-input" id="newStudentId" 
+                           placeholder="e.g., STU-2024-009" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" class="form-input" id="newStudentName" 
+                           placeholder="First and Last Name" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Grade</label>
+                    <input type="text" class="form-input" id="newStudentGrade" 
+                           placeholder="e.g., 5th Grade" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Parent Contact</label>
+                    <input type="tel" class="form-input" id="newStudentContact" 
+                           placeholder="Phone number" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Pickup Location</label>
+                    <input type="text" class="form-input" id="newStudentLocation" 
+                           placeholder="Address or landmark" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelAddStudent">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Student</button>
+                </div>
+            </form>
         </div>
-        <div style="background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 15px; margin-bottom: 10px; border: 1px solid rgba(255, 255, 255, 0.1);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <div>
-                    <div style="font-weight: 500; font-size: 14px;">GPS Interval</div>
-                    <div style="font-size: 12px; color: rgba(255, 255, 255, 0.6);">Update frequency</div>
-                </div>
-                <select style="padding: 8px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; color: white; font-size: 14px;" id="gpsInterval">
-                    <option value="1000">1 sec</option>
-                    <option value="3000" selected>3 sec</option>
-                    <option value="5000">5 sec</option>
-                </select>
+    </div>
+
+    <!-- Notifications Modal -->
+    <div class="modal" id="notificationsModal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h2 class="modal-title">Notifications</h2>
+                <p class="modal-subtitle">Alerts and updates</p>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <div>
-                    <div style="font-weight: 500; font-size: 14px;">Auto-save</div>
-                    <div style="font-size: 12px; color: rgba(255, 255, 255, 0.6);">Save tracks automatically</div>
-                </div>
-                <label style="position: relative; width: 48px; height: 24px;">
-                    <input type="checkbox" id="autoSave" checked style="opacity: 0; width: 0; height: 0;">
-                    <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.2); transition: .4s; border-radius: 24px;"></span>
-                    <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; transition: .4s; border-radius: 50%;"></span>
-                </label>
+            <div id="notificationsList">
+                <!-- Notifications will be loaded here -->
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <div>
-                    <div style="font-weight: 500; font-size: 14px;">High Accuracy</div>
-                    <div style="font-size: 12px; color: rgba(255, 255, 255, 0.6);">Better GPS, more battery</div>
-                </div>
-                <label style="position: relative; width: 48px; height: 24px;">
-                    <input type="checkbox" id="highAccuracy" checked style="opacity: 0; width: 0; height: 0;">
-                    <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #3B82F6; transition: .4s; border-radius: 24px;"></span>
-                    <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; transition: .4s; border-radius: 50%; transform: translateX(24px);"></span>
-                </label>
+            <div class="form-actions">
+                <button class="btn btn-secondary" id="clearNotifications">Clear All</button>
+                <button class="btn btn-secondary" id="closeNotifications">Close</button>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <div style="font-weight: 500; font-size: 14px;">Show Other Users</div>
-                    <div style="font-size: 12px; color: rgba(255, 255, 255, 0.6);">Display tracked users on map</div>
-                </div>
-                <label style="position: relative; width: 48px; height: 24px;">
-                    <input type="checkbox" id="showUsers" checked style="opacity: 0; width: 0; height: 0;">
-                    <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #3B82F6; transition: .4s; border-radius: 24px;"></span>
-                    <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; transition: .4s; border-radius: 50%; transform: translateX(24px);"></span>
-                </label>
-            </div>
-        </div>
-        <div style="margin-top: 20px;">
-            <button class="track-btn primary" style="width: 100%; margin-bottom: 10px;" id="saveSettingsBtn">
-                <i class="fas fa-save"></i> Save Settings
-            </button>
-            <button class="track-btn danger" style="width: 100%;" id="clearDataBtn">
-                <i class="fas fa-trash"></i> Clear All Data
-            </button>
         </div>
     </div>
 
     <!-- Toast Container -->
-    <div id="toastContainer"></div>
+    <div class="toast-container" id="toastContainer"></div>
 
-    <!-- Leaflet JS -->
+    <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
-    <!-- Main Application Script -->
     <script>
-        // Application State
+        // Enhanced Application State
+        const appState = {
+            userRole: 'driver',
+            driverId: '',
+            busNumber: '',
+            parentName: '',
+            studentId: '',
+            currentTrip: 'to_school', // 'to_school' or 'from_school'
+            tripActive: false,
+            notifications: [],
+            mapTheme: 'standard'
+        };
+
+        // MQTT Configuration
+        const MQTT_CONFIG = {
+            broker: 'wss://broker.emqx.io:8084/mqtt',
+            topics: {
+                location: 'schoolbus/tracker/location/',
+                status: 'schoolbus/tracker/status/',
+                students: 'schoolbus/tracker/students/',
+                alerts: 'schoolbus/tracker/alerts/',
+                commands: 'schoolbus/tracker/commands/'
+            }
+        };
+
+        // Enhanced Student Database
+        let studentDatabase = {
+            'STU-2024-001': {
+                id: 'STU-2024-001',
+                name: 'Emma Johnson',
+                grade: '5th Grade',
+                avatar: 'E',
+                contact: '+1234567890',
+                location: 'Maple Street',
+                status: 'waiting',
+                coordinates: [40.7128, -74.0060],
+                school: 'Westwood Elementary'
+            },
+            'STU-2024-002': {
+                id: 'STU-2024-002',
+                name: 'Noah Smith',
+                grade: '4th Grade',
+                avatar: 'N',
+                contact: '+1234567891',
+                location: 'Oak Avenue',
+                status: 'waiting',
+                coordinates: [40.7138, -74.0070],
+                school: 'Westwood Elementary'
+            },
+            // Add more students as needed
+        };
+
+        // Map Themes
+        const MAP_THEMES = {
+            standard: {
+                url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                attribution: '© OpenStreetMap'
+            },
+            dark: {
+                url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                attribution: '© CARTO'
+            },
+            satellite: {
+                url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                attribution: '© Esri'
+            },
+            light: {
+                url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+                attribution: '© CARTO'
+            }
+        };
+
+        // Global Variables
+        let mqttClient = null;
         let map = null;
-        let userMarker = null;
-        let trackingPolyline = null;
-        let isTracking = false;
-        let watchId = null;
-        let trackingInterval = null;
-        let currentMapType = 'streets';
-        
-        // Multi-user tracking
-        let trackedUsers = {};
-        let userMarkers = {};
-        let userPolylines = {};
-        
-        // Map tile providers
-        const mapLayers = {
-            streets: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap',
-                maxZoom: 19
-            }),
-            satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: '© Esri',
-                maxZoom: 19
-            }),
-            topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenTopoMap',
-                maxZoom: 17
-            }),
-            dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '© CartoDB',
-                maxZoom: 19
-            })
-        };
-        
-        let trackingData = {
-            points: [],
-            startTime: null,
-            totalDistance: 0,
-            currentSession: null,
-            pauseTime: 0,
-            totalPauseTime: 0
-        };
-        
-        let settings = {
-            gpsInterval: 3000,
-            autoSave: true,
-            highAccuracy: true,
-            showUsers: true
-        };
-        
-        let history = [];
-        let waypoints = [];
-        let photos = [];
+        let busMarker = null;
+        let busPath = null;
+        let busStops = [];
         let currentPosition = null;
-        
-        // Demo users (in real app, these would come from a server)
-        const demoUsers = [
-            { id: 'user1', name: 'John Driver', color: '#EF4444', lastSeen: Date.now() - 60000 },
-            { id: 'user2', name: 'Sarah Rider', color: '#10B981', lastSeen: Date.now() - 120000 },
-            { id: 'user3', name: 'Mike Courier', color: '#F59E0B', lastSeen: Date.now() - 180000 },
-            { id: 'user4', name: 'Lisa Traveler', color: '#8B5CF6', lastSeen: Date.now() - 240000 }
-        ];
+        let watchId = null;
+        let routePolyline = null;
+        let stopMarkers = [];
 
-        // Initialize App
-        document.addEventListener('DOMContentLoaded', function() {
-            initApp();
-        });
+        // Initialize Application
+        document.addEventListener('DOMContentLoaded', initApp);
 
-        async function initApp() {
-            await initMap();
-            loadAllData();
-            setupEventListeners();
-            startGPS();
-            updateTrackingControls();
-            updateUsersList();
-            showToast('Multi-User GPS Tracker Ready', 'success');
-            
-            // Start simulating other users (demo mode)
-            startUserTrackingSimulation();
+        function initApp() {
+            setupLogin();
+            updateClock();
+            setInterval(updateClock, 1000);
         }
 
-        function initMap() {
-            map = L.map('trackingMap').setView([0, 0], 2);
+        function setupLogin() {
+            const driverBtn = document.getElementById('driverRoleBtn');
+            const parentBtn = document.getElementById('parentRoleBtn');
+            const loginBtn = document.getElementById('loginBtn');
+
+            driverBtn.addEventListener('click', () => {
+                appState.userRole = 'driver';
+                driverBtn.classList.add('active');
+                parentBtn.classList.remove('active');
+                document.getElementById('loginLabel').textContent = 'Driver ID';
+                document.getElementById('parentExtra').style.display = 'none';
+            });
+
+            parentBtn.addEventListener('click', () => {
+                appState.userRole = 'parent';
+                parentBtn.classList.add('active');
+                driverBtn.classList.remove('active');
+                document.getElementById('loginLabel').textContent = 'Parent Name';
+                document.getElementById('parentExtra').style.display = 'block';
+            });
+
+            loginBtn.addEventListener('click', handleLogin);
+        }
+
+        function handleLogin() {
+            if (appState.userRole === 'driver') {
+                appState.driverId = document.getElementById('loginInput').value.trim();
+                appState.busNumber = document.getElementById('busNumber').value.trim();
+
+                if (!appState.driverId || !appState.busNumber) {
+                    showToast('Please enter Driver ID and Bus Number', 'error');
+                    return;
+                }
+
+                showInterface('driver');
+                initDriverInterface();
+                connectToMQTT();
+                showToast(`Welcome, Driver ${appState.driverId}!`, 'success');
+
+            } else {
+                appState.parentName = document.getElementById('parentName').value.trim();
+                appState.busNumber = document.getElementById('busNumber').value.trim();
+                appState.studentId = document.getElementById('studentId').value.trim();
+
+                if (!appState.parentName || !appState.busNumber || !appState.studentId) {
+                    showToast('Please fill all fields', 'error');
+                    return;
+                }
+
+                if (!studentDatabase[appState.studentId]) {
+                    showToast('Student ID not found', 'error');
+                    return;
+                }
+
+                showInterface('parent');
+                initParentInterface();
+                connectToMQTT();
+                showToast(`Welcome ${appState.parentName}!`, 'success');
+            }
+        }
+
+        function showInterface(interfaceType) {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.querySelectorAll('.interface').forEach(el => el.classList.remove('active'));
+            document.getElementById(`${interfaceType}Interface`).classList.add('active');
+        }
+
+        function initDriverInterface() {
+            initMap('driverMap');
+            setupDriverControls();
+            updateDriverDashboard();
+            startGPS();
+        }
+
+        function initParentInterface() {
+            initMap('parentMap');
+            setupParentControls();
+            updateParentDashboard();
             
-            // Add default map layer
-            mapLayers.streets.addTo(map);
+            const student = studentDatabase[appState.studentId];
+            if (student) {
+                updateChildInfo(student);
+            }
+        }
+
+        function initMap(mapId) {
+            const defaultCoords = [40.7128, -74.0060];
             
-            // Set current map type as active
-            document.querySelector(`[data-type="${currentMapType}"]`).classList.add('active');
+            map = L.map(mapId).setView(defaultCoords, 13);
             
-            trackingPolyline = L.polyline([], {
-                color: '#3B82F6',
-                weight: 3,
+            // Set initial map theme
+            setMapTheme(appState.mapTheme);
+            
+            // Create bus marker
+            busMarker = L.marker(defaultCoords, {
+                icon: L.divIcon({
+                    html: '<div style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, #1A56DB, #7E3AF2); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; border: 3px solid white; box-shadow: 0 0 20px rgba(26, 86, 219, 0.5);"><i class="fas fa-bus"></i></div>',
+                    className: 'bus-marker',
+                    iconSize: [50, 50],
+                    iconAnchor: [25, 25]
+                })
+            }).addTo(map);
+            
+            // Initialize bus path
+            busPath = L.polyline([], {
+                color: '#1A56DB',
+                weight: 4,
                 opacity: 0.8,
                 lineJoin: 'round'
             }).addTo(map);
             
-            userMarker = L.marker([0, 0], {
-                icon: L.divIcon({
-                    html: '<div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #1E40AF, #3B82F6); display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; border: 2px solid white; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);"><i class="fas fa-location-arrow"></i></div>',
-                    className: 'user-marker',
-                    iconSize: [32, 32],
-                    iconAnchor: [16, 16]
-                }),
-                zIndexOffset: 1000
-            }).addTo(map);
-            
-            userMarker.bindPopup('<strong>You</strong><br>Current position');
-            
-            return Promise.resolve();
+            // Add bus stops
+            addBusStopsToMap();
         }
 
-        function changeMapType(type) {
-            // Remove current layer
-            if (mapLayers[currentMapType]) {
-                map.removeLayer(mapLayers[currentMapType]);
+        function setMapTheme(theme) {
+            if (map) {
+                map.eachLayer(layer => {
+                    if (layer instanceof L.TileLayer) {
+                        map.removeLayer(layer);
+                    }
+                });
+                
+                const themeConfig = MAP_THEMES[theme];
+                L.tileLayer(themeConfig.url, {
+                    attribution: themeConfig.attribution,
+                    maxZoom: 19
+                }).addTo(map);
+                
+                appState.mapTheme = theme;
             }
+        }
+
+        function addBusStopsToMap() {
+            // Clear existing stops
+            stopMarkers.forEach(marker => map.removeLayer(marker));
+            stopMarkers = [];
             
-            // Add new layer
-            currentMapType = type;
-            mapLayers[type].addTo(map);
-            
-            // Update active button
-            document.querySelectorAll('.map-type-btn').forEach(btn => {
-                btn.classList.remove('active');
+            Object.values(studentDatabase).forEach(student => {
+                const stopMarker = L.marker(student.coordinates, {
+                    icon: L.divIcon({
+                        html: `<div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #0E9F6E, #10B981); border: 3px solid white; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px; box-shadow: 0 0 15px rgba(14, 159, 110, 0.5);">${student.avatar}</div>`,
+                        className: 'bus-stop-marker',
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16]
+                    })
+                }).addTo(map);
+                
+                stopMarker.bindPopup(`
+                    <div style="padding: 10px;">
+                        <strong>${student.name}</strong><br>
+                        Grade: ${student.grade}<br>
+                        Status: <span class="status-${student.status}">${student.status.toUpperCase()}</span><br>
+                        Location: ${student.location}<br>
+                        School: ${student.school}
+                    </div>
+                `);
+                
+                stopMarkers.push(stopMarker);
             });
-            document.querySelector(`[data-type="${type}"]`).classList.add('active');
+        }
+
+        function setupDriverControls() {
+            // Map controls
+            document.getElementById('centerMap').addEventListener('click', centerOnBus);
+            document.getElementById('zoomIn').addEventListener('click', () => map.zoomIn());
+            document.getElementById('zoomOut').addEventListener('click', () => map.zoomOut());
+            document.getElementById('showStudents').addEventListener('click', showStudentManagement);
+            document.getElementById('startTrip').addEventListener('click', toggleTrip);
             
-            showToast(`Map: ${type.charAt(0).toUpperCase() + type.slice(1)}`, 'info');
+            // Map themes
+            document.getElementById('mapThemesBtn').addEventListener('click', toggleMapThemes);
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const theme = this.dataset.theme;
+                    setMapTheme(theme);
+                    document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    document.getElementById('mapThemeSelector').style.display = 'none';
+                });
+            });
+            
+            // Notifications
+            document.getElementById('notificationsBtn').addEventListener('click', showNotifications);
+            
+            // Logout
+            document.getElementById('driverLogout').addEventListener('click', logout);
+        }
+
+        function setupParentControls() {
+            // Map controls
+            document.getElementById('parentCenterMap').addEventListener('click', centerOnBus);
+            document.getElementById('parentZoomIn').addEventListener('click', () => map.zoomIn());
+            document.getElementById('parentZoomOut').addEventListener('click', () => map.zoomOut());
+            document.getElementById('showRoute').addEventListener('click', toggleRoute);
+            document.getElementById('showStops').addEventListener('click', toggleStops);
+            
+            // Child actions
+            document.getElementById('markPickedBtn').addEventListener('click', () => markChildStatus('picked'));
+            document.getElementById('markDroppedBtn').addEventListener('click', () => markChildStatus('dropped'));
+            
+            // Map themes
+            document.getElementById('parentMapThemesBtn').addEventListener('click', toggleMapThemes);
+            
+            // Notifications
+            document.getElementById('parentNotificationsBtn').addEventListener('click', showNotifications);
+            
+            // Logout
+            document.getElementById('parentLogout').addEventListener('click', logout);
         }
 
         function startGPS() {
-            if (!navigator.geolocation) {
-                showToast('GPS not supported', 'error');
-                return;
+            if ('geolocation' in navigator) {
+                const options = {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                };
+
+                watchId = navigator.geolocation.watchPosition(
+                    handlePositionUpdate,
+                    handlePositionError,
+                    options
+                );
+            } else {
+                showToast('GPS not available on this device', 'error');
             }
-
-            if (watchId) {
-                navigator.geolocation.clearWatch(watchId);
-            }
-
-            const options = {
-                enableHighAccuracy: settings.highAccuracy,
-                maximumAge: 0,
-                timeout: 10000
-            };
-
-            watchId = navigator.geolocation.watchPosition(
-                handlePositionUpdate,
-                handlePositionError,
-                options
-            );
-
-            if (trackingInterval) {
-                clearInterval(trackingInterval);
-            }
-            
-            trackingInterval = setInterval(updateTrackingStats, 1000);
         }
 
         function handlePositionUpdate(position) {
             currentPosition = position;
-            const { latitude, longitude, accuracy, altitude, speed, heading } = position.coords;
+            const { latitude, longitude, speed, heading } = position.coords;
             
-            // Update compass
-            if (heading !== null) {
-                updateCompass(heading);
+            // Update bus marker
+            const newLatLng = [latitude, longitude];
+            busMarker.setLatLng(newLatLng);
+            
+            // Update bus path
+            const currentPath = busPath.getLatLngs();
+            currentPath.push(newLatLng);
+            if (currentPath.length > 100) currentPath.shift();
+            busPath.setLatLngs(currentPath);
+            
+            // Update dashboard
+            updateDriverDashboard(speed);
+            
+            // Publish location
+            publishLocation(latitude, longitude, speed, heading);
+            
+            // Center map on first location
+            if (!window.mapCentered) {
+                map.setView(newLatLng, 16);
+                window.mapCentered = true;
             }
+            
+            // Check for nearby stops
+            checkNearbyStops(newLatLng);
+        }
+
+        function publishLocation(lat, lng, speed, heading) {
+            if (!mqttClient) return;
+            
+            const locationData = {
+                type: 'location',
+                busNumber: appState.busNumber,
+                driverId: appState.driverId,
+                timestamp: Date.now(),
+                coordinates: [lat, lng],
+                speed: speed || 0,
+                heading: heading || 0,
+                trip: appState.currentTrip,
+                tripActive: appState.tripActive,
+                studentsOnBoard: Object.values(studentDatabase).filter(s => s.status === 'onbus').length
+            };
+            
+            mqttClient.publish(
+                `${MQTT_CONFIG.topics.location}${appState.busNumber}`,
+                JSON.stringify(locationData)
+            );
+        }
+
+        function updateDriverDashboard(speed = 0) {
+            const studentsOnBoard = Object.values(studentDatabase).filter(s => s.status === 'onbus').length;
+            const totalStudents = Object.keys(studentDatabase).length;
+            
+            // Update speed
+            document.getElementById('currentSpeed').textContent = 
+                Math.round((speed || 0) * 3.6) + ' km/h';
+            
+            // Update student count
+            document.getElementById('studentsCount').textContent = 
+                `${studentsOnBoard}/${totalStudents}`;
+            
+            // Update next stop
+            const nextStop = getNextStop();
+            document.getElementById('nextStopName').textContent = nextStop || '--';
+            
+            // Update trip status
+            const tripStatus = document.getElementById('tripStatus');
+            if (appState.tripActive) {
+                tripStatus.className = `trip-status trip-${appState.currentTrip.replace('_', '-')}`;
+                tripStatus.innerHTML = `
+                    <i class="fas fa-${appState.currentTrip === 'to_school' ? 'school' : 'home'}"></i>
+                    <span>Trip: ${appState.currentTrip === 'to_school' ? 'To School' : 'From School'}</span>
+                `;
+            } else {
+                tripStatus.style.display = 'none';
+            }
+            
+            // Update bus name
+            document.getElementById('driverBusName').textContent = appState.busNumber;
+        }
+
+        function updateParentDashboard() {
+            const student = studentDatabase[appState.studentId];
+            if (!student) return;
+            
+            // Update child info
+            document.getElementById('childFullName').textContent = student.name;
+            document.getElementById('childSchool').textContent = 
+                `${student.school} • ${student.grade}`;
+            document.getElementById('childLocation').textContent = 
+                student.status === 'onbus' ? 'On the bus' : `Waiting at ${student.location}`;
+            document.getElementById('childAvatar').textContent = student.avatar;
+            
+            // Update status badge
+            const statusBadge = document.getElementById('childStatusBadge');
+            statusBadge.className = `child-status status-${student.status}`;
+            statusBadge.textContent = student.status.toUpperCase();
+            
+            // Update bus info
+            document.getElementById('parentBusName').textContent = appState.busNumber;
+        }
+
+        function toggleTrip() {
+            appState.tripActive = !appState.tripActive;
+            const tripBtn = document.getElementById('startTrip');
+            
+            if (appState.tripActive) {
+                // Start trip
+                tripBtn.classList.add('active');
+                tripBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                showToast(`Trip to school started`, 'success');
+                
+                // Alert parents
+                sendTripAlert('trip_started', 'Bus has started the trip to school');
+                
+            } else {
+                // End trip
+                tripBtn.classList.remove('active');
+                tripBtn.innerHTML = '<i class="fas fa-play"></i>';
+                showToast('Trip ended', 'info');
+                
+                // Switch trip direction
+                appState.currentTrip = appState.currentTrip === 'to_school' ? 'from_school' : 'to_school';
+                appState.tripActive = true;
+                
+                // Alert parents
+                const alertMsg = appState.currentTrip === 'to_school' 
+                    ? 'Bus has started the trip to school' 
+                    : 'Bus has started the trip from school';
+                sendTripAlert('trip_started', alertMsg);
+            }
+            
+            // Publish trip status
+            publishTripStatus();
+        }
+
+        function sendTripAlert(type, message) {
+            if (!mqttClient) return;
+            
+            const alertData = {
+                type: type,
+                busNumber: appState.busNumber,
+                timestamp: Date.now(),
+                message: message,
+                trip: appState.currentTrip
+            };
+            
+            mqttClient.publish(
+                `${MQTT_CONFIG.topics.alerts}${appState.busNumber}`,
+                JSON.stringify(alertData)
+            );
+            
+            // Add to notifications
+            addNotification('Bus Alert', message, 'warning');
+        }
+
+        function publishTripStatus() {
+            if (!mqttClient) return;
+            
+            const statusData = {
+                type: 'trip_status',
+                busNumber: appState.busNumber,
+                timestamp: Date.now(),
+                trip: appState.currentTrip,
+                active: appState.tripActive,
+                driver: appState.driverId
+            };
+            
+            mqttClient.publish(
+                `${MQTT_CONFIG.topics.status}${appState.busNumber}`,
+                JSON.stringify(statusData)
+            );
+        }
+
+        function getNextStop() {
+            const waitingStudents = Object.values(studentDatabase)
+                .filter(s => s.status === 'waiting' || s.status === 'onbus');
+            
+            if (waitingStudents.length === 0) return null;
+            
+            // Simple algorithm: find nearest waiting student
+            if (currentPosition) {
+                const busCoords = [currentPosition.coords.latitude, currentPosition.coords.longitude];
+                let nearest = waitingStudents[0];
+                let minDistance = Infinity;
+                
+                waitingStudents.forEach(student => {
+                    const distance = map.distance(busCoords, student.coordinates);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        nearest = student;
+                    }
+                });
+                
+                return nearest.location;
+            }
+            
+            return waitingStudents[0].location;
+        }
+
+        function checkNearbyStops(busCoords) {
+            Object.values(studentDatabase).forEach(student => {
+                const distance = map.distance(busCoords, student.coordinates);
+                
+                if (distance < 100) { // Within 100 meters
+                    if (student.status === 'waiting') {
+                        // Auto-pickup when bus is nearby
+                        updateStudentStatus(student.id, 'onbus');
+                        showToast(`Auto-picked up: ${student.name}`, 'success');
+                    }
+                }
+            });
+        }
+
+        function updateStudentStatus(studentId, status) {
+            const student = studentDatabase[studentId];
+            if (!student) return;
+            
+            student.status = status;
+            
+            // Update UI if this is the parent's child
+            if (appState.userRole === 'parent' && studentId === appState.studentId) {
+                updateParentDashboard();
+            }
+            
+            // Publish student status
+            publishStudentStatus(studentId, status);
+            
+            // Send alert to parent
+            if (status === 'onbus') {
+                sendStudentAlert(studentId, 'picked_up', `${student.name} has been picked up`);
+            } else if (status === 'dropped') {
+                sendStudentAlert(studentId, 'dropped_off', `${student.name} has been dropped off`);
+            }
+        }
+
+        function publishStudentStatus(studentId, status) {
+            if (!mqttClient) return;
+            
+            const student = studentDatabase[studentId];
+            const statusData = {
+                type: 'student_status',
+                studentId: studentId,
+                studentName: student.name,
+                status: status,
+                timestamp: Date.now(),
+                location: student.location,
+                coordinates: student.coordinates
+            };
+            
+            mqttClient.publish(
+                `${MQTT_CONFIG.topics.students}${appState.busNumber}/${studentId}`,
+                JSON.stringify(statusData)
+            );
+        }
+
+        function sendStudentAlert(studentId, type, message) {
+            if (!mqttClient) return;
+            
+            const alertData = {
+                type: type,
+                studentId: studentId,
+                studentName: studentDatabase[studentId]?.name,
+                message: message,
+                timestamp: Date.now(),
+                busNumber: appState.busNumber
+            };
+            
+            mqttClient.publish(
+                `${MQTT_CONFIG.topics.alerts}${appState.busNumber}/${studentId}`,
+                JSON.stringify(alertData)
+            );
+            
+            // Add to notifications
+            addNotification('Student Update', message, 'info');
+        }
+
+        function markChildStatus(status) {
+            if (appState.userRole !== 'parent') return;
+            
+            updateStudentStatus(appState.studentId, status);
+            showToast(`Marked as ${status.replace('_', ' ')}`, 'success');
+        }
+
+        function showStudentManagement() {
+            loadStudentList();
+            document.getElementById('studentModal').classList.add('active');
+            
+            // Setup event listeners
+            document.getElementById('addStudentBtn').addEventListener('click', showAddStudentModal);
+            document.getElementById('closeStudentModal').addEventListener('click', () => {
+                document.getElementById('studentModal').classList.remove('active');
+            });
+        }
+
+        function loadStudentList() {
+            const container = document.getElementById('studentListContainer');
+            container.innerHTML = '';
+            
+            Object.values(studentDatabase).forEach(student => {
+                const studentEl = document.createElement('div');
+                studentEl.className = 'student-item';
+                studentEl.innerHTML = `
+                    <div class="student-avatar">${student.avatar}</div>
+                    <div class="student-info">
+                        <div class="student-name">${student.name}</div>
+                        <div class="student-details">
+                            <span>${student.grade}</span>
+                            <span>•</span>
+                            <span>${student.location}</span>
+                        </div>
+                    </div>
+                    <div class="student-status status-${student.status}">
+                        ${student.status.toUpperCase()}
+                    </div>
+                    <div class="student-actions-buttons">
+                        <button class="student-action-icon" onclick="editStudent('${student.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="student-action-icon" onclick="removeStudent('${student.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(studentEl);
+            });
+        }
+
+        function showAddStudentModal() {
+            document.getElementById('addStudentModal').classList.add('active');
+            
+            const form = document.getElementById('addStudentForm');
+            form.onsubmit = handleAddStudent;
+            
+            document.getElementById('cancelAddStudent').addEventListener('click', () => {
+                document.getElementById('addStudentModal').classList.remove('active');
+                form.reset();
+            });
+        }
+
+        function handleAddStudent(e) {
+            e.preventDefault();
+            
+            const newStudent = {
+                id: document.getElementById('newStudentId').value,
+                name: document.getElementById('newStudentName').value,
+                grade: document.getElementById('newStudentGrade').value,
+                contact: document.getElementById('newStudentContact').value,
+                location: document.getElementById('newStudentLocation').value,
+                avatar: document.getElementById('newStudentName').value.charAt(0).toUpperCase(),
+                status: 'waiting',
+                coordinates: [40.7128 + Math.random() * 0.01, -74.0060 + Math.random() * 0.01],
+                school: 'Westwood Elementary'
+            };
+            
+            studentDatabase[newStudent.id] = newStudent;
             
             // Update map
-            const newLatLng = [latitude, longitude];
-            userMarker.setLatLng(newLatLng);
-            
-            if (heading !== null) {
-                userMarker.setRotationAngle(heading);
-            }
-            
-            // Auto-center on first location
-            if (!currentPosition) {
-                map.setView(newLatLng, 16);
-            }
-            
-            // Add to tracking
-            if (isTracking && trackingData.currentSession) {
-                trackingData.points.push(newLatLng);
-                trackingPolyline.setLatLngs(trackingData.points);
-                
-                if (trackingData.points.length > 1) {
-                    const lastPoint = trackingData.points[trackingData.points.length - 2];
-                    const distance = map.distance(lastPoint, newLatLng);
-                    trackingData.totalDistance += distance;
-                }
-            }
+            addBusStopsToMap();
             
             // Update UI
-            updatePositionDisplay(latitude, longitude);
-            updateAccuracyDisplay(accuracy);
-            updateStatsDisplay(speed, altitude);
+            loadStudentList();
             
-            // Update user's position for others (in demo mode)
-            updateUserPosition('currentUser', latitude, longitude);
+            // Close modal
+            document.getElementById('addStudentModal').classList.remove('active');
+            document.getElementById('addStudentForm').reset();
+            
+            showToast(`Added student: ${newStudent.name}`, 'success');
+        }
+
+        function editStudent(studentId) {
+            const student = studentDatabase[studentId];
+            if (!student) return;
+            
+            // For simplicity, we'll just remove and re-add
+            // In a real app, you'd have an edit modal
+            showToast(`Edit ${student.name} (feature coming soon)`, 'info');
+        }
+
+        function removeStudent(studentId) {
+            const student = studentDatabase[studentId];
+            if (!student) return;
+            
+            if (confirm(`Remove ${student.name} from the roster?`)) {
+                delete studentDatabase[studentId];
+                loadStudentList();
+                addBusStopsToMap();
+                showToast(`Removed student: ${student.name}`, 'success');
+            }
+        }
+
+        function showNotifications() {
+            const modal = document.getElementById('notificationsModal');
+            const list = document.getElementById('notificationsList');
+            
+            list.innerHTML = appState.notifications.length > 0 
+                ? appState.notifications.map(n => `
+                    <div class="student-item">
+                        <div style="flex: 1;">
+                            <div class="student-name">${n.title}</div>
+                            <div class="student-details">${n.message}</div>
+                            <div class="student-details" style="font-size: 11px; opacity: 0.6;">
+                                ${new Date(n.timestamp).toLocaleTimeString()}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')
+                : '<div style="text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.6);">No notifications</div>';
+            
+            modal.classList.add('active');
+            
+            document.getElementById('clearNotifications').onclick = clearNotifications;
+            document.getElementById('closeNotifications').onclick = () => {
+                modal.classList.remove('active');
+            };
+        }
+
+        function addNotification(title, message, type = 'info') {
+            const notification = {
+                id: Date.now(),
+                title,
+                message,
+                type,
+                timestamp: Date.now(),
+                read: false
+            };
+            
+            appState.notifications.unshift(notification);
+            
+            // Keep only last 50 notifications
+            if (appState.notifications.length > 50) {
+                appState.notifications.pop();
+            }
+            
+            // Update notification badge
+            updateNotificationBadge();
+        }
+
+        function clearNotifications() {
+            appState.notifications = [];
+            updateNotificationBadge();
+            showNotifications();
+        }
+
+        function updateNotificationBadge() {
+            const unreadCount = appState.notifications.filter(n => !n.read).length;
+            const badges = document.querySelectorAll('.notification-badge');
+            
+            badges.forEach(badge => {
+                badge.textContent = unreadCount > 0 ? unreadCount : '';
+                badge.style.display = unreadCount > 0 ? 'flex' : 'none';
+            });
+        }
+
+        function toggleMapThemes() {
+            const selector = document.getElementById('mapThemeSelector');
+            selector.style.display = selector.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        function toggleRoute() {
+            const btn = document.getElementById('showRoute');
+            btn.classList.toggle('active');
+            
+            if (btn.classList.contains('active')) {
+                busPath.addTo(map);
+                showToast('Route shown', 'info');
+            } else {
+                map.removeLayer(busPath);
+                showToast('Route hidden', 'info');
+            }
+        }
+
+        function toggleStops() {
+            const btn = document.getElementById('showStops');
+            btn.classList.toggle('active');
+            
+            stopMarkers.forEach(marker => {
+                if (btn.classList.contains('active')) {
+                    map.addLayer(marker);
+                } else {
+                    map.removeLayer(marker);
+                }
+            });
+            
+            showToast(btn.classList.contains('active') ? 'Stops shown' : 'Stops hidden', 'info');
+        }
+
+        function centerOnBus() {
+            if (currentPosition) {
+                const { latitude, longitude } = currentPosition.coords;
+                map.setView([latitude, longitude], 16);
+                busMarker.openPopup();
+            }
+        }
+
+        function connectToMQTT() {
+            const clientId = `schoolbus_${appState.userRole}_${Date.now()}`;
+            
+            mqttClient = mqtt.connect(MQTT_CONFIG.broker, {
+                clientId: clientId,
+                clean: true,
+                connectTimeout: 4000,
+                reconnectPeriod: 1000
+            });
+
+            mqttClient.on('connect', () => {
+                console.log('MQTT Connected');
+                showToast('Connected to tracking service', 'success');
+                
+                // Subscribe based on role
+                if (appState.userRole === 'driver') {
+                    mqttClient.subscribe(`${MQTT_CONFIG.topics.commands}${appState.busNumber}`);
+                } else {
+                    mqttClient.subscribe(`${MQTT_CONFIG.topics.location}${appState.busNumber}`);
+                    mqttClient.subscribe(`${MQTT_CONFIG.topics.status}${appState.busNumber}`);
+                    mqttClient.subscribe(`${MQTT_CONFIG.topics.students}${appState.busNumber}/${appState.studentId}`);
+                    mqttClient.subscribe(`${MQTT_CONFIG.topics.alerts}${appState.busNumber}/${appState.studentId}`);
+                }
+            });
+
+            mqttClient.on('message', (topic, message) => {
+                try {
+                    const data = JSON.parse(message.toString());
+                    handleMQTTMessage(topic, data);
+                } catch (error) {
+                    console.error('MQTT Parse Error:', error);
+                }
+            });
+
+            mqttClient.on('error', (err) => {
+                console.error('MQTT Error:', err);
+                showToast('Connection error', 'error');
+            });
+        }
+
+        function handleMQTTMessage(topic, data) {
+            if (appState.userRole === 'parent') {
+                if (topic.includes('/location/')) {
+                    updateBusPosition(data);
+                } else if (topic.includes('/status/')) {
+                    updateBusStatus(data);
+                } else if (topic.includes('/students/')) {
+                    updateStudentFromMQTT(data);
+                } else if (topic.includes('/alerts/')) {
+                    handleAlert(data);
+                }
+            } else {
+                if (topic.includes('/commands/')) {
+                    handleCommand(data);
+                }
+            }
+        }
+
+        function updateBusPosition(data) {
+            if (!map || !busMarker) return;
+            
+            const [lat, lng] = data.coordinates;
+            busMarker.setLatLng([lat, lng]);
+            
+            // Update path
+            const currentPath = busPath.getLatLngs();
+            currentPath.push([lat, lng]);
+            if (currentPath.length > 50) currentPath.shift();
+            busPath.setLatLngs(currentPath);
+            
+            // Update info
+            document.getElementById('parentSpeed').textContent = 
+                Math.round((data.speed || 0) * 3.6) + ' km/h';
+            
+            // Update ETA and distance
+            updateETA(data.coordinates);
+        }
+
+        function updateETA(busCoords) {
+            // In a real app, calculate based on route and traffic
+            // For demo, use random values
+            const etaMinutes = Math.floor(Math.random() * 30) + 5;
+            const now = new Date();
+            now.setMinutes(now.getMinutes() + etaMinutes);
+            
+            document.getElementById('eta').textContent = 
+                now.getHours().toString().padStart(2, '0') + ':' + 
+                now.getMinutes().toString().padStart(2, '0');
+            
+            document.getElementById('distanceAway').textContent = 
+                (Math.random() * 5).toFixed(1) + ' km';
+        }
+
+        function updateBusStatus(data) {
+            const statusText = document.getElementById('busStatusText');
+            const statusDot = document.getElementById('busStatusDot');
+            
+            if (data.active) {
+                statusText.textContent = `Online • ${data.trip === 'to_school' ? 'To School' : 'From School'}`;
+                statusDot.className = 'status-indicator status-online';
+            } else {
+                statusText.textContent = 'Offline';
+                statusDot.className = 'status-indicator status-offline';
+            }
+        }
+
+        function updateStudentFromMQTT(data) {
+            const student = studentDatabase[data.studentId];
+            if (!student) return;
+            
+            student.status = data.status;
+            updateParentDashboard();
+            
+            // Show notification
+            if (data.studentId === appState.studentId) {
+                showToast(data.message || `Status updated: ${data.status}`, 'info');
+            }
+        }
+
+        function handleAlert(data) {
+            addNotification('Alert', data.message, 'warning');
+            
+            if (data.type === 'trip_started') {
+                showToast(`Bus alert: ${data.message}`, 'warning');
+            }
+        }
+
+        function handleCommand(data) {
+            showToast(`Command received: ${data.type}`, 'info');
+            
+            if (data.type === 'status_request') {
+                publishTripStatus();
+            }
         }
 
         function handlePositionError(error) {
+            let message = 'Unable to get location';
+            
             switch(error.code) {
                 case error.PERMISSION_DENIED:
-                    showToast('Location access denied', 'error');
+                    message = 'Location permission denied';
                     break;
                 case error.POSITION_UNAVAILABLE:
-                    showToast('Location unavailable', 'error');
+                    message = 'Location unavailable';
                     break;
                 case error.TIMEOUT:
-                    showToast('GPS timeout', 'error');
+                    message = 'Location request timeout';
                     break;
             }
+            
+            showToast(message, 'error');
         }
 
-        // Multi-user tracking functions
-        function updateUserPosition(userId, lat, lng) {
-            if (!trackedUsers[userId]) {
-                // Add new user
-                const user = demoUsers.find(u => u.id === userId) || {
-                    id: userId,
-                    name: `User ${Object.keys(trackedUsers).length + 1}`,
-                    color: getRandomColor(),
-                    lastSeen: Date.now()
-                };
-                
-                trackedUsers[userId] = {
-                    ...user,
-                    position: [lat, lng],
-                    path: [],
-                    lastUpdate: Date.now()
-                };
-                
-                // Create marker for this user
-                userMarkers[userId] = L.marker([lat, lng], {
-                    icon: L.divIcon({
-                        html: `<div style="width: 28px; height: 28px; border-radius: 50%; background: ${user.color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; border: 2px solid white; box-shadow: 0 0 0 2px ${user.color}80;"><i class="fas fa-user"></i></div>`,
-                        className: 'user-marker',
-                        iconSize: [28, 28],
-                        iconAnchor: [14, 14]
-                    }),
-                    zIndexOffset: 500
-                }).addTo(map);
-                
-                userMarkers[userId].bindPopup(`<strong>${user.name}</strong><br>Last seen: Just now`);
-                
-                // Create polyline for this user's path
-                userPolylines[userId] = L.polyline([], {
-                    color: user.color,
-                    weight: 2,
-                    opacity: 0.6,
-                    dashArray: '5, 10'
-                }).addTo(map);
-            } else {
-                // Update existing user
-                trackedUsers[userId].position = [lat, lng];
-                trackedUsers[userId].path.push([lat, lng]);
-                trackedUsers[userId].lastUpdate = Date.now();
-                trackedUsers[userId].lastSeen = Date.now();
-                
-                // Update marker
-                if (userMarkers[userId]) {
-                    userMarkers[userId].setLatLng([lat, lng]);
-                    
-                    // Update popup with distance info
-                    if (currentPosition) {
-                        const { latitude: myLat, longitude: myLng } = currentPosition.coords;
-                        const distance = map.distance([myLat, myLng], [lat, lng]);
-                        const timeAgo = Math.floor((Date.now() - trackedUsers[userId].lastSeen) / 1000);
-                        const timeText = timeAgo < 60 ? `${timeAgo}s ago` : `${Math.floor(timeAgo / 60)}m ago`;
-                        
-                        userMarkers[userId].setPopupContent(
-                            `<strong>${trackedUsers[userId].name}</strong><br>` +
-                            `Distance: ${(distance / 1000).toFixed(1)}km<br>` +
-                            `Last update: ${timeText}`
-                        );
-                    }
-                }
-                
-                // Update polyline
-                if (userPolylines[userId]) {
-                    userPolylines[userId].setLatLngs(trackedUsers[userId].path);
-                }
-            }
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2, '0') + ':' + 
+                           now.getMinutes().toString().padStart(2, '0');
             
-            // Update users list if panel is open
-            if (document.getElementById('usersPanel').classList.contains('active')) {
-                updateUsersList();
-            }
-        }
-
-        function getRandomColor() {
-            const colors = ['#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16', '#F97316'];
-            return colors[Math.floor(Math.random() * colors.length)];
-        }
-
-        function startUserTrackingSimulation() {
-            // Simulate other users moving around
-            setInterval(() => {
-                if (!settings.showUsers) return;
-                
-                demoUsers.forEach(user => {
-                    // Update last seen time
-                    const timeSinceLastSeen = Date.now() - user.lastSeen;
-                    
-                    // If user hasn't been seen in a while, simulate movement
-                    if (timeSinceLastSeen > 30000) {
-                        const lat = (Math.random() - 0.5) * 0.02 + (currentPosition?.coords.latitude || 0);
-                        const lng = (Math.random() - 0.5) * 0.02 + (currentPosition?.coords.longitude || 0);
-                        
-                        updateUserPosition(user.id, lat, lng);
-                        user.lastSeen = Date.now();
-                    }
-                });
-            }, 5000);
-            
-            // Periodically clean up old users (inactive for 5 minutes)
-            setInterval(() => {
-                const now = Date.now();
-                Object.keys(trackedUsers).forEach(userId => {
-                    if (userId !== 'currentUser' && (now - trackedUsers[userId].lastUpdate) > 300000) {
-                        // Remove inactive user
-                        if (userMarkers[userId]) {
-                            map.removeLayer(userMarkers[userId]);
-                            delete userMarkers[userId];
-                        }
-                        if (userPolylines[userId]) {
-                            map.removeLayer(userPolylines[userId]);
-                            delete userPolylines[userId];
-                        }
-                        delete trackedUsers[userId];
-                    }
-                });
-            }, 60000);
-        }
-
-        function updateUsersList() {
-            const container = document.getElementById('usersList');
-            const users = Object.values(trackedUsers).filter(u => u.id !== 'currentUser');
-            
-            if (users.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 2rem; color: rgba(255, 255, 255, 0.6);">
-                        <i class="fas fa-users" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem;"></i>
-                        <p>No other users tracked</p>
-                        <p style="font-size: 0.9rem;">Add users to track their locations</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = users.map(user => {
-                const timeAgo = Math.floor((Date.now() - user.lastSeen) / 1000);
-                const timeText = timeAgo < 60 ? `${timeAgo}s ago` : 
-                               timeAgo < 3600 ? `${Math.floor(timeAgo / 60)}m ago` : 
-                               `${Math.floor(timeAgo / 3600)}h ago`;
-                
-                let distanceText = '';
-                if (currentPosition && user.position) {
-                    const { latitude: myLat, longitude: myLng } = currentPosition.coords;
-                    const distance = map.distance([myLat, myLng], user.position);
-                    distanceText = ` • ${(distance / 1000).toFixed(1)}km away`;
-                }
-                
-                return `
-                    <div class="user-card" onclick="focusOnUser('${user.id}')">
-                        <div class="user-avatar" style="background: ${user.color};">
-                            ${user.name.charAt(0)}
-                        </div>
-                        <div class="user-info">
-                            <div class="user-name">${user.name}</div>
-                            <div class="user-status">
-                                <span class="status-dot ${timeAgo < 300 ? 'status-online' : 'status-offline'}"></span>
-                                ${timeText}${distanceText}
-                            </div>
-                        </div>
-                        <div class="list-item-actions">
-                            <button class="action-btn glass" onclick="toggleUserVisibility('${user.id}', event)" style="width: 32px; height: 32px;" title="Hide/Show">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="action-btn glass" onclick="removeUser('${user.id}', event)" style="width: 32px; height: 32px; background: rgba(239,68,68,0.2); color: #FCA5A5;" title="Remove">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function focusOnUser(userId) {
-            const user = trackedUsers[userId];
-            if (user && user.position) {
-                map.setView(user.position, 16);
-                if (userMarkers[userId]) {
-                    userMarkers[userId].openPopup();
-                }
-                hideAllPanels();
-                showToast(`Focused on ${user.name}`, 'info');
-            }
-        }
-
-        function toggleUserVisibility(userId, event) {
-            event.stopPropagation();
-            const user = trackedUsers[userId];
-            if (user) {
-                if (userMarkers[userId] && map.hasLayer(userMarkers[userId])) {
-                    map.removeLayer(userMarkers[userId]);
-                    if (userPolylines[userId]) {
-                        map.removeLayer(userPolylines[userId]);
-                    }
-                    showToast(`${user.name} hidden`, 'info');
-                } else {
-                    if (userMarkers[userId]) {
-                        map.addLayer(userMarkers[userId]);
-                    }
-                    if (userPolylines[userId]) {
-                        map.addLayer(userPolylines[userId]);
-                    }
-                    showToast(`${user.name} shown`, 'info');
-                }
-            }
-        }
-
-        function removeUser(userId, event) {
-            event.stopPropagation();
-            if (confirm('Remove this user from tracking?')) {
-                const user = trackedUsers[userId];
-                if (user) {
-                    if (userMarkers[userId]) {
-                        map.removeLayer(userMarkers[userId]);
-                        delete userMarkers[userId];
-                    }
-                    if (userPolylines[userId]) {
-                        map.removeLayer(userPolylines[userId]);
-                        delete userPolylines[userId];
-                    }
-                    delete trackedUsers[userId];
-                    updateUsersList();
-                    showToast(`${user.name} removed`, 'info');
-                }
-            }
-        }
-
-        function addUserToTrack() {
-            const userName = prompt('Enter user name:', `User ${Object.keys(trackedUsers).length + 1}`);
-            if (!userName) return;
-            
-            const userId = `user_${Date.now()}`;
-            const color = getRandomColor();
-            
-            // Create initial position near current location
-            let lat = 0, lng = 0;
-            if (currentPosition) {
-                lat = currentPosition.coords.latitude + (Math.random() - 0.5) * 0.01;
-                lng = currentPosition.coords.longitude + (Math.random() - 0.5) * 0.01;
-            }
-            
-            updateUserPosition(userId, lat, lng);
-            trackedUsers[userId].name = userName;
-            trackedUsers[userId].color = color;
-            
-            // Update marker with new name
-            if (userMarkers[userId]) {
-                userMarkers[userId].setPopupContent(`<strong>${userName}</strong><br>Last seen: Just now`);
-            }
-            
-            updateUsersList();
-            showToast(`Now tracking ${userName}`, 'success');
-        }
-
-        function updateCompass(heading) {
-            const compass = document.getElementById('compass');
-            if (compass) {
-                compass.style.transform = `rotate(${360 - heading}deg)`;
-            }
-        }
-
-        function updatePositionDisplay(lat, lng) {
-            // Simplified for mobile
-            document.getElementById('currentLat').textContent = Math.abs(lat).toFixed(4) + '°' + (lat >= 0 ? 'N' : 'S');
-            document.getElementById('currentLng').textContent = Math.abs(lng).toFixed(4) + '°' + (lng >= 0 ? 'E' : 'W');
-        }
-
-        function updateAccuracyDisplay(accuracy) {
-            const accuracyBar = document.getElementById('accuracyBar');
-            const accuracyText = document.getElementById('accuracyText');
-            
-            const maxAccuracy = 50;
-            const accuracyPercent = Math.max(0, Math.min(100, 100 - (accuracy / maxAccuracy * 100)));
-            
-            accuracyBar.style.width = `${accuracyPercent}%`;
-            accuracyText.textContent = `${Math.round(accuracy)}m`;
-            
-            if (accuracy < 10) {
-                accuracyBar.style.background = '#10B981';
-            } else if (accuracy < 25) {
-                accuracyBar.style.background = '#F59E0B';
-            } else {
-                accuracyBar.style.background = '#EF4444';
-            }
-        }
-
-        function updateStatsDisplay(speed, altitude) {
-            if (speed !== null && speed >= 0) {
-                document.getElementById('currentSpeed').textContent = (speed * 3.6).toFixed(1) + ' km/h';
-            }
-            
-            if (altitude !== null) {
-                document.getElementById('currentAltitude').textContent = Math.round(altitude) + ' m';
-            }
-        }
-
-        function updateTrackingStats() {
-            const distanceElement = document.getElementById('distanceTraveled');
-            const timeElement = document.getElementById('trackingTime');
-            
-            if (trackingData.totalDistance > 0) {
-                distanceElement.textContent = (trackingData.totalDistance / 1000).toFixed(2) + ' km';
-            }
-            
-            if (isTracking && trackingData.startTime) {
-                const elapsed = Date.now() - trackingData.startTime - trackingData.totalPauseTime;
-                const hours = Math.floor(elapsed / 3600000);
-                const minutes = Math.floor((elapsed % 3600000) / 60000);
-                const seconds = Math.floor((elapsed % 60000) / 1000);
-                timeElement.textContent = 
-                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            }
-            
-            updateActiveTrackingInfo();
-        }
-
-        // Tracking Functions
-        function startTracking() {
-            if (isTracking) {
-                showToast('Already tracking', 'warning');
-                return;
-            }
-
-            trackingData = {
-                points: [],
-                startTime: Date.now(),
-                totalDistance: 0,
-                currentSession: {
-                    id: Date.now(),
-                    name: `Track ${new Date().toLocaleDateString()}`,
-                    startTime: new Date().toISOString(),
-                    distance: 0,
-                    duration: 0
-                },
-                pauseTime: 0,
-                totalPauseTime: 0
-            };
-
-            isTracking = true;
-            document.getElementById('recordToggle').classList.add('active');
-            document.getElementById('recordIcon').className = 'fas fa-stop';
-            
-            updateTrackingControls();
-            
-            if (currentPosition) {
-                const { latitude, longitude } = currentPosition.coords;
-                trackingData.points.push([latitude, longitude]);
-                trackingPolyline.setLatLngs(trackingData.points);
-            }
-            
-            showToast('Tracking started', 'success');
-        }
-
-        function pauseTracking() {
-            if (!isTracking) {
-                showToast('No active tracking', 'warning');
-                return;
-            }
-
-            isTracking = false;
-            trackingData.pauseTime = Date.now();
-            document.getElementById('recordToggle').classList.remove('active');
-            document.getElementById('recordIcon').className = 'fas fa-circle';
-            
-            updateTrackingControls();
-            showToast('Tracking paused', 'info');
-        }
-
-        function stopTracking() {
-            if (!trackingData.currentSession) {
-                showToast('No active tracking', 'warning');
-                return;
-            }
-
-            isTracking = false;
-            document.getElementById('recordToggle').classList.remove('active');
-            document.getElementById('recordIcon').className = 'fas fa-circle';
-            
-            const endTime = Date.now();
-            const duration = endTime - trackingData.startTime - trackingData.totalPauseTime;
-            
-            const session = {
-                ...trackingData.currentSession,
-                endTime: new Date().toISOString(),
-                duration: duration,
-                distance: trackingData.totalDistance,
-                points: trackingData.points
-            };
-
-            if (settings.autoSave) {
-                history.unshift(session);
-                saveAllData();
-                showToast(`Track saved: ${(session.distance / 1000).toFixed(2)}km`, 'success');
-            }
-            
-            trackingData = {
-                points: [],
-                startTime: null,
-                totalDistance: 0,
-                currentSession: null,
-                pauseTime: 0,
-                totalPauseTime: 0
-            };
-            
-            updateTrackingControls();
-            trackingPolyline.setLatLngs([]);
-            document.getElementById('distanceTraveled').textContent = '0.00 km';
-            document.getElementById('trackingTime').textContent = '00:00';
-        }
-
-        function updateTrackingControls() {
-            const startBtn = document.getElementById('startTracking');
-            const pauseBtn = document.getElementById('pauseTracking');
-            const stopBtn = document.getElementById('stopTracking');
-            const panelStopBtn = document.getElementById('panelStopTracking');
-            
-            if (isTracking) {
-                startBtn.disabled = true;
-                pauseBtn.disabled = false;
-                stopBtn.disabled = false;
-                panelStopBtn.disabled = false;
-                startBtn.innerHTML = '<i class="fas fa-play"></i> Rec';
-                pauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pause';
-            } else if (trackingData.currentSession && trackingData.pauseTime > 0) {
-                startBtn.disabled = false;
-                pauseBtn.disabled = true;
-                stopBtn.disabled = false;
-                panelStopBtn.disabled = false;
-                startBtn.innerHTML = '<i class="fas fa-play"></i> Resume';
-                pauseBtn.innerHTML = '<i class="fas fa-pause"></i> Paused';
-            } else {
-                startBtn.disabled = false;
-                pauseBtn.disabled = true;
-                stopBtn.disabled = true;
-                panelStopBtn.disabled = true;
-                startBtn.innerHTML = '<i class="fas fa-play"></i> Start';
-                pauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pause';
-            }
-        }
-
-        function updateActiveTrackingInfo() {
-            const container = document.getElementById('activeTrackingInfo');
-            
-            if (!trackingData.currentSession) {
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 2rem; color: rgba(255, 255, 255, 0.6);">
-                        <i class="fas fa-route" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem;"></i>
-                        <p>No active tracking</p>
-                        <p style="font-size: 0.9rem;">Tap Start to begin</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            const elapsed = isTracking ? 
-                Date.now() - trackingData.startTime - trackingData.totalPauseTime :
-                trackingData.pauseTime - trackingData.startTime - trackingData.totalPauseTime;
-            
-            const minutes = Math.floor((elapsed % 3600000) / 60000);
-            const seconds = Math.floor((elapsed % 60000) / 1000);
-            
-            container.innerHTML = `
-                <div class="list-item">
-                    <div class="list-item-info">
-                        <div class="list-item-title">${trackingData.currentSession.name}</div>
-                        <div class="list-item-details">
-                            ${new Date(trackingData.startTime).toLocaleTimeString()}
-                        </div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="font-size: 1.25rem; font-weight: 600; color: #3B82F6;">
-                            ${(trackingData.totalDistance / 1000).toFixed(2)} km
-                        </div>
-                        <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.6);">
-                            ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Data Management
-        function loadAllData() {
-            try {
-                const savedSettings = localStorage.getItem('trackflow_settings');
-                const savedTrackedUsers = localStorage.getItem('trackflow_trackedUsers');
-                
-                if (savedSettings) settings = JSON.parse(savedSettings);
-                if (savedTrackedUsers) {
-                    const users = JSON.parse(savedTrackedUsers);
-                    Object.keys(users).forEach(userId => {
-                        if (userId !== 'currentUser') {
-                            trackedUsers[userId] = users[userId];
-                        }
-                    });
-                }
-                
-                document.getElementById('gpsInterval').value = settings.gpsInterval;
-                document.getElementById('autoSave').checked = settings.autoSave;
-                document.getElementById('highAccuracy').checked = settings.highAccuracy;
-                document.getElementById('showUsers').checked = settings.showUsers;
-                
-            } catch (error) {
-                console.error('Error loading data:', error);
-            }
-        }
-
-        function saveAllData() {
-            try {
-                localStorage.setItem('trackflow_settings', JSON.stringify(settings));
-                localStorage.setItem('trackflow_trackedUsers', JSON.stringify(trackedUsers));
-            } catch (error) {
-                console.error('Error saving data:', error);
-            }
-        }
-
-        function saveSettings() {
-            settings.gpsInterval = parseInt(document.getElementById('gpsInterval').value);
-            settings.autoSave = document.getElementById('autoSave').checked;
-            settings.highAccuracy = document.getElementById('highAccuracy').checked;
-            settings.showUsers = document.getElementById('showUsers').checked;
-            
-            // Show/hide other users based on setting
-            Object.keys(userMarkers).forEach(userId => {
-                if (userId !== 'currentUser') {
-                    if (settings.showUsers) {
-                        if (!map.hasLayer(userMarkers[userId])) {
-                            map.addLayer(userMarkers[userId]);
-                        }
-                        if (userPolylines[userId] && !map.hasLayer(userPolylines[userId])) {
-                            map.addLayer(userPolylines[userId]);
-                        }
-                    } else {
-                        if (map.hasLayer(userMarkers[userId])) {
-                            map.removeLayer(userMarkers[userId]);
-                        }
-                        if (userPolylines[userId] && map.hasLayer(userPolylines[userId])) {
-                            map.removeLayer(userPolylines[userId]);
-                        }
-                    }
-                }
-            });
-            
-            startGPS();
-            saveAllData();
-            showToast('Settings saved', 'success');
-        }
-
-        // Panel Functions
-        function showPanel(panelId) {
-            hideAllPanels();
-            document.getElementById(panelId + 'Panel').classList.add('active');
-            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-            document.getElementById('nav' + panelId.charAt(0).toUpperCase() + panelId.slice(1)).classList.add('active');
-            
-            if (panelId === 'users') updateUsersList();
-            if (panelId === 'tracking') updateActiveTrackingInfo();
-        }
-
-        function hideAllPanels() {
-            document.querySelectorAll('.panel').forEach(panel => {
-                panel.classList.remove('active');
-            });
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            document.getElementById('navMap').classList.add('active');
-        }
-
-        // Event Listeners
-        function setupEventListeners() {
-            // Map Controls
-            document.getElementById('centerMap').addEventListener('click', () => {
-                if (currentPosition) {
-                    const { latitude, longitude } = currentPosition.coords;
-                    map.setView([latitude, longitude], map.getZoom());
-                    showToast('Centered', 'info');
-                }
-            });
-            
-            document.getElementById('zoomIn').addEventListener('click', () => map.zoomIn());
-            document.getElementById('zoomOut').addEventListener('click', () => map.zoomOut());
-            
-            // Map Type Selector
-            document.querySelectorAll('.map-type-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const type = btn.getAttribute('data-type');
-                    changeMapType(type);
-                });
-            });
-            
-            // Recording Control
-            document.getElementById('recordToggle').addEventListener('click', function() {
-                if (isTracking) {
-                    pauseTracking();
-                } else if (trackingData.currentSession && trackingData.pauseTime > 0) {
-                    startTracking();
-                } else {
-                    startTracking();
-                }
-            });
-            
-            // Fullscreen
-            document.getElementById('fullscreenToggle').addEventListener('click', () => {
-                if (!document.fullscreenElement) {
-                    document.documentElement.requestFullscreen();
-                } else {
-                    document.exitFullscreen();
-                }
-            });
-            
-            // Theme Toggle
-            document.getElementById('themeToggle').addEventListener('click', () => {
-                const btn = document.getElementById('themeToggle');
-                if (document.body.style.backgroundColor === 'rgb(248, 250, 252)') {
-                    document.body.style.backgroundColor = '#0F172A';
-                    btn.innerHTML = '<i class="fas fa-moon"></i>';
-                } else {
-                    document.body.style.backgroundColor = '#F8FAFC';
-                    document.body.style.color = '#1E293B';
-                    btn.innerHTML = '<i class="fas fa-sun"></i>';
-                }
-            });
-            
-            // Tracking Buttons
-            document.getElementById('startTracking').addEventListener('click', startTracking);
-            document.getElementById('pauseTracking').addEventListener('click', pauseTracking);
-            document.getElementById('stopTracking').addEventListener('click', stopTracking);
-            
-            // Panel Buttons
-            document.getElementById('panelStartTracking').addEventListener('click', startTracking);
-            document.getElementById('panelStopTracking').addEventListener('click', stopTracking);
-            document.getElementById('addUserBtn').addEventListener('click', addUserToTrack);
-            document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
-            document.getElementById('clearDataBtn').addEventListener('click', () => {
-                if (confirm('⚠️ Clear all tracked users?')) {
-                    Object.keys(userMarkers).forEach(userId => {
-                        if (userId !== 'currentUser') {
-                            map.removeLayer(userMarkers[userId]);
-                            if (userPolylines[userId]) {
-                                map.removeLayer(userPolylines[userId]);
-                            }
-                        }
-                    });
-                    trackedUsers = {};
-                    userMarkers = {};
-                    userPolylines = {};
-                    saveAllData();
-                    updateUsersList();
-                    showToast('All users cleared', 'info');
-                }
-            });
-            
-            // Panel Close Buttons
-            document.getElementById('closeUsersPanel').addEventListener('click', hideAllPanels);
-            document.getElementById('closeTrackingPanel').addEventListener('click', hideAllPanels);
-            document.getElementById('closeSettingsPanel').addEventListener('click', hideAllPanels);
-            
-            // Navigation
-            document.getElementById('navMap').addEventListener('click', hideAllPanels);
-            document.getElementById('navUsers').addEventListener('click', () => showPanel('users'));
-            document.getElementById('navTracking').addEventListener('click', () => showPanel('tracking'));
-            document.getElementById('navSettings').addEventListener('click', () => showPanel('settings'));
-            
-            // Handle fullscreen changes
-            document.addEventListener('fullscreenchange', () => {
-                const btn = document.getElementById('fullscreenToggle');
-                btn.innerHTML = document.fullscreenElement ? 
-                    '<i class="fas fa-compress"></i>' : 
-                    '<i class="fas fa-expand"></i>';
-            });
-            
-            // Swipe to close panels
-            let touchStartX = 0;
-            document.addEventListener('touchstart', (e) => {
-                touchStartX = e.touches[0].clientX;
-            });
-            
-            document.addEventListener('touchend', (e) => {
-                const touchEndX = e.changedTouches[0].clientX;
-                const diff = touchStartX - touchEndX;
-                
-                // Swipe right to close panel
-                if (diff > 50 && (document.querySelector('.panel.active'))) {
-                    hideAllPanels();
-                }
+            document.querySelectorAll('#currentTime, #parentTime').forEach(el => {
+                if (el) el.textContent = timeStr;
             });
         }
 
-        // Toast Function
+        function logout() {
+            // Cleanup
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            
+            if (mqttClient) {
+                mqttClient.end();
+                mqttClient = null;
+            }
+            
+            // Reset UI
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.querySelectorAll('.interface').forEach(el => el.classList.remove('active'));
+            
+            // Reset state
+            appState.userRole = 'driver';
+            appState.driverId = '';
+            appState.busNumber = '';
+            appState.parentName = '';
+            appState.studentId = '';
+            appState.tripActive = false;
+            
+            showToast('Logged out', 'info');
+        }
+
         function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
-            toast.className = 'toast';
+            
+            const icons = {
+                success: 'check-circle',
+                error: 'exclamation-circle',
+                warning: 'exclamation-triangle',
+                info: 'info-circle'
+            };
+            
+            toast.className = `toast toast-${type}`;
             toast.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 
-                                 type === 'error' ? 'exclamation-circle' : 
-                                 'info-circle'}"></i>
-                <span>${message}</span>
+                <i class="fas fa-${icons[type] || 'info-circle'} toast-icon"></i>
+                <div class="toast-message">${message}</div>
+                <button class="toast-close">&times;</button>
             `;
             
-            document.getElementById('toastContainer').appendChild(toast);
+            container.appendChild(toast);
             
+            // Show animation
             setTimeout(() => toast.classList.add('show'), 10);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            
+            // Close button
+            toast.querySelector('.toast-close').onclick = () => hideToast(toast);
+            
+            // Auto-hide
+            setTimeout(() => hideToast(toast), 5000);
         }
+
+        function hideToast(toast) {
+            toast.classList.add('hiding');
+            setTimeout(() => toast.remove(), 300);
+        }
+
+        // Global functions for student actions
+        window.editStudent = editStudent;
+        window.removeStudent = removeStudent;
+        window.markChildStatus = markChildStatus;
+
+        // Initial demo setup
+        setTimeout(() => {
+            if (appState.userRole === 'driver') {
+                // Simulate some students on bus for demo
+                updateStudentStatus('STU-2024-001', 'onbus');
+                updateStudentStatus('STU-2024-002', 'onbus');
+            }
+        }, 2000);
     </script>
 </body>
 </html>
