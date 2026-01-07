@@ -9,8 +9,15 @@
     <title>SchoolBus Tracker Pro • Real-Time Bus Tracking</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    
+    <!-- Remove MQTT and add Firebase -->
+    <!-- <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script> -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
     <style>
+        /* [Keep all your existing CSS styles - they remain exactly the same] */
         :root {
             --primary: #1A56DB;
             --primary-dark: #1E40AF;
@@ -1600,6 +1607,22 @@
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        // ==================== FIREBASE CONFIGURATION ====================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEnhJWNEpEkvQ3Oeuw3g6trXuz14zsK-U",
+            authDomain: "schoolbus-tracker-pro.firebaseapp.com",
+            databaseURL: "https://schoolbus-tracker-pro-default-rtdb.firebaseio.com",
+            projectId: "schoolbus-tracker-pro",
+            storageBucket: "schoolbus-tracker-pro.firebasestorage.app",
+            messagingSenderId: "372498519858",
+            appId: "1:372498519858:web:c1be826010b5cbf952292b"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+
         // Application State
         const appState = {
             userRole: 'driver',
@@ -1612,59 +1635,49 @@
             notifications: [],
             mapTheme: 'standard',
             studentsOnBoard: 0,
-            totalStudents: 0
+            totalStudents: 0,
+            userId: null
         };
 
-        // MQTT Configuration
-        const MQTT_CONFIG = {
-            broker: 'wss://broker.emqx.io:8084/mqtt',
-            topics: {
-                location: 'schoolbus/tracker/location/',
-                status: 'schoolbus/tracker/status/',
-                students: 'schoolbus/tracker/students/',
-                alerts: 'schoolbus/tracker/alerts/',
-                commands: 'schoolbus/tracker/commands/'
-            }
+        // Firebase Database References
+        const dbRefs = {
+            buses: 'buses',
+            students: 'students',
+            trips: 'trips',
+            alerts: 'alerts',
+            users: 'users'
         };
 
-        // Enhanced Student Database
-        let studentDatabase = {
-            'STU-2024-001': {
-                id: 'STU-2024-001',
-                name: 'Emma Johnson',
-                grade: '5th Grade',
-                avatar: 'E',
-                contact: '+1234567890',
-                location: 'Maple Street',
-                status: 'waiting',
-                coordinates: [40.7128, -74.0060],
-                school: 'Westwood Elementary'
-            },
-            'STU-2024-002': {
-                id: 'STU-2024-002',
-                name: 'Noah Smith',
-                grade: '4th Grade',
-                avatar: 'N',
-                contact: '+1234567891',
-                location: 'Oak Avenue',
-                status: 'waiting',
-                coordinates: [40.7138, -74.0070],
-                school: 'Westwood Elementary'
-            },
-            'STU-2024-003': {
-                id: 'STU-2024-003',
-                name: 'Olivia Brown',
-                grade: '3rd Grade',
-                avatar: 'O',
-                contact: '+1234567892',
-                location: 'Pine Road',
-                status: 'waiting',
-                coordinates: [40.7148, -74.0080],
-                school: 'Westwood Elementary'
-            }
-        };
+        // Enhanced Student Database (now in Firebase)
+        let studentDatabase = {};
+        
+        // Load students from Firebase on startup
+        function loadStudentsFromFirebase() {
+            database.ref(`${dbRefs.students}/${appState.busNumber}`).on('value', (snapshot) => {
+                const students = snapshot.val();
+                if (students) {
+                    studentDatabase = students;
+                    
+                    // Update student list if visible
+                    if (document.getElementById('studentManagement').classList.contains('active')) {
+                        loadStudentList();
+                    }
+                    
+                    // Update dashboard
+                    updateDashboard();
+                    
+                    // Update map stops
+                    addBusStopsToMap();
+                    
+                    // Update parent interface if applicable
+                    if (appState.userRole === 'parent' && appState.studentId) {
+                        updateChildInfo(studentDatabase[appState.studentId] || {});
+                    }
+                }
+            });
+        }
 
-        // Map Themes
+        // Map Themes (unchanged)
         const MAP_THEMES = {
             standard: {
                 url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -1685,7 +1698,6 @@
         };
 
         // Global Variables
-        let mqttClient = null;
         let map = null;
         let busMarker = null;
         let busPath = null;
@@ -1695,6 +1707,8 @@
         let stopMarkers = [];
         let isMapThemeVisible = false;
         let isParentMapThemeVisible = false;
+        let locationUpdateInterval = null;
+        let parentListener = null;
 
         // Initialize Application
         document.addEventListener('DOMContentLoaded', initApp);
@@ -1703,6 +1717,27 @@
             setupLogin();
             updateClock();
             setInterval(updateClock, 1000);
+            
+            // Check if user is already logged in (from localStorage)
+            const savedUser = localStorage.getItem('schoolbus_user');
+            if (savedUser) {
+                const userData = JSON.parse(savedUser);
+                appState.userRole = userData.role;
+                appState.userId = userData.userId;
+                appState.busNumber = userData.busNumber;
+                appState.driverId = userData.driverId;
+                appState.parentName = userData.parentName;
+                appState.studentId = userData.studentId;
+                
+                showInterface(appState.userRole);
+                if (appState.userRole === 'driver') {
+                    initDriverInterface();
+                } else {
+                    initParentInterface();
+                }
+                
+                showToast(`Welcome back, ${appState.userRole === 'driver' ? appState.driverId : appState.parentName}!`, 'success');
+            }
             
             // Prevent pull-to-refresh
             document.body.addEventListener('touchmove', function(e) {
@@ -1715,6 +1750,511 @@
                 e.preventDefault();
             }, { passive: false });
         }
+
+        // ==================== MODIFIED FUNCTIONS FOR FIREBASE ====================
+
+        function handleLogin() {
+            if (appState.userRole === 'driver') {
+                appState.driverId = document.getElementById('loginInput').value.trim();
+                appState.busNumber = document.getElementById('busNumber').value.trim();
+
+                if (!appState.driverId || !appState.busNumber) {
+                    showToast('Please enter Driver ID and Bus Number', 'error');
+                    return;
+                }
+
+                // Create user session
+                appState.userId = `driver_${Date.now()}`;
+                
+                // Save to localStorage
+                localStorage.setItem('schoolbus_user', JSON.stringify({
+                    role: 'driver',
+                    userId: appState.userId,
+                    driverId: appState.driverId,
+                    busNumber: appState.busNumber
+                }));
+
+                showInterface('driver');
+                initDriverInterface();
+                
+                // Initialize Firebase listeners
+                setupFirebaseListeners();
+                loadStudentsFromFirebase();
+                
+                showToast(`Welcome, Driver ${appState.driverId}!`, 'success');
+
+            } else {
+                appState.parentName = document.getElementById('parentName').value.trim();
+                appState.busNumber = document.getElementById('busNumber').value.trim();
+                appState.studentId = document.getElementById('studentId').value.trim();
+
+                if (!appState.parentName || !appState.busNumber || !appState.studentId) {
+                    showToast('Please fill all fields', 'error');
+                    return;
+                }
+
+                appState.userId = `parent_${Date.now()}`;
+                
+                // Save to localStorage
+                localStorage.setItem('schoolbus_user', JSON.stringify({
+                    role: 'parent',
+                    userId: appState.userId,
+                    parentName: appState.parentName,
+                    busNumber: appState.busNumber,
+                    studentId: appState.studentId
+                }));
+
+                showInterface('parent');
+                initParentInterface();
+                
+                // Initialize Firebase listeners
+                setupFirebaseListeners();
+                loadStudentsFromFirebase();
+                
+                showToast(`Welcome ${appState.parentName}!`, 'success');
+            }
+        }
+
+        function setupFirebaseListeners() {
+            if (appState.userRole === 'parent') {
+                // Listen for bus location updates
+                database.ref(`${dbRefs.buses}/${appState.busNumber}/location`).on('value', (snapshot) => {
+                    const locationData = snapshot.val();
+                    if (locationData) {
+                        updateBusPosition(locationData);
+                    }
+                });
+
+                // Listen for bus status updates
+                database.ref(`${dbRefs.buses}/${appState.busNumber}/status`).on('value', (snapshot) => {
+                    const statusData = snapshot.val();
+                    if (statusData) {
+                        updateBusStatus(statusData);
+                    }
+                });
+
+                // Listen for student updates
+                database.ref(`${dbRefs.students}/${appState.busNumber}/${appState.studentId}`).on('value', (snapshot) => {
+                    const studentData = snapshot.val();
+                    if (studentData) {
+                        updateStudentFromFirebase(studentData);
+                    }
+                });
+
+                // Listen for alerts
+                database.ref(`${dbRefs.alerts}/${appState.busNumber}`).limitToLast(10).on('child_added', (snapshot) => {
+                    const alertData = snapshot.val();
+                    if (alertData) {
+                        handleAlert(alertData);
+                    }
+                });
+            }
+        }
+
+        function publishLocation(lat, lng, speed, heading) {
+            const studentsOnBoard = Object.values(studentDatabase).filter(s => s.status === 'onbus').length;
+            const totalStudents = Object.keys(studentDatabase).length;
+            
+            const locationData = {
+                lat: lat,
+                lng: lng,
+                speed: speed || 0,
+                heading: heading || 0,
+                timestamp: Date.now(),
+                trip: appState.currentTrip,
+                tripActive: appState.tripActive,
+                studentsOnBoard: studentsOnBoard,
+                totalStudents: totalStudents,
+                driverId: appState.driverId
+            };
+            
+            // Update bus location in Firebase
+            database.ref(`${dbRefs.buses}/${appState.busNumber}/location`).set(locationData);
+            
+            // Also update bus status
+            database.ref(`${dbRefs.buses}/${appState.busNumber}/status`).set({
+                trip: appState.currentTrip,
+                active: appState.tripActive,
+                lastUpdate: Date.now(),
+                driver: appState.driverId
+            });
+            
+            // Update trip history
+            database.ref(`${dbRefs.trips}/${appState.busNumber}/${Date.now()}`).set({
+                coordinates: [lat, lng],
+                speed: speed,
+                timestamp: Date.now()
+            });
+        }
+
+        function publishTripStatus() {
+            const studentsOnBoard = Object.values(studentDatabase).filter(s => s.status === 'onbus').length;
+            const totalStudents = Object.keys(studentDatabase).length;
+            
+            const statusData = {
+                type: 'trip_status',
+                busNumber: appState.busNumber,
+                timestamp: Date.now(),
+                trip: appState.currentTrip,
+                active: appState.tripActive,
+                driver: appState.driverId,
+                studentsOnBoard: studentsOnBoard,
+                totalStudents: totalStudents
+            };
+            
+            database.ref(`${dbRefs.buses}/${appState.busNumber}/status`).set(statusData);
+        }
+
+        function sendTripAlert(type, message) {
+            const alertData = {
+                type: type,
+                busNumber: appState.busNumber,
+                timestamp: Date.now(),
+                message: message,
+                trip: appState.currentTrip,
+                driverId: appState.driverId
+            };
+            
+            const alertRef = database.ref(`${dbRefs.alerts}/${appState.busNumber}`).push();
+            alertRef.set(alertData);
+            
+            addNotification('Bus Alert', message, 'warning');
+        }
+
+        function publishStudentStatus(studentId, status) {
+            const student = studentDatabase[studentId];
+            if (!student) return;
+            
+            const statusData = {
+                studentId: studentId,
+                studentName: student.name,
+                status: status,
+                timestamp: Date.now(),
+                location: student.location,
+                coordinates: student.coordinates,
+                busNumber: appState.busNumber
+            };
+            
+            // Update student in Firebase
+            database.ref(`${dbRefs.students}/${appState.busNumber}/${studentId}`).set({
+                ...student,
+                status: status,
+                lastUpdated: Date.now()
+            });
+            
+            // Send alert
+            sendStudentAlert(studentId, status === 'onbus' ? 'picked_up' : 'dropped_off', 
+                           `${student.name} has been ${status === 'onbus' ? 'picked up' : 'dropped off'}`);
+        }
+
+        function sendStudentAlert(studentId, type, message) {
+            const student = studentDatabase[studentId];
+            if (!student) return;
+            
+            const alertData = {
+                type: type,
+                studentId: studentId,
+                studentName: student.name,
+                message: message,
+                timestamp: Date.now(),
+                busNumber: appState.busNumber,
+                parentContact: student.contact
+            };
+            
+            const alertRef = database.ref(`${dbRefs.alerts}/${appState.busNumber}/${studentId}`).push();
+            alertRef.set(alertData);
+            
+            addNotification('Student Update', message, 'info');
+        }
+
+        function updateBusPosition(data) {
+            if (!map || !busMarker) return;
+            
+            const lat = data.lat || data.coordinates[0];
+            const lng = data.lng || data.coordinates[1];
+            
+            busMarker.setLatLng([lat, lng]);
+            
+            // Update path
+            const currentPath = busPath.getLatLngs();
+            currentPath.push([lat, lng]);
+            if (currentPath.length > 50) currentPath.shift();
+            busPath.setLatLngs(currentPath);
+            
+            // Update parent dashboard
+            updateParentDashboard({
+                speed: data.speed || 0,
+                eta: calculateETA(data.timestamp),
+                distance: calculateDistance([lat, lng]),
+                trip: data.trip,
+                tripActive: data.tripActive
+            });
+        }
+
+        function updateBusStatus(data) {
+            updateParentDashboard({
+                trip: data.trip,
+                tripActive: data.active
+            });
+        }
+
+        function updateStudentFromFirebase(data) {
+            // Update local student database
+            if (data.id) {
+                studentDatabase[data.id] = data;
+            }
+            
+            // Update UI if this is the parent's child
+            if (appState.userRole === 'parent' && data.id === appState.studentId) {
+                updateChildInfo(data);
+                
+                // Show notification for status changes
+                if (data.status && data.lastUpdated) {
+                    const now = Date.now();
+                    if (now - data.lastUpdated < 10000) { // Within 10 seconds
+                        showToast(`${data.name} is now ${data.status === 'onbus' ? 'on the bus' : data.status}`, 'info');
+                    }
+                }
+            }
+        }
+
+        function handleAlert(data) {
+            addNotification(data.type === 'trip_started' ? 'Bus Alert' : 'Student Alert', 
+                          data.message, 'warning');
+            
+            if (data.type === 'trip_started') {
+                showToast(`Bus alert: ${data.message}`, 'warning');
+            }
+        }
+
+        // ==================== MODIFIED STUDENT MANAGEMENT ====================
+
+        function handleAddStudent(e) {
+            e.preventDefault();
+            
+            const newStudent = {
+                id: document.getElementById('newStudentId').value,
+                name: document.getElementById('newStudentName').value,
+                grade: document.getElementById('newStudentGrade').value,
+                contact: document.getElementById('newStudentContact').value,
+                location: document.getElementById('newStudentLocation').value,
+                avatar: document.getElementById('newStudentName').value.charAt(0).toUpperCase(),
+                status: 'waiting',
+                coordinates: [40.7128 + Math.random() * 0.01, -74.0060 + Math.random() * 0.01],
+                school: 'Westwood Elementary',
+                busNumber: appState.busNumber,
+                createdAt: Date.now(),
+                lastUpdated: Date.now()
+            };
+            
+            // Save to Firebase
+            database.ref(`${dbRefs.students}/${appState.busNumber}/${newStudent.id}`).set(newStudent)
+                .then(() => {
+                    // Update map
+                    addBusStopsToMap();
+                    
+                    // Update UI
+                    loadStudentList();
+                    updateDashboard();
+                    
+                    // Close modal
+                    hideAddStudentModal();
+                    
+                    showToast(`Added student: ${newStudent.name}`, 'success');
+                })
+                .catch((error) => {
+                    showToast(`Error adding student: ${error.message}`, 'error');
+                });
+        }
+
+        function removeStudent(studentId) {
+            const student = studentDatabase[studentId];
+            if (!student) return;
+            
+            if (confirm(`Remove ${student.name} from the roster?`)) {
+                database.ref(`${dbRefs.students}/${appState.busNumber}/${studentId}`).remove()
+                    .then(() => {
+                        delete studentDatabase[studentId];
+                        loadStudentList();
+                        addBusStopsToMap();
+                        updateDashboard();
+                        showToast(`Removed student: ${student.name}`, 'success');
+                    })
+                    .catch((error) => {
+                        showToast(`Error removing student: ${error.message}`, 'error');
+                    });
+            }
+        }
+
+        // ==================== MODIFIED LOGOUT FUNCTION ====================
+
+        function logout() {
+            // Cleanup
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            
+            if (locationUpdateInterval) {
+                clearInterval(locationUpdateInterval);
+                locationUpdateInterval = null;
+            }
+            
+            if (parentListener) {
+                database.ref(`${dbRefs.buses}/${appState.busNumber}`).off('value', parentListener);
+                parentListener = null;
+            }
+            
+            // Clear all Firebase listeners
+            if (appState.busNumber) {
+                database.ref(`${dbRefs.buses}/${appState.busNumber}`).off();
+                database.ref(`${dbRefs.students}/${appState.busNumber}`).off();
+                database.ref(`${dbRefs.alerts}/${appState.busNumber}`).off();
+            }
+            
+            // Reset UI
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.querySelectorAll('.interface').forEach(el => el.classList.remove('active'));
+            document.getElementById('studentManagement').classList.remove('active');
+            document.getElementById('addStudentModal').classList.remove('active');
+            document.getElementById('notificationsModal').classList.remove('active');
+            
+            // Hide map theme selectors
+            hideMapThemeSelector();
+            hideParentMapThemeSelector();
+            
+            // Clear localStorage
+            localStorage.removeItem('schoolbus_user');
+            
+            // Reset state
+            appState.userRole = 'driver';
+            appState.driverId = '';
+            appState.busNumber = '';
+            appState.parentName = '';
+            appState.studentId = '';
+            appState.tripActive = false;
+            appState.notifications = [];
+            appState.studentsOnBoard = 0;
+            appState.totalStudents = 0;
+            appState.userId = null;
+            
+            // Reset student database
+            studentDatabase = {};
+            
+            // Reset form
+            document.getElementById('addStudentForm').reset();
+            
+            showToast('Logged out', 'info');
+        }
+
+        // ==================== DEMO FUNCTIONS (for testing without GPS) ====================
+
+        function startDemoLocationUpdates() {
+            if (appState.userRole === 'driver') {
+                let demoLat = 40.7128;
+                let demoLng = -74.0060;
+                let demoIndex = 0;
+                
+                locationUpdateInterval = setInterval(() => {
+                    demoLat += 0.0001;
+                    demoLng += 0.0001;
+                    demoIndex++;
+                    
+                    const demoPosition = {
+                        coords: {
+                            latitude: demoLat,
+                            longitude: demoLng,
+                            speed: 8 + Math.random() * 4,
+                            heading: (demoIndex * 10) % 360
+                        }
+                    };
+                    
+                    handlePositionUpdate(demoPosition);
+                    
+                    // Auto-pickup demo students
+                    if (demoIndex % 10 === 0) {
+                        const waitingStudents = Object.values(studentDatabase).filter(s => s.status === 'waiting');
+                        if (waitingStudents.length > 0) {
+                            const randomStudent = waitingStudents[0];
+                            updateStudentStatus(randomStudent.id, 'onbus');
+                        }
+                    }
+                }, 2000);
+            }
+        }
+
+        function startParentDemoUpdates() {
+            // This will be handled by Firebase listeners now
+            // Remove the old interval-based demo
+        }
+
+        // ==================== REST OF YOUR FUNCTIONS REMAIN THE SAME ====================
+        // [All your other functions remain exactly the same, including:]
+        // - setupLogin()
+        // - handleRoleSelect()
+        // - showInterface()
+        // - initDriverInterface()
+        // - initParentInterface()
+        // - initMap()
+        // - setMapTheme()
+        // - addBusStopsToMap()
+        // - setupDriverControls()
+        // - setupParentControls()
+        // - startGPS()
+        // - handlePositionUpdate()
+        // - updateDashboard()
+        // - updateParentDashboard()
+        // - updateChildInfo()
+        // - toggleTrip()
+        // - getNextStop()
+        // - checkNearbyStops()
+        // - updateStudentStatus()
+        // - markChildStatus()
+        // - showStudentManagement()
+        // - hideStudentManagement()
+        // - loadStudentList()
+        // - showAddStudentModal()
+        // - hideAddStudentModal()
+        // - importStudents()
+        // - editStudent()
+        // - toggleMapThemeSelector()
+        // - hideMapThemeSelector()
+        // - toggleParentMapThemeSelector()
+        // - hideParentMapThemeSelector()
+        // - toggleRoute()
+        // - toggleStops()
+        // - centerOnBus()
+        // - handlePositionError()
+        // - updateClock()
+        // - showToast()
+        // - hideToast()
+        // - calculateETA()
+        // - calculateDistance()
+        // - showNotifications()
+        // - hideNotificationsModal()
+        // - addNotification()
+        // - clearNotifications()
+        // - updateNotificationBadge()
+        // - And all your CSS animations and helper functions
+
+        // Global functions for student actions
+        window.editStudent = editStudent;
+        window.removeStudent = removeStudent;
+        window.markChildStatus = markChildStatus;
+
+        // Initialize with some demo data
+        setTimeout(() => {
+            // Add initial notifications
+            addNotification('Welcome', 'SchoolBus Tracker Pro is ready!', 'info');
+            addNotification('System', 'Real-time tracking activated', 'success');
+            
+            // Update dashboard initially
+            updateDashboard();
+        }, 1000);
+
+        // ==================== ADD MISSING FUNCTIONS ====================
+        // These functions were referenced but not defined in the Firebase version
+        // I'll add the most critical ones:
 
         function setupLogin() {
             const driverBtn = document.getElementById('driverRoleBtn');
@@ -1749,48 +2289,11 @@
             }
         }
 
-        function handleLogin() {
-            if (appState.userRole === 'driver') {
-                appState.driverId = document.getElementById('loginInput').value.trim();
-                appState.busNumber = document.getElementById('busNumber').value.trim();
-
-                if (!appState.driverId || !appState.busNumber) {
-                    showToast('Please enter Driver ID and Bus Number', 'error');
-                    return;
-                }
-
-                showInterface('driver');
-                initDriverInterface();
-                connectToMQTT();
-                showToast(`Welcome, Driver ${appState.driverId}!`, 'success');
-
-            } else {
-                appState.parentName = document.getElementById('parentName').value.trim();
-                appState.busNumber = document.getElementById('busNumber').value.trim();
-                appState.studentId = document.getElementById('studentId').value.trim();
-
-                if (!appState.parentName || !appState.busNumber || !appState.studentId) {
-                    showToast('Please fill all fields', 'error');
-                    return;
-                }
-
-                if (!studentDatabase[appState.studentId]) {
-                    showToast('Student ID not found', 'error');
-                    return;
-                }
-
-                showInterface('parent');
-                initParentInterface();
-                connectToMQTT();
-                showToast(`Welcome ${appState.parentName}!`, 'success');
-            }
-        }
-
         function showInterface(interfaceType) {
             document.getElementById('loginScreen').classList.add('hidden');
             document.querySelectorAll('.interface').forEach(el => el.classList.remove('active'));
             document.getElementById(`${interfaceType}Interface`).classList.add('active');
-            updateDashboard();
+            // Note: updateDashboard() will be called separately
         }
 
         function initDriverInterface() {
@@ -1807,9 +2310,6 @@
             if (student) {
                 updateChildInfo(student);
             }
-            
-            // Start demo updates for parent
-            startParentDemoUpdates();
         }
 
         function initMap(mapId) {
@@ -2003,7 +2503,7 @@
             } else {
                 showToast('GPS not available on this device', 'error');
                 // Start demo updates for testing
-                startDemoUpdates();
+                startDemoLocationUpdates();
             }
         }
 
@@ -2035,32 +2535,6 @@
             
             // Check for nearby stops
             checkNearbyStops(newLatLng);
-        }
-
-        function publishLocation(lat, lng, speed, heading) {
-            if (!mqttClient) return;
-            
-            const studentsOnBoard = Object.values(studentDatabase).filter(s => s.status === 'onbus').length;
-            const totalStudents = Object.keys(studentDatabase).length;
-            
-            const locationData = {
-                type: 'location',
-                busNumber: appState.busNumber,
-                driverId: appState.driverId,
-                timestamp: Date.now(),
-                coordinates: [lat, lng],
-                speed: speed || 0,
-                heading: heading || 0,
-                trip: appState.currentTrip,
-                tripActive: appState.tripActive,
-                studentsOnBoard: studentsOnBoard,
-                totalStudents: totalStudents
-            };
-            
-            mqttClient.publish(
-                `${MQTT_CONFIG.topics.location}${appState.busNumber}`,
-                JSON.stringify(locationData)
-            );
         }
 
         function updateDashboard(speed = 0) {
@@ -2198,46 +2672,6 @@
             publishTripStatus();
         }
 
-        function sendTripAlert(type, message) {
-            if (!mqttClient) return;
-            
-            const alertData = {
-                type: type,
-                busNumber: appState.busNumber,
-                timestamp: Date.now(),
-                message: message,
-                trip: appState.currentTrip
-            };
-            
-            mqttClient.publish(
-                `${MQTT_CONFIG.topics.alerts}${appState.busNumber}`,
-                JSON.stringify(alertData)
-            );
-            
-            // Add to notifications
-            addNotification('Bus Alert', message, 'warning');
-        }
-
-        function publishTripStatus() {
-            if (!mqttClient) return;
-            
-            const statusData = {
-                type: 'trip_status',
-                busNumber: appState.busNumber,
-                timestamp: Date.now(),
-                trip: appState.currentTrip,
-                active: appState.tripActive,
-                driver: appState.driverId,
-                studentsOnBoard: appState.studentsOnBoard,
-                totalStudents: appState.totalStudents
-            };
-            
-            mqttClient.publish(
-                `${MQTT_CONFIG.topics.status}${appState.busNumber}`,
-                JSON.stringify(statusData)
-            );
-        }
-
         function getNextStop() {
             const waitingStudents = Object.values(studentDatabase)
                 .filter(s => s.status === 'waiting' || s.status === 'onbus');
@@ -2308,47 +2742,6 @@
             }
         }
 
-        function publishStudentStatus(studentId, status) {
-            if (!mqttClient) return;
-            
-            const student = studentDatabase[studentId];
-            const statusData = {
-                type: 'student_status',
-                studentId: studentId,
-                studentName: student.name,
-                status: status,
-                timestamp: Date.now(),
-                location: student.location,
-                coordinates: student.coordinates
-            };
-            
-            mqttClient.publish(
-                `${MQTT_CONFIG.topics.students}${appState.busNumber}/${studentId}`,
-                JSON.stringify(statusData)
-            );
-        }
-
-        function sendStudentAlert(studentId, type, message) {
-            if (!mqttClient) return;
-            
-            const alertData = {
-                type: type,
-                studentId: studentId,
-                studentName: studentDatabase[studentId]?.name,
-                message: message,
-                timestamp: Date.now(),
-                busNumber: appState.busNumber
-            };
-            
-            mqttClient.publish(
-                `${MQTT_CONFIG.topics.alerts}${appState.busNumber}/${studentId}`,
-                JSON.stringify(alertData)
-            );
-            
-            // Add to notifications
-            addNotification('Student Update', message, 'info');
-        }
-
         function markChildStatus(status) {
             if (appState.userRole !== 'parent') return;
             
@@ -2407,36 +2800,6 @@
             document.getElementById('addStudentForm').reset();
         }
 
-        function handleAddStudent(e) {
-            e.preventDefault();
-            
-            const newStudent = {
-                id: document.getElementById('newStudentId').value,
-                name: document.getElementById('newStudentName').value,
-                grade: document.getElementById('newStudentGrade').value,
-                contact: document.getElementById('newStudentContact').value,
-                location: document.getElementById('newStudentLocation').value,
-                avatar: document.getElementById('newStudentName').value.charAt(0).toUpperCase(),
-                status: 'waiting',
-                coordinates: [40.7128 + Math.random() * 0.01, -74.0060 + Math.random() * 0.01],
-                school: 'Westwood Elementary'
-            };
-            
-            studentDatabase[newStudent.id] = newStudent;
-            
-            // Update map
-            addBusStopsToMap();
-            
-            // Update UI
-            loadStudentList();
-            updateDashboard();
-            
-            // Close modal
-            hideAddStudentModal();
-            
-            showToast(`Added student: ${newStudent.name}`, 'success');
-        }
-
         function importStudents() {
             showToast('Import feature coming soon!', 'info');
         }
@@ -2447,19 +2810,6 @@
             
             // For simplicity, we'll just show an edit modal
             showToast(`Editing ${student.name} - feature coming soon!`, 'info');
-        }
-
-        function removeStudent(studentId) {
-            const student = studentDatabase[studentId];
-            if (!student) return;
-            
-            if (confirm(`Remove ${student.name} from the roster?`)) {
-                delete studentDatabase[studentId];
-                loadStudentList();
-                addBusStopsToMap();
-                updateDashboard();
-                showToast(`Removed student: ${student.name}`, 'success');
-            }
         }
 
         function toggleMapThemeSelector() {
@@ -2525,94 +2875,76 @@
             }
         }
 
-        function connectToMQTT() {
-            const clientId = `schoolbus_${appState.userRole}_${Date.now()}`;
+        function handlePositionError(error) {
+            let message = 'Unable to get location';
             
-            try {
-                mqttClient = mqtt.connect(MQTT_CONFIG.broker, {
-                    clientId: clientId,
-                    clean: true,
-                    connectTimeout: 4000,
-                    reconnectPeriod: 1000
-                });
-
-                mqttClient.on('connect', () => {
-                    console.log('MQTT Connected');
-                    showToast('Connected to tracking service', 'success');
-                    
-                    // Subscribe based on role
-                    if (appState.userRole === 'driver') {
-                        mqttClient.subscribe(`${MQTT_CONFIG.topics.commands}${appState.busNumber}`);
-                    } else {
-                        mqttClient.subscribe(`${MQTT_CONFIG.topics.location}${appState.busNumber}`);
-                        mqttClient.subscribe(`${MQTT_CONFIG.topics.status}${appState.busNumber}`);
-                        mqttClient.subscribe(`${MQTT_CONFIG.topics.students}${appState.busNumber}/${appState.studentId}`);
-                        mqttClient.subscribe(`${MQTT_CONFIG.topics.alerts}${appState.busNumber}/${appState.studentId}`);
-                    }
-                });
-
-                mqttClient.on('message', (topic, message) => {
-                    try {
-                        const data = JSON.parse(message.toString());
-                        handleMQTTMessage(topic, data);
-                    } catch (error) {
-                        console.error('MQTT Parse Error:', error);
-                    }
-                });
-
-                mqttClient.on('error', (err) => {
-                    console.error('MQTT Error:', err);
-                    showToast('Connection error', 'error');
-                });
-                
-                mqttClient.on('close', () => {
-                    showToast('Disconnected from tracking service', 'warning');
-                });
-                
-            } catch (error) {
-                console.error('MQTT Connection Error:', error);
-                showToast('Failed to connect to tracking service', 'error');
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    message = 'Location permission denied';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    message = 'Location unavailable';
+                    break;
+                case error.TIMEOUT:
+                    message = 'Location request timeout';
+                    break;
             }
+            
+            showToast(message, 'error');
+            
+            // Start demo updates for testing
+            startDemoLocationUpdates();
         }
 
-        function handleMQTTMessage(topic, data) {
-            if (appState.userRole === 'parent') {
-                if (topic.includes('/location/')) {
-                    updateBusPosition(data);
-                } else if (topic.includes('/status/')) {
-                    updateBusStatus(data);
-                } else if (topic.includes('/students/')) {
-                    updateStudentFromMQTT(data);
-                } else if (topic.includes('/alerts/')) {
-                    handleAlert(data);
-                }
-            } else {
-                if (topic.includes('/commands/')) {
-                    handleCommand(data);
-                }
-            }
-        }
-
-        function updateBusPosition(data) {
-            if (!map || !busMarker) return;
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2, '0') + ':' + 
+                           now.getMinutes().toString().padStart(2, '0');
             
-            const [lat, lng] = data.coordinates;
-            busMarker.setLatLng([lat, lng]);
-            
-            // Update path
-            const currentPath = busPath.getLatLngs();
-            currentPath.push([lat, lng]);
-            if (currentPath.length > 50) currentPath.shift();
-            busPath.setLatLngs(currentPath);
-            
-            // Update parent dashboard with metrics
-            updateParentDashboard({
-                speed: data.speed || 0,
-                eta: calculateETA(data.timestamp),
-                distance: calculateDistance([lat, lng]),
-                trip: data.trip,
-                tripActive: data.tripActive
+            document.querySelectorAll('#currentTime, #parentTime').forEach(el => {
+                if (el) el.textContent = timeStr;
             });
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const icons = {
+                success: 'check-circle',
+                error: 'exclamation-circle',
+                warning: 'exclamation-triangle',
+                info: 'info-circle'
+            };
+            
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <i class="fas fa-${icons[type] || 'info-circle'} toast-icon"></i>
+                <div class="toast-message">${message}</div>
+                <button class="toast-close">&times;</button>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Show animation
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            // Close button
+            toast.querySelector('.toast-close').onclick = () => hideToast(toast);
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => hideToast(toast), 5000);
+        }
+
+        function hideToast(toast) {
+            if (toast && toast.parentNode) {
+                toast.classList.add('hiding');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.remove();
+                    }
+                }, 300);
+            }
         }
 
         function calculateETA(timestamp) {
@@ -2626,42 +2958,6 @@
             // Simple distance calculation (would use user location in real app)
             const distance = Math.random() * 5 + 1;
             return distance.toFixed(1) + ' km';
-        }
-
-        function updateBusStatus(data) {
-            updateParentDashboard({
-                trip: data.trip,
-                tripActive: data.active
-            });
-        }
-
-        function updateStudentFromMQTT(data) {
-            const student = studentDatabase[data.studentId];
-            if (!student) return;
-            
-            student.status = data.status;
-            updateChildInfo(student);
-            
-            // Show notification
-            if (data.studentId === appState.studentId) {
-                showToast(data.message || `Status updated: ${data.status}`, 'info');
-            }
-        }
-
-        function handleAlert(data) {
-            addNotification('Alert', data.message, 'warning');
-            
-            if (data.type === 'trip_started') {
-                showToast(`Bus alert: ${data.message}`, 'warning');
-            }
-        }
-
-        function handleCommand(data) {
-            showToast(`Command received: ${data.type}`, 'info');
-            
-            if (data.type === 'status_request') {
-                publishTripStatus();
-            }
         }
 
         function showNotifications() {
@@ -2730,216 +3026,6 @@
                 }
             });
         }
-
-        function handlePositionError(error) {
-            let message = 'Unable to get location';
-            
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    message = 'Location permission denied';
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    message = 'Location unavailable';
-                    break;
-                case error.TIMEOUT:
-                    message = 'Location request timeout';
-                    break;
-            }
-            
-            showToast(message, 'error');
-            
-            // Start demo updates for testing
-            startDemoUpdates();
-        }
-
-        function startDemoUpdates() {
-            if (appState.userRole === 'driver') {
-                // Demo position updates for driver
-                let demoLat = 40.7128;
-                let demoLng = -74.0060;
-                let demoIndex = 0;
-                
-                const demoInterval = setInterval(() => {
-                    if (!currentPosition) {
-                        demoLat += 0.0001;
-                        demoLng += 0.0001;
-                        demoIndex++;
-                        
-                        const demoPosition = {
-                            coords: {
-                                latitude: demoLat,
-                                longitude: demoLng,
-                                speed: 8 + Math.random() * 4,
-                                heading: (demoIndex * 10) % 360
-                            }
-                        };
-                        
-                        handlePositionUpdate(demoPosition);
-                        
-                        // Auto-pickup demo students
-                        if (demoIndex % 10 === 0) {
-                            const waitingStudents = Object.values(studentDatabase).filter(s => s.status === 'waiting');
-                            if (waitingStudents.length > 0) {
-                                const randomStudent = waitingStudents[0];
-                                updateStudentStatus(randomStudent.id, 'onbus');
-                            }
-                        }
-                    } else {
-                        clearInterval(demoInterval);
-                    }
-                }, 2000);
-            }
-        }
-
-        function startParentDemoUpdates() {
-            // Demo updates for parent interface
-            let demoIndex = 0;
-            
-            const demoInterval = setInterval(() => {
-                if (appState.userRole === 'parent') {
-                    demoIndex++;
-                    
-                    // Simulate bus movement
-                    const demoLat = 40.7128 + Math.sin(demoIndex * 0.01) * 0.01;
-                    const demoLng = -74.0060 + Math.cos(demoIndex * 0.01) * 0.01;
-                    
-                    updateBusPosition({
-                        coordinates: [demoLat, demoLng],
-                        speed: 10 + Math.random() * 5,
-                        timestamp: Date.now(),
-                        trip: appState.currentTrip,
-                        tripActive: true
-                    });
-                    
-                    // Update student status occasionally
-                    if (demoIndex % 15 === 0) {
-                        const student = studentDatabase[appState.studentId];
-                        if (student && student.status === 'waiting') {
-                            updateStudentStatus(student.id, 'onbus');
-                        }
-                    }
-                    
-                    // Send occasional alerts
-                    if (demoIndex % 30 === 0) {
-                        addNotification('System', 'Bus is running on schedule', 'info');
-                    }
-                }
-            }, 3000);
-            
-            // Store interval for cleanup
-            window.parentDemoInterval = demoInterval;
-        }
-
-        function updateClock() {
-            const now = new Date();
-            const timeStr = now.getHours().toString().padStart(2, '0') + ':' + 
-                           now.getMinutes().toString().padStart(2, '0');
-            
-            document.querySelectorAll('#currentTime, #parentTime').forEach(el => {
-                if (el) el.textContent = timeStr;
-            });
-        }
-
-        function logout() {
-            // Cleanup
-            if (watchId) {
-                navigator.geolocation.clearWatch(watchId);
-                watchId = null;
-            }
-            
-            if (mqttClient) {
-                mqttClient.end();
-                mqttClient = null;
-            }
-            
-            if (window.parentDemoInterval) {
-                clearInterval(window.parentDemoInterval);
-                window.parentDemoInterval = null;
-            }
-            
-            // Reset UI
-            document.getElementById('loginScreen').classList.remove('hidden');
-            document.querySelectorAll('.interface').forEach(el => el.classList.remove('active'));
-            document.getElementById('studentManagement').classList.remove('active');
-            document.getElementById('addStudentModal').classList.remove('active');
-            document.getElementById('notificationsModal').classList.remove('active');
-            
-            // Hide map theme selectors
-            hideMapThemeSelector();
-            hideParentMapThemeSelector();
-            
-            // Reset state
-            appState.userRole = 'driver';
-            appState.driverId = '';
-            appState.busNumber = '';
-            appState.parentName = '';
-            appState.studentId = '';
-            appState.tripActive = false;
-            appState.notifications = [];
-            appState.studentsOnBoard = 0;
-            appState.totalStudents = 0;
-            
-            // Reset form
-            document.getElementById('addStudentForm').reset();
-            
-            showToast('Logged out', 'info');
-        }
-
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            
-            const icons = {
-                success: 'check-circle',
-                error: 'exclamation-circle',
-                warning: 'exclamation-triangle',
-                info: 'info-circle'
-            };
-            
-            toast.className = `toast toast-${type}`;
-            toast.innerHTML = `
-                <i class="fas fa-${icons[type] || 'info-circle'} toast-icon"></i>
-                <div class="toast-message">${message}</div>
-                <button class="toast-close">&times;</button>
-            `;
-            
-            container.appendChild(toast);
-            
-            // Show animation
-            setTimeout(() => toast.classList.add('show'), 10);
-            
-            // Close button
-            toast.querySelector('.toast-close').onclick = () => hideToast(toast);
-            
-            // Auto-hide after 5 seconds
-            setTimeout(() => hideToast(toast), 5000);
-        }
-
-        function hideToast(toast) {
-            if (toast && toast.parentNode) {
-                toast.classList.add('hiding');
-                setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.remove();
-                    }
-                }, 300);
-            }
-        }
-
-        // Global functions for student actions
-        window.editStudent = editStudent;
-        window.removeStudent = removeStudent;
-        window.markChildStatus = markChildStatus;
-
-        // Initialize with some demo data
-        setTimeout(() => {
-            // Add initial notifications
-            addNotification('Welcome', 'SchoolBus Tracker Pro is ready!', 'info');
-            addNotification('System', 'GPS tracking activated', 'success');
-            
-            // Update dashboard initially
-            updateDashboard();
-        }, 1000);
     </script>
 </body>
 </html>
