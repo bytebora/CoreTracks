@@ -1,0 +1,1669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1E40AF">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>TrackFlow • Professional GPS Tracker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        /* Reset & Base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overscroll-behavior: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #0F172A;
+            color: #FFFFFF;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        /* Full Screen Map */
+        #trackingMap {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Glass Effect */
+        .glass {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Top Bar - Compact for Mobile */
+        .top-bar {
+            position: fixed;
+            top: env(safe-area-inset-top, 0px);
+            left: 0;
+            right: 0;
+            height: 60px;
+            padding: 0 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 1000;
+            pointer-events: all;
+        }
+
+        .app-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .app-logo-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #1E40AF, #3B82F6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            box-shadow: 0 3px 8px rgba(30, 64, 175, 0.3);
+        }
+
+        .app-logo-text h1 {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+            line-height: 1.2;
+        }
+
+        .app-logo-text p {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 0.5px;
+        }
+
+        .top-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Action Button - Compact */
+        .action-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .action-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Status Bar - Compact and Stacked on Mobile */
+        .status-bar {
+            position: fixed;
+            top: calc(env(safe-area-inset-top, 0px) + 65px);
+            left: 12px;
+            right: 12px;
+            border-radius: 16px;
+            padding: 12px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            z-index: 1000;
+            pointer-events: all;
+        }
+
+        .status-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+        .status-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            line-height: 1.2;
+        }
+
+        .status-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        /* GPS Accuracy - Compact */
+        .accuracy-indicator {
+            position: fixed;
+            top: calc(env(safe-area-inset-top, 0px) + 65px);
+            right: 12px;
+            border-radius: 16px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            pointer-events: all;
+            min-width: 140px;
+        }
+
+        .accuracy-visual {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+        }
+
+        .accuracy-bar {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .accuracy-fill {
+            height: 100%;
+            background: #10B981;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .accuracy-text {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Quick Actions - Smaller and Optimized */
+        .quick-actions {
+            position: fixed;
+            bottom: calc(70px + env(safe-area-inset-bottom, 0px) + 140px);
+            left: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1000;
+            pointer-events: all;
+        }
+
+        /* Location Card - Compact */
+        .location-card {
+            position: fixed;
+            bottom: calc(70px + env(safe-area-inset-bottom, 0px) + 140px);
+            right: 12px;
+            border-radius: 16px;
+            padding: 12px;
+            max-width: 160px;
+            z-index: 1000;
+            pointer-events: all;
+        }
+
+        .location-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .location-details {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 6px;
+            font-size: 12px;
+        }
+
+        .coord {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .coord-label {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .coord-value {
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 11px;
+            color: white;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Control Panel - Smaller and Optimized for Thumb */
+        .control-panel {
+            position: fixed;
+            bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+            right: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1000;
+            pointer-events: all;
+        }
+
+        /* Control Button - Mobile Optimized */
+        .control-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #1E40AF, #3B82F6);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .control-btn:active {
+            transform: scale(0.92);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .control-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .control-btn.active {
+            background: #EF4444;
+            animation: pulse 2s infinite;
+        }
+
+        .control-btn.secondary {
+            background: rgba(30, 41, 59, 0.8);
+            color: white;
+        }
+
+        .control-btn.large {
+            width: 52px;
+            height: 52px;
+            font-size: 20px;
+        }
+
+        /* Tracking Controls - Bottom Center, Compact */
+        .tracking-controls {
+            position: fixed;
+            bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 16px;
+            padding: 8px;
+            display: flex;
+            gap: 6px;
+            z-index: 1000;
+            pointer-events: all;
+        }
+
+        /* Track Button - Mobile Optimized */
+        .track-btn {
+            padding: 10px 14px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .track-btn:active {
+            transform: scale(0.95);
+        }
+
+        .track-btn:hover {
+            background: rgba(59, 130, 246, 0.2);
+        }
+
+        .track-btn.primary {
+            background: linear-gradient(135deg, #1E40AF, #3B82F6);
+            color: white;
+        }
+
+        .track-btn.danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: #FCA5A5;
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .track-btn.danger:active {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .track-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Bottom Navigation - Thumb-Friendly */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            padding: 8px;
+            z-index: 1001;
+            height: 70px;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+            border: none;
+            background: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 11px;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-radius: 10px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .nav-item:active {
+            transform: scale(0.95);
+        }
+
+        .nav-item.active {
+            color: #3B82F6;
+            background: rgba(59, 130, 246, 0.15);
+        }
+
+        .nav-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        .nav-item.active .nav-icon {
+            background: linear-gradient(135deg, #1E40AF, #3B82F6);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .nav-label {
+            font-weight: 500;
+            font-size: 10px;
+            letter-spacing: 0.3px;
+        }
+
+        /* Panels - Mobile Optimized */
+        .panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            z-index: 1500;
+            padding: calc(60px + env(safe-area-inset-top, 0px)) 12px calc(70px + env(safe-area-inset-bottom, 0px));
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+            display: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .panel.active {
+            transform: translateX(0);
+            display: block;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .panel-title {
+            font-size: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* List Items - Mobile Optimized */
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .list-item:active {
+            transform: scale(0.98);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .list-item-info {
+            flex: 1;
+        }
+
+        .list-item-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+
+        .list-item-details {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .list-item-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        /* Toast - Mobile Optimized */
+        .toast {
+            position: fixed;
+            bottom: calc(70px + env(safe-area-inset-bottom, 0px) + 10px);
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 14px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 320px;
+            width: calc(100% - 24px);
+            transition: transform 0.3s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            pointer-events: all;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Compass - Smaller */
+        .compass {
+            position: fixed;
+            top: calc(env(safe-area-inset-top, 0px) + 65px);
+            left: 12px;
+            width: 60px;
+            height: 60px;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .compass-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #3B82F6;
+            transition: transform 0.1s linear;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { 
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            50% { 
+                box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+            }
+        }
+
+        /* Hide elements on very small screens */
+        @media (max-width: 350px) {
+            .location-card {
+                display: none;
+            }
+            
+            .quick-actions {
+                display: none;
+            }
+            
+            .accuracy-indicator {
+                min-width: 120px;
+            }
+            
+            .tracking-controls {
+                flex-wrap: wrap;
+                width: 90%;
+            }
+            
+            .track-btn {
+                font-size: 11px;
+                padding: 8px 10px;
+            }
+        }
+
+        /* Landscape mode optimizations */
+        @media (orientation: landscape) and (max-height: 500px) {
+            .top-bar {
+                height: 50px;
+            }
+            
+            .status-bar {
+                top: calc(env(safe-area-inset-top, 0px) + 55px);
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .accuracy-indicator {
+                top: calc(env(safe-area-inset-top, 0px) + 55px);
+            }
+            
+            .compass {
+                top: calc(env(safe-area-inset-top, 0px) + 55px);
+            }
+            
+            .quick-actions {
+                bottom: calc(70px + env(safe-area-inset-bottom, 0px) + 100px);
+            }
+            
+            .location-card {
+                bottom: calc(70px + env(safe-area-inset-bottom, 0px) + 100px);
+            }
+            
+            .bottom-nav {
+                height: 60px;
+            }
+            
+            .control-panel {
+                bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+            }
+            
+            .tracking-controls {
+                bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+            }
+        }
+
+        /* Hide scrollbar for map */
+        .leaflet-container {
+            scrollbar-width: none;
+        }
+
+        .leaflet-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Prevent text selection */
+        .no-select {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* Better touch feedback */
+        button:active {
+            opacity: 0.8;
+        }
+
+        /* Swipe gestures for panels */
+        .panel {
+            touch-action: pan-y;
+        }
+    </style>
+</head>
+<body class="no-select">
+    <!-- Full Screen Map -->
+    <div id="trackingMap"></div>
+
+    <!-- Compass -->
+    <div class="compass">
+        <div class="compass-inner glass" id="compass">
+            <i class="fas fa-location-arrow"></i>
+        </div>
+    </div>
+
+    <!-- Top Bar -->
+    <div class="top-bar glass">
+        <div class="app-logo">
+            <div class="app-logo-icon">
+                <i class="fas fa-satellite"></i>
+            </div>
+            <div class="app-logo-text">
+                <h1>TrackFlow</h1>
+                <p>GPS Tracker</p>
+            </div>
+        </div>
+        <div class="top-actions">
+            <button class="action-btn glass" id="themeToggle" title="Theme">
+                <i class="fas fa-moon"></i>
+            </button>
+            <button class="action-btn glass" id="fullscreenToggle" title="Fullscreen">
+                <i class="fas fa-expand"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar glass">
+        <div class="status-item">
+            <div class="status-value" id="currentSpeed">0 km/h</div>
+            <div class="status-label">Speed</div>
+        </div>
+        <div class="status-item">
+            <div class="status-value" id="distanceTraveled">0.00 km</div>
+            <div class="status-label">Distance</div>
+        </div>
+        <div class="status-item">
+            <div class="status-value" id="trackingTime">00:00</div>
+            <div class="status-label">Duration</div>
+        </div>
+        <div class="status-item">
+            <div class="status-value" id="currentAltitude">0 m</div>
+            <div class="status-label">Altitude</div>
+        </div>
+    </div>
+
+    <!-- GPS Accuracy -->
+    <div class="accuracy-indicator glass">
+        <i class="fas fa-crosshairs" style="color: #10B981; font-size: 14px;"></i>
+        <div class="accuracy-visual">
+            <div class="accuracy-bar">
+                <div class="accuracy-fill" id="accuracyBar" style="width: 80%"></div>
+            </div>
+            <div class="accuracy-text">
+                <span>GPS</span>
+                <span id="accuracyText">8m</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <button class="action-btn glass" id="centerMap" title="Center">
+            <i class="fas fa-crosshairs"></i>
+        </button>
+        <button class="action-btn glass" id="zoomIn" title="Zoom In">
+            <i class="fas fa-plus"></i>
+        </button>
+        <button class="action-btn glass" id="zoomOut" title="Zoom Out">
+            <i class="fas fa-minus"></i>
+        </button>
+    </div>
+
+    <!-- Location Card -->
+    <div class="location-card glass">
+        <div class="location-title">
+            <i class="fas fa-location-dot" style="color: #10B981; font-size: 12px;"></i>
+            <span>Position</span>
+        </div>
+        <div class="location-details">
+            <div class="coord">
+                <span class="coord-label">Lat</span>
+                <span class="coord-value" id="currentLat">0.0000°</span>
+            </div>
+            <div class="coord">
+                <span class="coord-label">Lng</span>
+                <span class="coord-value" id="currentLng">0.0000°</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="control-panel">
+        <button class="control-btn large" id="recordToggle" title="Record">
+            <i class="fas fa-circle" id="recordIcon"></i>
+        </button>
+        <button class="control-btn secondary glass" id="takePhoto" title="Photo">
+            <i class="fas fa-camera"></i>
+        </button>
+        <button class="control-btn secondary glass" id="addWaypoint" title="Waypoint">
+            <i class="fas fa-map-pin"></i>
+        </button>
+    </div>
+
+    <!-- Tracking Controls -->
+    <div class="tracking-controls glass">
+        <button class="track-btn primary" id="startTracking">
+            <i class="fas fa-play"></i> Start
+        </button>
+        <button class="track-btn" id="pauseTracking" disabled>
+            <i class="fas fa-pause"></i> Pause
+        </button>
+        <button class="track-btn danger" id="stopTracking" disabled>
+            <i class="fas fa-stop"></i> Stop
+        </button>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" id="navMap">
+            <div class="nav-icon">
+                <i class="fas fa-map"></i>
+            </div>
+            <span class="nav-label">Map</span>
+        </button>
+        <button class="nav-item" id="navTracking">
+            <div class="nav-icon">
+                <i class="fas fa-route"></i>
+            </div>
+            <span class="nav-label">Track</span>
+        </button>
+        <button class="nav-item" id="navHistory">
+            <div class="nav-icon">
+                <i class="fas fa-history"></i>
+            </div>
+            <span class="nav-label">History</span>
+        </button>
+        <button class="nav-item" id="navSettings">
+            <div class="nav-icon">
+                <i class="fas fa-cog"></i>
+            </div>
+            <span class="nav-label">Settings</span>
+        </button>
+    </nav>
+
+    <!-- Panels -->
+    <div class="panel" id="trackingPanel">
+        <div class="panel-header">
+            <h2 class="panel-title"><i class="fas fa-route"></i> Tracking</h2>
+            <button class="action-btn glass" id="closeTrackingPanel" style="background: transparent; border: none;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="activeTrackingInfo">
+            <!-- Active tracking info -->
+        </div>
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <button class="track-btn primary" style="flex: 1;" id="panelStartTracking">
+                <i class="fas fa-play"></i> Start
+            </button>
+            <button class="track-btn danger" style="flex: 1;" id="panelStopTracking" disabled>
+                <i class="fas fa-stop"></i> Stop
+            </button>
+        </div>
+    </div>
+
+    <div class="panel" id="historyPanel">
+        <div class="panel-header">
+            <h2 class="panel-title"><i class="fas fa-history"></i> History</h2>
+            <button class="action-btn glass" id="closeHistoryPanel" style="background: transparent; border: none;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="historyList">
+            <!-- History list -->
+        </div>
+        <div style="margin-top: 15px;">
+            <button class="track-btn" style="width: 100%;" id="exportDataBtn">
+                <i class="fas fa-download"></i> Export Data
+            </button>
+        </div>
+    </div>
+
+    <div class="panel" id="settingsPanel">
+        <div class="panel-header">
+            <h2 class="panel-title"><i class="fas fa-cog"></i> Settings</h2>
+            <button class="action-btn glass" id="closeSettingsPanel" style="background: transparent; border: none;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div style="background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 15px; margin-bottom: 10px; border: 1px solid rgba(255, 255, 255, 0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div>
+                    <div style="font-weight: 500; font-size: 14px;">GPS Interval</div>
+                    <div style="font-size: 12px; color: rgba(255, 255, 255, 0.6);">Update frequency</div>
+                </div>
+                <select style="padding: 8px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; color: white; font-size: 14px;" id="gpsInterval">
+                    <option value="1000">1 sec</option>
+                    <option value="3000" selected>3 sec</option>
+                    <option value="5000">5 sec</option>
+                </select>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div>
+                    <div style="font-weight: 500; font-size: 14px;">Auto-save</div>
+                    <div style="font-size: 12px; color: rgba(255, 255, 255, 0.6);">Save tracks automatically</div>
+                </div>
+                <label style="position: relative; width: 48px; height: 24px;">
+                    <input type="checkbox" id="autoSave" checked style="opacity: 0; width: 0; height: 0;">
+                    <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.2); transition: .4s; border-radius: 24px;"></span>
+                    <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; transition: .4s; border-radius: 50%;"></span>
+                </label>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-weight: 500; font-size: 14px;">High Accuracy</div>
+                    <div style="font-size: 12px; color: rgba(255, 255, 255, 0.6);">Better GPS, more battery</div>
+                </div>
+                <label style="position: relative; width: 48px; height: 24px;">
+                    <input type="checkbox" id="highAccuracy" checked style="opacity: 0; width: 0; height: 0;">
+                    <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #3B82F6; transition: .4s; border-radius: 24px;"></span>
+                    <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; transition: .4s; border-radius: 50%; transform: translateX(24px);"></span>
+                </label>
+            </div>
+        </div>
+        <div style="margin-top: 20px;">
+            <button class="track-btn primary" style="width: 100%; margin-bottom: 10px;" id="saveSettingsBtn">
+                <i class="fas fa-save"></i> Save Settings
+            </button>
+            <button class="track-btn danger" style="width: 100%;" id="clearDataBtn">
+                <i class="fas fa-trash"></i> Clear Data
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Main Application Script -->
+    <script>
+        // Application State
+        let map = null;
+        let userMarker = null;
+        let trackingPolyline = null;
+        let isTracking = false;
+        let watchId = null;
+        let trackingInterval = null;
+        
+        let trackingData = {
+            points: [],
+            startTime: null,
+            totalDistance: 0,
+            currentSession: null,
+            pauseTime: 0,
+            totalPauseTime: 0
+        };
+        
+        let settings = {
+            gpsInterval: 3000,
+            autoSave: true,
+            highAccuracy: true
+        };
+        
+        let history = [];
+        let waypoints = [];
+        let photos = [];
+        let currentPosition = null;
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', function() {
+            initApp();
+        });
+
+        async function initApp() {
+            await initMap();
+            loadAllData();
+            setupEventListeners();
+            startGPS();
+            updateTrackingControls();
+            updateHistoryList();
+            showToast('GPS Tracker Ready', 'success');
+        }
+
+        function initMap() {
+            map = L.map('trackingMap').setView([0, 0], 2);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap',
+                maxZoom: 19
+            }).addTo(map);
+            
+            trackingPolyline = L.polyline([], {
+                color: '#3B82F6',
+                weight: 3,
+                opacity: 0.8,
+                lineJoin: 'round'
+            }).addTo(map);
+            
+            userMarker = L.marker([0, 0], {
+                icon: L.divIcon({
+                    html: '<div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #1E40AF, #3B82F6); display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; border: 2px solid white; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);"><i class="fas fa-location-arrow"></i></div>',
+                    className: 'user-marker',
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16]
+                }),
+                zIndexOffset: 1000
+            }).addTo(map);
+            
+            return Promise.resolve();
+        }
+
+        function startGPS() {
+            if (!navigator.geolocation) {
+                showToast('GPS not supported', 'error');
+                return;
+            }
+
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+            }
+
+            const options = {
+                enableHighAccuracy: settings.highAccuracy,
+                maximumAge: 0,
+                timeout: 10000
+            };
+
+            watchId = navigator.geolocation.watchPosition(
+                handlePositionUpdate,
+                handlePositionError,
+                options
+            );
+
+            if (trackingInterval) {
+                clearInterval(trackingInterval);
+            }
+            
+            trackingInterval = setInterval(updateTrackingStats, 1000);
+        }
+
+        function handlePositionUpdate(position) {
+            currentPosition = position;
+            const { latitude, longitude, accuracy, altitude, speed, heading } = position.coords;
+            
+            // Update compass
+            if (heading !== null) {
+                updateCompass(heading);
+            }
+            
+            // Update map
+            const newLatLng = [latitude, longitude];
+            userMarker.setLatLng(newLatLng);
+            
+            if (heading !== null) {
+                userMarker.setRotationAngle(heading);
+            }
+            
+            // Auto-center on first location
+            if (!currentPosition) {
+                map.setView(newLatLng, 16);
+            }
+            
+            // Add to tracking
+            if (isTracking && trackingData.currentSession) {
+                trackingData.points.push(newLatLng);
+                trackingPolyline.setLatLngs(trackingData.points);
+                
+                if (trackingData.points.length > 1) {
+                    const lastPoint = trackingData.points[trackingData.points.length - 2];
+                    const distance = map.distance(lastPoint, newLatLng);
+                    trackingData.totalDistance += distance;
+                }
+            }
+            
+            // Update UI
+            updatePositionDisplay(latitude, longitude);
+            updateAccuracyDisplay(accuracy);
+            updateStatsDisplay(speed, altitude);
+        }
+
+        function handlePositionError(error) {
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    showToast('Location access denied', 'error');
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    showToast('Location unavailable', 'error');
+                    break;
+                case error.TIMEOUT:
+                    showToast('GPS timeout', 'error');
+                    break;
+            }
+        }
+
+        function updateCompass(heading) {
+            const compass = document.getElementById('compass');
+            if (compass) {
+                compass.style.transform = `rotate(${360 - heading}deg)`;
+            }
+        }
+
+        function updatePositionDisplay(lat, lng) {
+            document.getElementById('currentLat').textContent = Math.abs(lat).toFixed(4) + '°' + (lat >= 0 ? 'N' : 'S');
+            document.getElementById('currentLng').textContent = Math.abs(lng).toFixed(4) + '°' + (lng >= 0 ? 'E' : 'W');
+        }
+
+        function updateAccuracyDisplay(accuracy) {
+            const accuracyBar = document.getElementById('accuracyBar');
+            const accuracyText = document.getElementById('accuracyText');
+            
+            const maxAccuracy = 50;
+            const accuracyPercent = Math.max(0, Math.min(100, 100 - (accuracy / maxAccuracy * 100)));
+            
+            accuracyBar.style.width = `${accuracyPercent}%`;
+            accuracyText.textContent = `${Math.round(accuracy)}m`;
+            
+            if (accuracy < 10) {
+                accuracyBar.style.background = '#10B981';
+            } else if (accuracy < 25) {
+                accuracyBar.style.background = '#F59E0B';
+            } else {
+                accuracyBar.style.background = '#EF4444';
+            }
+        }
+
+        function updateStatsDisplay(speed, altitude) {
+            if (speed !== null && speed >= 0) {
+                document.getElementById('currentSpeed').textContent = (speed * 3.6).toFixed(1) + ' km/h';
+            }
+            
+            if (altitude !== null) {
+                document.getElementById('currentAltitude').textContent = Math.round(altitude) + ' m';
+            }
+        }
+
+        function updateTrackingStats() {
+            const distanceElement = document.getElementById('distanceTraveled');
+            const timeElement = document.getElementById('trackingTime');
+            
+            if (trackingData.totalDistance > 0) {
+                distanceElement.textContent = (trackingData.totalDistance / 1000).toFixed(2) + ' km';
+            }
+            
+            if (isTracking && trackingData.startTime) {
+                const elapsed = Date.now() - trackingData.startTime - trackingData.totalPauseTime;
+                const hours = Math.floor(elapsed / 3600000);
+                const minutes = Math.floor((elapsed % 3600000) / 60000);
+                const seconds = Math.floor((elapsed % 60000) / 1000);
+                timeElement.textContent = 
+                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            updateActiveTrackingInfo();
+        }
+
+        // Tracking Functions
+        function startTracking() {
+            if (isTracking) {
+                showToast('Already tracking', 'warning');
+                return;
+            }
+
+            trackingData = {
+                points: [],
+                startTime: Date.now(),
+                totalDistance: 0,
+                currentSession: {
+                    id: Date.now(),
+                    name: `Track ${new Date().toLocaleDateString()}`,
+                    startTime: new Date().toISOString(),
+                    distance: 0,
+                    duration: 0
+                },
+                pauseTime: 0,
+                totalPauseTime: 0
+            };
+
+            isTracking = true;
+            document.getElementById('recordToggle').classList.add('active');
+            document.getElementById('recordIcon').className = 'fas fa-stop';
+            
+            updateTrackingControls();
+            
+            if (currentPosition) {
+                const { latitude, longitude } = currentPosition.coords;
+                trackingData.points.push([latitude, longitude]);
+                trackingPolyline.setLatLngs(trackingData.points);
+            }
+            
+            showToast('Tracking started', 'success');
+        }
+
+        function pauseTracking() {
+            if (!isTracking) {
+                showToast('No active tracking', 'warning');
+                return;
+            }
+
+            isTracking = false;
+            trackingData.pauseTime = Date.now();
+            document.getElementById('recordToggle').classList.remove('active');
+            document.getElementById('recordIcon').className = 'fas fa-circle';
+            
+            updateTrackingControls();
+            showToast('Tracking paused', 'info');
+        }
+
+        function stopTracking() {
+            if (!trackingData.currentSession) {
+                showToast('No active tracking', 'warning');
+                return;
+            }
+
+            isTracking = false;
+            document.getElementById('recordToggle').classList.remove('active');
+            document.getElementById('recordIcon').className = 'fas fa-circle';
+            
+            const endTime = Date.now();
+            const duration = endTime - trackingData.startTime - trackingData.totalPauseTime;
+            
+            const session = {
+                ...trackingData.currentSession,
+                endTime: new Date().toISOString(),
+                duration: duration,
+                distance: trackingData.totalDistance,
+                points: trackingData.points
+            };
+
+            if (settings.autoSave) {
+                history.unshift(session);
+                saveAllData();
+                updateHistoryList();
+                showToast(`Track saved: ${(session.distance / 1000).toFixed(2)}km`, 'success');
+            }
+            
+            trackingData = {
+                points: [],
+                startTime: null,
+                totalDistance: 0,
+                currentSession: null,
+                pauseTime: 0,
+                totalPauseTime: 0
+            };
+            
+            updateTrackingControls();
+            trackingPolyline.setLatLngs([]);
+            document.getElementById('distanceTraveled').textContent = '0.00 km';
+            document.getElementById('trackingTime').textContent = '00:00';
+        }
+
+        function updateTrackingControls() {
+            const startBtn = document.getElementById('startTracking');
+            const pauseBtn = document.getElementById('pauseTracking');
+            const stopBtn = document.getElementById('stopTracking');
+            const panelStopBtn = document.getElementById('panelStopTracking');
+            
+            if (isTracking) {
+                startBtn.disabled = true;
+                pauseBtn.disabled = false;
+                stopBtn.disabled = false;
+                panelStopBtn.disabled = false;
+                startBtn.innerHTML = '<i class="fas fa-play"></i> Rec';
+                pauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+            } else if (trackingData.currentSession && trackingData.pauseTime > 0) {
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                stopBtn.disabled = false;
+                panelStopBtn.disabled = false;
+                startBtn.innerHTML = '<i class="fas fa-play"></i> Resume';
+                pauseBtn.innerHTML = '<i class="fas fa-pause"></i> Paused';
+            } else {
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                stopBtn.disabled = true;
+                panelStopBtn.disabled = true;
+                startBtn.innerHTML = '<i class="fas fa-play"></i> Start';
+                pauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+            }
+        }
+
+        function updateActiveTrackingInfo() {
+            const container = document.getElementById('activeTrackingInfo');
+            
+            if (!trackingData.currentSession) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: rgba(255, 255, 255, 0.6);">
+                        <i class="fas fa-route" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem;"></i>
+                        <p>No active tracking</p>
+                        <p style="font-size: 0.9rem;">Tap Start to begin</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const elapsed = isTracking ? 
+                Date.now() - trackingData.startTime - trackingData.totalPauseTime :
+                trackingData.pauseTime - trackingData.startTime - trackingData.totalPauseTime;
+            
+            const minutes = Math.floor((elapsed % 3600000) / 60000);
+            const seconds = Math.floor((elapsed % 60000) / 1000);
+            
+            container.innerHTML = `
+                <div class="list-item">
+                    <div class="list-item-info">
+                        <div class="list-item-title">${trackingData.currentSession.name}</div>
+                        <div class="list-item-details">
+                            ${new Date(trackingData.startTime).toLocaleTimeString()}
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 1.25rem; font-weight: 600; color: #3B82F6;">
+                            ${(trackingData.totalDistance / 1000).toFixed(2)} km
+                        </div>
+                        <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.6);">
+                            ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Waypoint Functions
+        function addWaypoint() {
+            if (!currentPosition) {
+                showToast('Wait for GPS', 'warning');
+                return;
+            }
+
+            const { latitude, longitude } = currentPosition.coords;
+            const name = `Waypoint ${waypoints.length + 1}`;
+            
+            const waypoint = L.marker([latitude, longitude], {
+                icon: L.divIcon({
+                    html: '<div style="background: rgba(245,158,11,0.8); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border: 2px solid white;"><i class="fas fa-flag" style="color: white; font-size: 12px;"></i></div>',
+                    className: 'waypoint-marker',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                })
+            }).addTo(map);
+            
+            waypoint.bindPopup(`<strong>${name}</strong>`);
+            waypoints.push({
+                id: Date.now(),
+                name: name,
+                lat: latitude,
+                lng: longitude,
+                marker: waypoint,
+                timestamp: new Date().toISOString()
+            });
+            
+            saveAllData();
+            showToast(`Waypoint added`, 'success');
+        }
+
+        // Photo Functions
+        function takePhoto() {
+            if (!currentPosition) {
+                showToast('Wait for GPS', 'warning');
+                return;
+            }
+
+            const { latitude, longitude } = currentPosition.coords;
+            const photoMarker = L.marker([latitude, longitude], {
+                icon: L.divIcon({
+                    html: '<div style="background: rgba(239,68,68,0.8); border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border: 2px solid white;"><i class="fas fa-camera" style="color: white; font-size: 10px;"></i></div>',
+                    className: 'photo-marker',
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                })
+            }).addTo(map);
+            
+            photos.push({
+                id: Date.now(),
+                lat: latitude,
+                lng: longitude,
+                marker: photoMarker,
+                timestamp: new Date().toISOString()
+            });
+            
+            saveAllData();
+            showToast('Photo marker added', 'success');
+        }
+
+        // Data Management
+        function loadAllData() {
+            try {
+                const savedSettings = localStorage.getItem('trackflow_settings');
+                const savedHistory = localStorage.getItem('trackflow_history');
+                const savedWaypoints = localStorage.getItem('trackflow_waypoints');
+                const savedPhotos = localStorage.getItem('trackflow_photos');
+                
+                if (savedSettings) settings = JSON.parse(savedSettings);
+                if (savedHistory) history = JSON.parse(savedHistory);
+                if (savedWaypoints) waypoints = JSON.parse(savedWaypoints);
+                if (savedPhotos) photos = JSON.parse(savedPhotos);
+                
+                document.getElementById('gpsInterval').value = settings.gpsInterval;
+                document.getElementById('autoSave').checked = settings.autoSave;
+                document.getElementById('highAccuracy').checked = settings.highAccuracy;
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        function saveAllData() {
+            try {
+                localStorage.setItem('trackflow_settings', JSON.stringify(settings));
+                localStorage.setItem('trackflow_history', JSON.stringify(history));
+                localStorage.setItem('trackflow_waypoints', JSON.stringify(waypoints));
+                localStorage.setItem('trackflow_photos', JSON.stringify(photos));
+            } catch (error) {
+                console.error('Error saving data:', error);
+            }
+        }
+
+        function saveSettings() {
+            settings.gpsInterval = parseInt(document.getElementById('gpsInterval').value);
+            settings.autoSave = document.getElementById('autoSave').checked;
+            settings.highAccuracy = document.getElementById('highAccuracy').checked;
+            
+            startGPS();
+            saveAllData();
+            showToast('Settings saved', 'success');
+        }
+
+        function updateHistoryList() {
+            const container = document.getElementById('historyList');
+            
+            if (history.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: rgba(255, 255, 255, 0.6);">
+                        <i class="fas fa-history" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem;"></i>
+                        <p>No history</p>
+                        <p style="font-size: 0.9rem;">Start tracking to build history</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = history.slice(0, 10).map(session => `
+                <div class="list-item">
+                    <div class="list-item-info">
+                        <div class="list-item-title">${session.name}</div>
+                        <div class="list-item-details">
+                            ${new Date(session.startTime).toLocaleDateString()} • 
+                            ${(session.distance / 1000).toFixed(2)}km
+                        </div>
+                    </div>
+                    <div class="list-item-actions">
+                        <button class="action-btn glass" onclick="viewSession(${session.id})" style="width: 32px; height: 32px;">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="action-btn glass" onclick="deleteSession(${session.id})" style="width: 32px; height: 32px; background: rgba(239,68,68,0.2); color: #FCA5A5;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function viewSession(sessionId) {
+            const session = history.find(s => s.id === sessionId);
+            if (session) {
+                hideAllPanels();
+                trackingPolyline.setLatLngs(session.points);
+                if (session.points.length > 0) {
+                    const bounds = L.latLngBounds(session.points);
+                    map.fitBounds(bounds.pad(0.1));
+                }
+                showToast(`Viewing: ${session.name}`, 'success');
+            }
+        }
+
+        function deleteSession(sessionId) {
+            if (confirm('Delete this session?')) {
+                const index = history.findIndex(s => s.id === sessionId);
+                if (index > -1) {
+                    history.splice(index, 1);
+                    saveAllData();
+                    updateHistoryList();
+                    showToast('Session deleted', 'info');
+                }
+            }
+        }
+
+        function exportAllData() {
+            const data = {
+                history: history,
+                waypoints: waypoints,
+                photos: photos,
+                settings: settings
+            };
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const link = document.createElement('a');
+            link.setAttribute('href', dataUri);
+            link.setAttribute('download', `trackflow-data.json`);
+            link.click();
+            
+            showToast('Data exported', 'success');
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ Delete ALL data?')) {
+                history = [];
+                waypoints.forEach(w => {
+                    if (w.marker) map.removeLayer(w.marker);
+                });
+                waypoints = [];
+                photos.forEach(p => {
+                    if (p.marker) map.removeLayer(p.marker);
+                });
+                photos = [];
+                
+                saveAllData();
+                updateHistoryList();
+                showToast('All data cleared', 'info');
+            }
+        }
+
+        // Panel Functions
+        function showPanel(panelId) {
+            hideAllPanels();
+            document.getElementById(panelId + 'Panel').classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.getElementById('nav' + panelId.charAt(0).toUpperCase() + panelId.slice(1)).classList.add('active');
+            
+            if (panelId === 'history') updateHistoryList();
+            if (panelId === 'tracking') updateActiveTrackingInfo();
+        }
+
+        function hideAllPanels() {
+            document.querySelectorAll('.panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.getElementById('navMap').classList.add('active');
+        }
+
+        // Event Listeners
+        function setupEventListeners() {
+            // Map Controls
+            document.getElementById('centerMap').addEventListener('click', () => {
+                if (currentPosition) {
+                    const { latitude, longitude } = currentPosition.coords;
+                    map.setView([latitude, longitude], map.getZoom());
+                    showToast('Centered', 'info');
+                }
+            });
+            
+            document.getElementById('zoomIn').addEventListener('click', () => map.zoomIn());
+            document.getElementById('zoomOut').addEventListener('click', () => map.zoomOut());
+            
+            // Recording Control
+            document.getElementById('recordToggle').addEventListener('click', function() {
+                if (isTracking) {
+                    pauseTracking();
+                } else if (trackingData.currentSession && trackingData.pauseTime > 0) {
+                    startTracking();
+                } else {
+                    startTracking();
+                }
+            });
+            
+            // Photo & Waypoint
+            document.getElementById('takePhoto').addEventListener('click', takePhoto);
+            document.getElementById('addWaypoint').addEventListener('click', addWaypoint);
+            
+            // Fullscreen
+            document.getElementById('fullscreenToggle').addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen();
+                } else {
+                    document.exitFullscreen();
+                }
+            });
+            
+            // Theme Toggle
+            document.getElementById('themeToggle').addEventListener('click', () => {
+                const btn = document.getElementById('themeToggle');
+                if (document.body.style.backgroundColor === 'rgb(248, 250, 252)') {
+                    document.body.style.backgroundColor = '#0F172A';
+                    btn.innerHTML = '<i class="fas fa-moon"></i>';
+                } else {
+                    document.body.style.backgroundColor = '#F8FAFC';
+                    document.body.style.color = '#1E293B';
+                    btn.innerHTML = '<i class="fas fa-sun"></i>';
+                }
+            });
+            
+            // Tracking Buttons
+            document.getElementById('startTracking').addEventListener('click', startTracking);
+            document.getElementById('pauseTracking').addEventListener('click', pauseTracking);
+            document.getElementById('stopTracking').addEventListener('click', stopTracking);
+            
+            // Panel Buttons
+            document.getElementById('panelStartTracking').addEventListener('click', startTracking);
+            document.getElementById('panelStopTracking').addEventListener('click', stopTracking);
+            document.getElementById('exportDataBtn').addEventListener('click', exportAllData);
+            document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+            document.getElementById('clearDataBtn').addEventListener('click', clearAllData);
+            
+            // Panel Close Buttons
+            document.getElementById('closeTrackingPanel').addEventListener('click', hideAllPanels);
+            document.getElementById('closeHistoryPanel').addEventListener('click', hideAllPanels);
+            document.getElementById('closeSettingsPanel').addEventListener('click', hideAllPanels);
+            
+            // Navigation
+            document.getElementById('navMap').addEventListener('click', hideAllPanels);
+            document.getElementById('navTracking').addEventListener('click', () => showPanel('tracking'));
+            document.getElementById('navHistory').addEventListener('click', () => showPanel('history'));
+            document.getElementById('navSettings').addEventListener('click', () => showPanel('settings'));
+            
+            // Handle fullscreen changes
+            document.addEventListener('fullscreenchange', () => {
+                const btn = document.getElementById('fullscreenToggle');
+                btn.innerHTML = document.fullscreenElement ? 
+                    '<i class="fas fa-compress"></i>' : 
+                    '<i class="fas fa-expand"></i>';
+            });
+            
+            // Swipe to close panels
+            let touchStartX = 0;
+            document.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+            });
+            
+            document.addEventListener('touchend', (e) => {
+                const touchEndX = e.changedTouches[0].clientX;
+                const diff = touchStartX - touchEndX;
+                
+                // Swipe right to close panel
+                if (diff > 50 && (document.querySelector('.panel.active'))) {
+                    hideAllPanels();
+                }
+            });
+        }
+
+        // Toast Function
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 
+                                 type === 'error' ? 'exclamation-circle' : 
+                                 'info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            document.getElementById('toastContainer').appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
