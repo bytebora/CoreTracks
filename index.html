@@ -3,258 +3,329 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#1A56DB">
+    <meta name="theme-color" content="#0A0A0F">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>SchoolBus Tracker Pro • Real-Time Bus Tracking</title>
+    <title>NEXUS • Quantum School Transport</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
-    <!-- Remove MQTT and add Firebase -->
-    <!-- <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script> -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     
     <style>
-        /* [Keep all your existing CSS styles - they remain exactly the same] */
+        /* === FUTURISTIC DESIGN SYSTEM === */
         :root {
-            --primary: #1A56DB;
-            --primary-dark: #1E40AF;
-            --secondary: #7E3AF2;
-            --success: #0E9F6E;
-            --warning: #F59E0B;
-            --danger: #DC2626;
-            --info: #3B82F6;
-            --dark: #111827;
-            --light: #F9FAFB;
-            --gray-100: #F3F4F6;
-            --gray-800: #1F2937;
-            --glass-bg: rgba(255, 255, 255, 0.1);
-            --glass-border: rgba(255, 255, 255, 0.2);
+            --cyber-blue: #00D4FF;
+            --neon-purple: #B026FF;
+            --matrix-green: #00FF9D;
+            --warning-orange: #FF6B35;
+            --critical-red: #FF375F;
+            --dark-space: #0A0A0F;
+            --deep-space: #12121D;
+            --mid-space: #1A1A2E;
+            --light-space: #25253E;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glow-blue: 0 0 30px rgba(0, 212, 255, 0.4);
+            --glow-purple: 0 0 30px rgba(176, 38, 255, 0.4);
+            --glow-green: 0 0 30px rgba(0, 255, 157, 0.4);
         }
 
-        /* Reset & Base */
+        /* === RESET & BASE === */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
-            -webkit-overflow-scrolling: touch;
         }
 
         html, body {
             height: 100%;
             width: 100%;
-            overscroll-behavior: none;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
-            background: var(--dark);
-            color: white;
             overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--dark-space);
+            color: #fff;
+            overscroll-behavior: none;
             position: fixed;
-            touch-action: manipulation;
         }
 
-        /* Prevent pull-to-refresh on mobile */
-        body {
-            overscroll-behavior-y: contain;
+        /* === FONTS & TYPOGRAPHY === */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        .font-mono {
+            font-family: 'SF Mono', 'Courier New', monospace;
         }
 
-        .glass {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        /* === CYBER GLASS EFFECT === */
+        .cyber-glass {
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.05) 0%, 
+                rgba(255, 255, 255, 0.02) 100%);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            position: relative;
+            overflow: hidden;
         }
 
-        /* Login Screen */
+        .cyber-glass::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent, 
+                var(--cyber-blue), 
+                var(--neon-purple), 
+                transparent);
+            opacity: 0.5;
+        }
+
+        /* === NEON GLOW EFFECTS === */
+        .neon-glow-blue {
+            box-shadow: var(--glow-blue);
+            border-color: rgba(0, 212, 255, 0.3) !important;
+        }
+
+        .neon-glow-purple {
+            box-shadow: var(--glow-purple);
+            border-color: rgba(176, 38, 255, 0.3) !important;
+        }
+
+        .neon-glow-green {
+            box-shadow: var(--glow-green);
+            border-color: rgba(0, 255, 157, 0.3) !important;
+        }
+
+        /* === LOGIN SCREEN - FUTURISTIC === */
         .login-container {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, var(--dark) 0%, var(--gray-800) 100%);
+            background: radial-gradient(ellipse at center, 
+                var(--deep-space) 0%, 
+                var(--dark-space) 100%);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             padding: 20px;
-            z-index: 2000;
-            transition: opacity 0.3s ease;
+            z-index: 9999;
             overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .login-container.hidden {
-            opacity: 0;
-            pointer-events: none;
         }
 
         .login-wrapper {
             width: 100%;
-            max-width: 400px;
-            padding: 20px;
-            margin: auto;
+            max-width: 480px;
+            padding: 40px;
+            position: relative;
         }
 
-        .login-logo {
+        .cyber-grid-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(0, 212, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+            border-radius: 24px;
+            opacity: 0.3;
+        }
+
+        .nexus-logo {
             text-align: center;
-            margin-bottom: 30px;
-            animation: fadeInUp 0.6s ease;
+            margin-bottom: 40px;
+            position: relative;
         }
 
-        .login-logo-icon {
+        .nexus-icon {
             width: 80px;
             height: 80px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, var(--cyber-blue), var(--neon-purple));
             border-radius: 20px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 36px;
-            margin: 0 auto 15px;
-            box-shadow: 0 12px 32px rgba(26, 86, 219, 0.3);
+            font-size: 32px;
+            position: relative;
+            animation: float 6s ease-in-out infinite;
         }
 
-        .login-title {
-            font-size: 28px;
+        .nexus-icon::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            background: linear-gradient(45deg, var(--cyber-blue), var(--neon-purple), var(--matrix-green));
+            border-radius: 22px;
+            z-index: -1;
+            filter: blur(10px);
+            opacity: 0.6;
+        }
+
+        .nexus-title {
+            font-size: 2.5rem;
             font-weight: 800;
-            background: linear-gradient(135deg, #fff, #E5E7EB);
+            background: linear-gradient(135deg, var(--cyber-blue), var(--neon-purple));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 8px;
             letter-spacing: -0.5px;
+            margin-bottom: 8px;
         }
 
-        .login-subtitle {
-            color: rgba(255, 255, 255, 0.7);
+        .nexus-subtitle {
+            color: rgba(255, 255, 255, 0.6);
             font-size: 14px;
             font-weight: 400;
-            line-height: 1.4;
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
 
-        .role-selector {
+        /* === HOLOGRAPHIC ROLE SELECTOR === */
+        .hologram-selector {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 25px;
-            width: 100%;
-            animation: fadeInUp 0.6s ease 0.2s both;
+            gap: 16px;
+            margin-bottom: 32px;
+            perspective: 1000px;
         }
 
-        .role-btn {
-            padding: 16px;
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid rgba(255, 255, 255, 0.1);
+        .hologram-card {
+            padding: 24px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             color: white;
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            transform-style: preserve-3d;
         }
 
-        .role-btn:active {
-            transform: scale(0.98);
+        .hologram-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, 
+                rgba(0, 212, 255, 0.1), 
+                rgba(176, 38, 255, 0.1));
+            opacity: 0;
+            transition: opacity 0.4s ease;
         }
 
-        .role-btn.active {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-color: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(26, 86, 219, 0.3);
+        .hologram-card.active {
+            transform: translateZ(20px);
+            border-color: var(--cyber-blue);
+            box-shadow: var(--glow-blue);
         }
 
-        .role-icon {
-            font-size: 24px;
+        .hologram-card.active::before {
+            opacity: 1;
         }
 
-        .login-form {
-            width: 100%;
-            animation: fadeInUp 0.6s ease 0.4s both;
+        .hologram-icon {
+            font-size: 28px;
+            margin-bottom: 12px;
+            color: var(--cyber-blue);
+            text-shadow: 0 0 20px currentColor;
         }
 
-        .input-group {
-            margin-bottom: 16px;
+        .hologram-card.active .hologram-icon {
+            color: var(--cyber-blue);
+            animation: pulse 2s infinite;
         }
 
-        .input-label {
+        /* === CYBER INPUTS === */
+        .cyber-input-group {
+            margin-bottom: 24px;
+        }
+
+        .cyber-label {
             display: block;
             margin-bottom: 8px;
             font-size: 14px;
             font-weight: 500;
-            color: rgba(255, 255, 255, 0.9);
+            color: rgba(255, 255, 255, 0.8);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        .login-input {
+        .cyber-input {
             width: 100%;
-            padding: 14px 16px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 18px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
             color: white;
             font-size: 16px;
+            font-weight: 400;
             transition: all 0.3s ease;
-            -webkit-appearance: none;
+            font-family: 'Inter', sans-serif;
         }
 
-        .login-input:focus {
+        .cyber-input:focus {
             outline: none;
-            border-color: var(--primary);
-            background: rgba(255, 255, 255, 0.12);
-            box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
+            border-color: var(--cyber-blue);
+            box-shadow: var(--glow-blue);
+            background: rgba(0, 212, 255, 0.05);
         }
 
-        .login-btn {
+        .cyber-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* === QUANTUM BUTTON === */
+        .quantum-btn {
             width: 100%;
-            padding: 16px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            padding: 20px;
+            background: linear-gradient(135deg, var(--cyber-blue), var(--neon-purple));
             border: none;
+            border-radius: 16px;
             color: white;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 8px;
             position: relative;
             overflow: hidden;
+            transition: all 0.3s ease;
         }
 
-        .login-btn:active {
-            transform: translateY(0);
-        }
-
-        .login-btn::after {
+        .quantum-btn::before {
             content: '';
             position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 5px;
-            height: 5px;
-            background: rgba(255, 255, 255, 0.5);
-            opacity: 0;
-            border-radius: 100%;
-            transform: scale(1, 1) translate(-50%);
-            transform-origin: 50% 50%;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.2), 
+                transparent);
+            transition: left 0.5s ease;
         }
 
-        .login-btn:focus:not(:active)::after {
-            animation: ripple 1s ease-out;
+        .quantum-btn:hover::before {
+            left: 100%;
         }
 
-        /* Interface Common */
+        .quantum-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* === INTERFACE COMMON === */
         .interface {
             position: fixed;
             top: 0;
@@ -262,868 +333,540 @@
             right: 0;
             bottom: 0;
             display: none;
-            overflow: hidden;
+            background: var(--dark-space);
         }
 
         .interface.active {
             display: block;
         }
 
-        .map-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-
-        /* Top Bar - Mobile Optimized */
-        .top-bar {
+        /* === NEURAL HEADER === */
+        .neural-header {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            height: 60px;
-            padding: 0 16px;
+            height: 80px;
+            padding: 0 24px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             z-index: 1000;
-            pointer-events: all;
-            background: linear-gradient(to bottom, rgba(17, 24, 39, 0.95), rgba(17, 24, 39, 0.8));
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(40px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            -webkit-backdrop-filter: blur(20px);
-            backdrop-filter: blur(20px);
         }
 
-        .app-logo {
+        .nexus-brand {
             display: flex;
             align-items: center;
-            gap: 10px;
-            min-width: 0;
+            gap: 12px;
         }
 
-        .app-logo-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 16px;
-            flex-shrink: 0;
-        }
-
-        .app-logo-text {
-            min-width: 0;
-        }
-
-        .app-logo-text h1 {
-            font-size: 16px;
-            font-weight: 700;
-            color: white;
-            line-height: 1.2;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .app-logo-text p {
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.6);
-            letter-spacing: 0.5px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .top-actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-shrink: 0;
-        }
-
-        .action-btn {
+        .brand-icon {
             width: 40px;
             height: 40px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
+            background: linear-gradient(135deg, var(--cyber-blue), var(--neon-purple));
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
-            position: relative;
+            font-size: 18px;
         }
 
-        .action-btn:active {
-            transform: scale(0.95);
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        /* Status Cards - Mobile Optimized */
-        .status-cards {
-            position: fixed;
-            top: 70px;
-            left: 12px;
-            right: 12px;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            z-index: 1000;
-            pointer-events: all;
-        }
-
-        .status-card {
-            padding: 12px;
-            border-radius: 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            min-height: 70px;
-        }
-
-        .status-card-icon {
-            font-size: 16px;
-            opacity: 0.8;
-        }
-
-        .status-card-value {
+        .brand-text h1 {
             font-size: 18px;
             font-weight: 700;
-            color: white;
-            line-height: 1;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            background: linear-gradient(135deg, var(--cyber-blue), #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .status-card-label {
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.7);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        .brand-text p {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
         }
 
-        /* Student Management - Mobile Optimized */
-        .student-management {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(17, 24, 39, 0.98);
-            backdrop-filter: blur(30px);
-            z-index: 2000;
-            padding: 20px 16px;
-            padding-top: calc(env(safe-area-inset-top, 0px) + 20px);
-            transform: translateY(100%);
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            overscroll-behavior: contain;
-        }
-
-        .student-management.active {
-            transform: translateY(0);
-        }
-
-        .student-management-header {
+        .neural-actions {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .student-management-title {
-            font-size: 20px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: white;
-        }
-
-        .student-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .student-action-btn {
-            padding: 14px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: white;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             gap: 8px;
-            transition: all 0.2s ease;
-            text-align: center;
         }
 
-        .student-action-btn:active {
-            transform: scale(0.98);
-        }
-
-        .student-action-btn.primary {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-        }
-
-        .student-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 80px;
-        }
-
-        .student-item {
-            padding: 16px;
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            transition: all 0.2s ease;
-        }
-
-        .student-item:active {
-            background: rgba(255, 255, 255, 0.08);
-        }
-
-        .student-avatar {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, var(--info), var(--secondary));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 16px;
-            flex-shrink: 0;
-        }
-
-        .student-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .student-name {
-            font-weight: 600;
-            font-size: 14px;
-            margin-bottom: 4px;
-            color: white;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .student-details {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.6);
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .student-status {
-            padding: 6px 10px;
-            border-radius: 20px;
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-
-        .status-waiting {
-            background: rgba(245, 158, 11, 0.15);
-            color: var(--warning);
-        }
-
-        .status-picked {
-            background: rgba(59, 130, 246, 0.15);
-            color: var(--info);
-        }
-
-        .status-onbus {
-            background: rgba(14, 159, 110, 0.15);
-            color: var(--success);
-        }
-
-        .status-dropped {
-            background: rgba(124, 58, 237, 0.15);
-            color: var(--secondary);
-        }
-
-        .student-actions-buttons {
-            display: flex;
-            gap: 6px;
-            flex-shrink: 0;
-        }
-
-        .student-action-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-        }
-
-        .student-action-icon:active {
-            transform: scale(0.95);
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        /* Parent Interface - Mobile Optimized */
-        .parent-info-card {
-            position: fixed;
-            bottom: 16px;
-            left: 12px;
-            right: 12px;
-            padding: 16px;
-            border-radius: 18px;
-            z-index: 1000;
-            pointer-events: all;
-        }
-
-        .child-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 14px;
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.05);
-            margin-bottom: 12px;
-        }
-
-        .child-details {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .child-name {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .child-school {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 6px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .child-location {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.6);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .child-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .child-action-btn {
-            padding: 14px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border: none;
-            color: white;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-        }
-
-        .child-action-btn:active {
-            transform: scale(0.98);
-        }
-
-        .child-action-btn.secondary {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        /* Bus Info Panel - Mobile Optimized */
-        .bus-info-panel {
-            position: fixed;
-            top: 70px;
-            left: 12px;
-            right: 12px;
-            padding: 16px;
-            border-radius: 18px;
-            z-index: 1000;
-            pointer-events: all;
-        }
-
-        .bus-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .bus-icon {
+        .hologram-btn {
             width: 48px;
             height: 48px;
             border-radius: 14px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
-            flex-shrink: 0;
-        }
-
-        .bus-details {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .bus-name {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .bus-status {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 13px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .status-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-            flex-shrink: 0;
-        }
-
-        .status-online {
-            background: var(--success);
-            animation: pulse 2s infinite;
-        }
-
-        .status-offline {
-            background: var(--danger);
-        }
-
-        .bus-metrics {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-        }
-
-        .metric-item {
-            text-align: center;
-            padding: 10px;
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-        }
-
-        .metric-value {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .metric-label {
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.6);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* Map Controls - Mobile Optimized */
-        .map-controls {
-            position: fixed;
-            bottom: 200px;
-            right: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            z-index: 1000;
-            pointer-events: all;
-        }
-
-        .map-control-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             color: white;
-            font-size: 16px;
+            font-size: 18px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            position: relative;
         }
 
-        .map-control-btn:active {
-            transform: scale(0.95);
-            background: rgba(255, 255, 255, 0.15);
+        .hologram-btn.active {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: var(--cyber-blue);
+            color: var(--cyber-blue);
         }
 
-        .map-control-btn.active {
-            background: var(--primary);
+        .hologram-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--glow-blue);
         }
 
-        /* Modal - Mobile Optimized */
-        .modal {
+        /* === QUANTUM DASHBOARD === */
+        .quantum-dashboard {
+            position: fixed;
+            top: 100px;
+            left: 24px;
+            right: 24px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            z-index: 1000;
+        }
+
+        .quantum-card {
+            padding: 20px;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 120px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .quantum-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--cyber-blue), var(--neon-purple));
+        }
+
+        .card-icon {
+            font-size: 24px;
+            color: var(--cyber-blue);
+            filter: drop-shadow(0 0 10px currentColor);
+        }
+
+        .card-value {
+            font-size: 32px;
+            font-weight: 800;
+            color: white;
+            line-height: 1;
+        }
+
+        .card-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* === HOLOGRAPHIC STUDENT MANAGEMENT === */
+        .holo-management {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.9);
-            backdrop-filter: blur(20px);
+            background: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(50px);
+            z-index: 2000;
+            padding: 40px 24px 24px;
+            transform: translateY(100%);
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+        }
+
+        .holo-management.active {
+            transform: translateY(0);
+        }
+
+        .holo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .holo-title {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--cyber-blue), #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .holo-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .holo-action-btn {
+            padding: 16px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .holo-action-btn.primary {
+            background: linear-gradient(135deg, var(--cyber-blue), var(--neon-purple));
+            border: none;
+        }
+
+        /* === STUDENT HOLO-CARDS === */
+        .student-holo-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .student-holo-card {
+            padding: 20px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .student-holo-card:hover {
+            transform: translateX(4px);
+            border-color: var(--cyber-blue);
+        }
+
+        .student-holo-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--cyber-blue), var(--neon-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 20px;
+            position: relative;
+        }
+
+        .student-holo-avatar::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            background: linear-gradient(45deg, var(--cyber-blue), var(--neon-purple));
+            border-radius: 18px;
+            z-index: -1;
+            filter: blur(8px);
+            opacity: 0.5;
+        }
+
+        .student-holo-info {
+            flex: 1;
+        }
+
+        .student-holo-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: white;
+        }
+
+        .student-holo-details {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            display: flex;
+            gap: 8px;
+        }
+
+        .student-holo-status {
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .status-cyber-waiting {
+            background: rgba(255, 107, 53, 0.15);
+            color: var(--warning-orange);
+            border: 1px solid rgba(255, 107, 53, 0.3);
+        }
+
+        .status-cyber-onbus {
+            background: rgba(0, 255, 157, 0.15);
+            color: var(--matrix-green);
+            border: 1px solid rgba(0, 255, 157, 0.3);
+        }
+
+        .status-cyber-dropped {
+            background: rgba(176, 38, 255, 0.15);
+            color: var(--neon-purple);
+            border: 1px solid rgba(176, 38, 255, 0.3);
+        }
+
+        /* === PARENT HOLO-INTERFACE === */
+        .parent-holo-panel {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            right: 24px;
+            padding: 24px;
+            border-radius: 24px;
+            z-index: 1000;
+        }
+
+        .child-holo-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 20px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            margin-bottom: 20px;
+        }
+
+        .child-holo-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--cyber-blue), var(--neon-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .child-holo-details {
+            flex: 1;
+        }
+
+        .child-holo-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: white;
+        }
+
+        .child-holo-info {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .child-holo-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .holo-action-btn.small {
+            padding: 14px;
+            font-size: 13px;
+        }
+
+        /* === CYBER MAP CONTROLS === */
+        .cyber-map-controls {
+            position: fixed;
+            bottom: 200px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 1000;
+        }
+
+        .cyber-control-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .cyber-control-btn.active {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: var(--cyber-blue);
+            color: var(--cyber-blue);
+            box-shadow: var(--glow-blue);
+        }
+
+        .cyber-control-btn:hover {
+            transform: scale(1.1);
+            box-shadow: var(--glow-blue);
+        }
+
+        /* === QUANTUM MODAL === */
+        .quantum-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 10, 15, 0.9);
+            backdrop-filter: blur(40px);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 3000;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.3s ease;
-            padding: 20px;
+            transition: opacity 0.4s ease;
         }
 
-        .modal.active {
+        .quantum-modal.active {
             opacity: 1;
             pointer-events: all;
         }
 
-        .modal-content {
-            width: 100%;
+        .modal-holo-content {
+            width: 90%;
             max-width: 500px;
             max-height: 85vh;
             overflow-y: auto;
-            border-radius: 20px;
-            padding: 24px;
-            -webkit-overflow-scrolling: touch;
-            overscroll-behavior: contain;
+            border-radius: 24px;
+            padding: 40px;
+            position: relative;
         }
 
-        .modal-header {
-            margin-bottom: 20px;
-            text-align: center;
+        .modal-holo-content::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, 
+                rgba(0, 212, 255, 0.1), 
+                rgba(176, 38, 255, 0.1));
+            border-radius: 24px;
+            z-index: -1;
         }
 
-        .modal-title {
-            font-size: 22px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: white;
-        }
-
-        .modal-subtitle {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 14px;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 14px;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 14px 16px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: white;
-            font-size: 15px;
-            transition: all 0.2s ease;
-            -webkit-appearance: none;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            background: rgba(255, 255, 255, 0.12);
-        }
-
-        .form-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 24px;
-        }
-
-        .btn {
-            padding: 14px;
-            border-radius: 12px;
-            font-size: 15px;
-            font-weight: 500;
-            cursor: pointer;
-            border: none;
-            transition: all 0.2s ease;
-            text-align: center;
-        }
-
-        .btn:active {
-            transform: scale(0.98);
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-        }
-
-        /* Toast Notifications - Mobile Optimized */
-        .toast-container {
+        /* === NEURAL NOTIFICATIONS === */
+        .neural-notifications {
             position: fixed;
-            bottom: 16px;
-            left: 12px;
-            right: 12px;
+            bottom: 24px;
+            left: 24px;
+            right: 24px;
             z-index: 4000;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            pointer-events: none;
+            gap: 12px;
         }
 
-        .toast {
-            padding: 14px 16px;
-            border-radius: 14px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(30px);
-            border: 1px solid var(--glass-border);
+        .neural-toast {
+            padding: 20px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
             align-items: center;
-            gap: 12px;
-            animation: slideInUp 0.3s ease;
+            gap: 16px;
+            animation: slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             transform: translateY(100px);
             opacity: 0;
-            pointer-events: all;
         }
 
-        .toast.show {
+        .neural-toast.show {
             transform: translateY(0);
             opacity: 1;
         }
 
-        .toast.hiding {
-            animation: slideOutDown 0.3s ease forwards;
-        }
-
-        .toast-icon {
-            font-size: 18px;
-            flex-shrink: 0;
-        }
-
-        .toast-success .toast-icon { color: var(--success); }
-        .toast-error .toast-icon { color: var(--danger); }
-        .toast-warning .toast-icon { color: var(--warning); }
-        .toast-info .toast-icon { color: var(--info); }
-
-        .toast-message {
-            flex: 1;
-            font-size: 14px;
-            line-height: 1.4;
-        }
-
-        .toast-close {
-            background: none;
-            border: none;
-            color: rgba(255, 255, 255, 0.6);
-            cursor: pointer;
-            padding: 4px;
-            font-size: 14px;
-            flex-shrink: 0;
-        }
-
-        /* Map Theme Selector - Mobile Optimized */
-        .map-theme-selector {
-            position: fixed;
-            top: 70px;
-            right: 12px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding: 12px;
-            border-radius: 14px;
-            display: none;
-        }
-
-        .theme-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            border: 2px solid white;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            background-size: cover;
-        }
-
-        .theme-btn:active {
-            transform: scale(0.95);
-        }
-
-        .theme-btn.active {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.3);
-        }
-
-        /* Notification Badge */
-        .notification-badge {
-            position: absolute;
-            top: -4px;
-            right: -4px;
-            background: var(--danger);
-            color: white;
-            font-size: 10px;
-            font-weight: 600;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Trip Status */
-        .trip-status {
-            position: fixed;
-            top: 70px;
-            left: 12px;
-            z-index: 1000;
-            padding: 10px 16px;
+        .toast-holo-icon {
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
             border-radius: 12px;
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-weight: 500;
-            font-size: 13px;
-            white-space: nowrap;
-        }
-
-        .trip-to-school {
-            background: rgba(14, 159, 110, 0.15);
-            color: var(--success);
-        }
-
-        .trip-from-school {
-            background: rgba(59, 130, 246, 0.15);
-            color: var(--info);
-        }
-
-        /* Close Button */
-        .close-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
         }
 
-        .close-btn:active {
-            transform: scale(0.95);
+        .toast-holo-success .toast-holo-icon {
+            background: rgba(0, 255, 157, 0.15);
+            color: var(--matrix-green);
         }
 
-        /* Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .toast-holo-error .toast-holo-icon {
+            background: rgba(255, 55, 95, 0.15);
+            color: var(--critical-red);
+        }
+
+        .toast-holo-warning .toast-holo-icon {
+            background: rgba(255, 107, 53, 0.15);
+            color: var(--warning-orange);
+        }
+
+        .toast-holo-info .toast-holo-icon {
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--cyber-blue);
+        }
+
+        /* === QUANTUM PULSE ANIMATION === */
+        .quantum-pulse {
+            position: relative;
+        }
+
+        .quantum-pulse::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: inherit;
+            background: inherit;
+            filter: blur(8px);
+            opacity: 0.6;
+            animation: pulse 2s infinite;
+        }
+
+        /* === ANIMATIONS === */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 0.2; }
         }
 
         @keyframes slideInUp {
@@ -1137,126 +880,83 @@
             }
         }
 
-        @keyframes slideOutDown {
-            to {
-                transform: translateY(100px);
-                opacity: 0;
-            }
+        @keyframes cyberScan {
+            0% { transform: translateX(-100%) rotate(45deg); }
+            100% { transform: translateX(200%) rotate(45deg); }
         }
 
-        @keyframes ripple {
-            0% {
-                transform: scale(0, 0);
-                opacity: 1;
-            }
-            20% {
-                transform: scale(25, 25);
-                opacity: 1;
-            }
-            100% {
-                opacity: 0;
-                transform: scale(40, 40);
-            }
+        @keyframes hologramFlicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
         }
 
-        /* Mobile Specific Optimizations */
-        @media (max-width: 360px) {
-            .status-cards {
+        /* === MAP STYLES === */
+        .map-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .leaflet-container {
+            background: var(--dark-space) !important;
+        }
+
+        .leaflet-control-attribution {
+            background: rgba(0, 0, 0, 0.8) !important;
+            color: rgba(255, 255, 255, 0.5) !important;
+            font-size: 10px !important;
+        }
+
+        /* === RESPONSIVE DESIGN === */
+        @media (max-width: 768px) {
+            .quantum-dashboard {
                 grid-template-columns: 1fr;
-                top: 65px;
+                top: 90px;
             }
             
-            .bus-metrics {
+            .hologram-selector {
                 grid-template-columns: 1fr;
             }
             
-            .child-actions {
-                grid-template-columns: 1fr;
+            .login-wrapper {
+                padding: 24px;
             }
             
-            .role-selector {
-                grid-template-columns: 1fr;
+            .nexus-title {
+                font-size: 2rem;
             }
         }
 
         @media (max-height: 600px) {
-            .status-cards {
-                top: 65px;
+            .quantum-card {
+                min-height: 100px;
+                padding: 16px;
             }
             
-            .bus-info-panel {
-                top: 65px;
-            }
-            
-            .parent-info-card {
-                bottom: 12px;
-            }
-            
-            .map-controls {
-                bottom: 180px;
+            .card-value {
+                font-size: 24px;
             }
         }
 
-        /* Landscape Mode */
-        @media (orientation: landscape) {
-            .login-wrapper {
-                max-height: 90vh;
-                overflow-y: auto;
-                padding: 10px;
-            }
-            
-            .role-selector {
-                grid-template-columns: 1fr 1fr;
-            }
-            
-            .status-cards {
-                top: 65px;
-                grid-template-columns: repeat(3, 1fr);
-            }
-            
-            .map-controls {
-                bottom: 100px;
-            }
+        /* === SCROLLBAR STYLING === */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
 
-        /* Tablet */
-        @media (min-width: 768px) {
-            .status-cards {
-                max-width: 400px;
-                left: 50%;
-                transform: translateX(-50%);
-            }
-            
-            .map-controls {
-                right: 20px;
-                bottom: 220px;
-            }
-            
-            .parent-info-card {
-                max-width: 400px;
-                left: 50%;
-                transform: translateX(-50%);
-            }
-            
-            .bus-info-panel {
-                max-width: 400px;
-                left: 50%;
-                transform: translateX(-50%);
-            }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
         }
 
-        /* Fix Leaflet Scroll */
-        .leaflet-container {
-            width: 100%;
-            height: 100%;
-            -webkit-overflow-scrolling: touch;
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, var(--cyber-blue), var(--neon-purple));
+            border-radius: 4px;
         }
 
-        .leaflet-control-attribution {
-            font-size: 9px !important;
-        }
-
-        /* Safe Area Insets */
+        /* === SAFE AREA SUPPORT === */
         .safe-area-top {
             padding-top: env(safe-area-inset-top, 0px);
         }
@@ -1267,348 +967,333 @@
     </style>
 </head>
 <body>
-    <!-- Login Screen -->
-    <div class="login-container glass" id="loginScreen">
-        <div class="login-wrapper">
-            <div class="login-logo">
-                <div class="login-logo-icon">
-                    <i class="fas fa-bus-alt"></i>
+    <!-- Quantum Login Interface -->
+    <div class="login-container" id="loginScreen">
+        <div class="login-wrapper cyber-glass">
+            <div class="cyber-grid-bg"></div>
+            
+            <div class="nexus-logo">
+                <div class="nexus-icon quantum-pulse">
+                    <i class="fas fa-atom"></i>
                 </div>
-                <h1 class="login-title">SchoolBus Tracker Pro</h1>
-                <p class="login-subtitle">Safe & Real-Time Student Transportation Tracking</p>
+                <h1 class="nexus-title">NEXUS</h1>
+                <p class="nexus-subtitle">Quantum School Transport System</p>
             </div>
             
-            <div class="role-selector">
-                <button class="role-btn glass active" id="driverRoleBtn">
-                    <div class="role-icon">
-                        <i class="fas fa-user-tie"></i>
+            <div class="hologram-selector">
+                <div class="hologram-card active" id="driverRoleBtn">
+                    <div class="hologram-icon">
+                        <i class="fas fa-brain"></i>
                     </div>
-                    <span>Driver</span>
-                </button>
-                <button class="role-btn glass" id="parentRoleBtn">
-                    <div class="role-icon">
-                        <i class="fas fa-user-friends"></i>
+                    <span>Operator</span>
+                    <div class="font-mono" style="font-size: 11px; opacity: 0.6; margin-top: 4px;">
+                        DRIVER PROTOCOL
                     </div>
-                    <span>Parent</span>
-                </button>
+                </div>
+                <div class="hologram-card" id="parentRoleBtn">
+                    <div class="hologram-icon">
+                        <i class="fas fa-user-astronaut"></i>
+                    </div>
+                    <span>Guardian</span>
+                    <div class="font-mono" style="font-size: 11px; opacity: 0.6; margin-top: 4px;">
+                        PARENT PROTOCOL
+                    </div>
+                </div>
             </div>
             
-            <div class="login-form">
-                <div class="input-group">
-                    <label class="input-label" id="loginLabel">Driver ID</label>
-                    <input type="text" class="login-input glass" id="loginInput" 
-                           placeholder="Enter your Driver ID" value="DRIVER-2024">
+            <div class="cyber-input-group">
+                <label class="cyber-label" id="loginLabel">Operator ID</label>
+                <input type="text" class="cyber-input" id="loginInput" 
+                       placeholder="Enter neural ID" value="OP-001">
+                <div class="font-mono" style="font-size: 11px; margin-top: 4px; opacity: 0.5;">
+                    Neural ID recognized
                 </div>
-                <div class="input-group">
-                    <label class="input-label">Bus Number</label>
-                    <input type="text" class="login-input glass" id="busNumber" 
-                           placeholder="e.g., BUS-001" value="BUS-001">
+            </div>
+            
+            <div class="cyber-input-group">
+                <label class="cyber-label">Vehicle Code</label>
+                <input type="text" class="cyber-input" id="busNumber" 
+                       placeholder="e.g., VH-001-QUANTUM" value="VH-001">
+            </div>
+            
+            <div class="cyber-input-group" id="parentExtra" style="display: none;">
+                <label class="cyber-label">Guardian Protocol</label>
+                <input type="text" class="cyber-input" id="parentName" 
+                       placeholder="Designation" value="GUARDIAN-ALPHA">
+                <div style="margin-top: 16px;">
+                    <label class="cyber-label">Ward Neural ID</label>
+                    <input type="text" class="cyber-input" id="studentId" 
+                           placeholder="e.g., WARD-001-ALPHA" value="WARD-001">
                 </div>
-                <div class="input-group" id="parentExtra" style="display: none;">
-                    <label class="input-label">Parent Name</label>
-                    <input type="text" class="login-input glass" id="parentName" 
-                           placeholder="Your full name" value="John Smith">
-                    <div style="margin-top: 12px;">
-                        <label class="input-label">Child's Student ID</label>
-                        <input type="text" class="login-input glass" id="studentId" 
-                               placeholder="e.g., STU-2024-001" value="STU-2024-001">
-                    </div>
-                </div>
-                <button class="login-btn" id="loginBtn">
-                    <i class="fas fa-sign-in-alt"></i> Start Tracking
-                </button>
+            </div>
+            
+            <button class="quantum-btn" id="loginBtn">
+                <i class="fas fa-bolt"></i> INITIATE QUANTUM LINK
+            </button>
+            
+            <div class="font-mono" style="text-align: center; margin-top: 24px; font-size: 11px; opacity: 0.4;">
+                <i class="fas fa-shield-alt"></i> NEXUS SECURITY PROTOCOL ACTIVE
             </div>
         </div>
     </div>
 
-    <!-- Driver Interface -->
+    <!-- Operator Interface -->
     <div class="interface" id="driverInterface">
         <div class="map-container" id="driverMap"></div>
         
-        <div class="top-bar glass safe-area-top">
-            <div class="app-logo">
-                <div class="app-logo-icon">
-                    <i class="fas fa-bus-alt"></i>
+        <div class="neural-header safe-area-top">
+            <div class="nexus-brand">
+                <div class="brand-icon">
+                    <i class="fas fa-atom"></i>
                 </div>
-                <div class="app-logo-text">
-                    <h1 id="driverBusName">BUS-001</h1>
-                    <p>Driver • <span id="currentTime">00:00</span></p>
+                <div class="brand-text">
+                    <h1 id="driverBusName">VH-001</h1>
+                    <p>OPERATOR MODE • <span class="font-mono" id="currentTime">--:--:--</span></p>
                 </div>
             </div>
-            <div class="top-actions">
-                <button class="action-btn glass" id="notificationsBtn" title="Notifications">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge" id="notificationCount" style="display: none;">0</span>
+            <div class="neural-actions">
+                <button class="hologram-btn" id="notificationsBtn" title="Neural Feed">
+                    <i class="fas fa-satellite-dish"></i>
+                    <span class="notification-badge" id="notificationCount" style="display: none;"></span>
                 </button>
-                <button class="action-btn glass" id="mapThemesBtn" title="Map Themes">
-                    <i class="fas fa-layer-group"></i>
-                </button>
-                <button class="action-btn glass" id="driverLogout" title="Logout">
-                    <i class="fas fa-sign-out-alt"></i>
+                <button class="hologram-btn" id="driverLogout" title="Disconnect">
+                    <i class="fas fa-power-off"></i>
                 </button>
             </div>
         </div>
 
-        <div class="status-cards">
-            <div class="status-card glass" style="background: linear-gradient(135deg, rgba(26, 86, 219, 0.2), rgba(30, 64, 175, 0.1));">
-                <div class="status-card-icon">
-                    <i class="fas fa-tachometer-alt"></i>
+        <div class="quantum-dashboard">
+            <div class="quantum-card cyber-glass neon-glow-blue">
+                <div class="card-icon">
+                    <i class="fas fa-tachometer-alt-fast"></i>
                 </div>
-                <div class="status-card-value" id="currentSpeed">0 km/h</div>
-                <div class="status-card-label">Current Speed</div>
+                <div class="card-value font-mono" id="currentSpeed">0</div>
+                <div class="card-label">VELOCITY (KM/H)</div>
+                <div class="font-mono" style="font-size: 10px; opacity: 0.5;">QUANTUM STABLE</div>
             </div>
-            <div class="status-card glass" style="background: linear-gradient(135deg, rgba(14, 159, 110, 0.2), rgba(16, 185, 129, 0.1));">
-                <div class="status-card-icon">
-                    <i class="fas fa-users"></i>
+            
+            <div class="quantum-card cyber-glass neon-glow-green">
+                <div class="card-icon">
+                    <i class="fas fa-users-between-lines"></i>
                 </div>
-                <div class="status-card-value" id="studentsCount">0/0</div>
-                <div class="status-card-label">Students On Board</div>
+                <div class="card-value" id="studentsCount">0/0</div>
+                <div class="card-label">WARDS ON BOARD</div>
+                <div class="font-mono" style="font-size: 10px; opacity: 0.5;">BIOMETRIC ACTIVE</div>
             </div>
-            <div class="status-card glass" style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(139, 92, 246, 0.1));">
-                <div class="status-card-icon">
-                    <i class="fas fa-map-marker-alt"></i>
+            
+            <div class="quantum-card cyber-glass neon-glow-purple">
+                <div class="card-icon">
+                    <i class="fas fa-location-crosshairs"></i>
                 </div>
-                <div class="status-card-value" id="nextStopName">--</div>
-                <div class="status-card-label">Next Stop</div>
+                <div class="card-value" id="nextStopName">--</div>
+                <div class="card-label">NEXT INTERCEPT</div>
+                <div class="font-mono" style="font-size: 10px; opacity: 0.5;">AWAITING COORDINATES</div>
             </div>
         </div>
 
-        <div class="trip-status trip-to-school glass" id="tripStatus" style="display: none;">
-            <i class="fas fa-school"></i>
-            <span>Trip: To School</span>
-        </div>
-
-        <div class="map-controls">
-            <button class="map-control-btn glass" id="centerMap" title="Center on Bus">
+        <div class="cyber-map-controls">
+            <button class="cyber-control-btn" id="centerMap" title="Sync Coordinates">
                 <i class="fas fa-crosshairs"></i>
             </button>
-            <button class="map-control-btn glass" id="zoomIn" title="Zoom In">
-                <i class="fas fa-plus"></i>
+            <button class="cyber-control-btn" id="zoomIn" title="Enhance View">
+                <i class="fas fa-search-plus"></i>
             </button>
-            <button class="map-control-btn glass" id="zoomOut" title="Zoom Out">
-                <i class="fas fa-minus"></i>
+            <button class="cyber-control-btn" id="zoomOut" title="Reduce View">
+                <i class="fas fa-search-minus"></i>
             </button>
-            <button class="map-control-btn glass" id="showStudents" title="Manage Students">
-                <i class="fas fa-user-graduate"></i>
+            <button class="cyber-control-btn" id="showStudents" title="Ward Management">
+                <i class="fas fa-user-helmet-safety"></i>
             </button>
-            <button class="map-control-btn glass" id="startTrip" title="Start Trip">
+            <button class="cyber-control-btn" id="startTrip" title="Initiate Protocol">
                 <i class="fas fa-play"></i>
             </button>
         </div>
-
-        <div class="map-theme-selector glass" id="mapThemeSelector">
-            <div class="theme-btn active" data-theme="standard" 
-                 style="background: linear-gradient(45deg, #4CAF50, #2196F3);" title="Standard Map"></div>
-            <div class="theme-btn" data-theme="dark" 
-                 style="background: linear-gradient(45deg, #333, #666);" title="Dark Map"></div>
-            <div class="theme-btn" data-theme="satellite" 
-                 style="background: linear-gradient(45deg, #8BC34A, #689F38);" title="Satellite Map"></div>
-            <div class="theme-btn" data-theme="light" 
-                 style="background: linear-gradient(45deg, #fff, #e0e0e0);" title="Light Map"></div>
-        </div>
     </div>
 
-    <!-- Parent Interface -->
+    <!-- Guardian Interface -->
     <div class="interface" id="parentInterface">
         <div class="map-container" id="parentMap"></div>
         
-        <div class="top-bar glass safe-area-top">
-            <div class="app-logo">
-                <div class="app-logo-icon">
-                    <i class="fas fa-bus-alt"></i>
+        <div class="neural-header safe-area-top">
+            <div class="nexus-brand">
+                <div class="brand-icon">
+                    <i class="fas fa-atom"></i>
                 </div>
-                <div class="app-logo-text">
-                    <h1>SchoolBus Tracker</h1>
-                    <p>Parent • <span id="parentTime">00:00</span></p>
+                <div class="brand-text">
+                    <h1>NEXUS</h1>
+                    <p>GUARDIAN MODE • <span class="font-mono" id="parentTime">--:--:--</span></p>
                 </div>
             </div>
-            <div class="top-actions">
-                <button class="action-btn glass" id="parentNotificationsBtn" title="Notifications">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge" id="parentNotificationCount" style="display: none;">0</span>
+            <div class="neural-actions">
+                <button class="hologram-btn" id="parentNotificationsBtn" title="Alerts">
+                    <i class="fas fa-radar"></i>
+                    <span class="notification-badge" id="parentNotificationCount" style="display: none;"></span>
                 </button>
-                <button class="action-btn glass" id="parentMapThemesBtn" title="Map Themes">
-                    <i class="fas fa-layer-group"></i>
-                </button>
-                <button class="action-btn glass" id="parentLogout" title="Logout">
-                    <i class="fas fa-sign-out-alt"></i>
+                <button class="hologram-btn" id="parentLogout" title="Disconnect">
+                    <i class="fas fa-power-off"></i>
                 </button>
             </div>
         </div>
 
-        <div class="bus-info-panel glass">
-            <div class="bus-header">
-                <div class="bus-icon">
-                    <i class="fas fa-bus"></i>
+        <div class="parent-holo-panel cyber-glass neon-glow-blue">
+            <div class="child-holo-card">
+                <div class="child-holo-avatar" id="childAvatar">
+                    W
                 </div>
-                <div class="bus-details">
-                    <div class="bus-name" id="parentBusName">BUS-001</div>
-                    <div class="bus-status">
-                        <span class="status-indicator status-online" id="busStatusDot"></span>
-                        <span id="busStatusText">Online • To School</span>
+                <div class="child-holo-details">
+                    <div class="child-holo-name" id="childFullName">WARD ALPHA</div>
+                    <div class="child-holo-info">
+                        <span><i class="fas fa-school"></i> QUANTUM ACADEMY</span>
+                        <span class="font-mono">•</span>
+                        <span>PROTOCOL: <span id="childSchool">GRADE 5</span></span>
+                    </div>
+                    <div class="child-holo-info">
+                        <i class="fas fa-location-dot"></i>
+                        <span id="childLocation">COORDINATES SYNCHING...</span>
                     </div>
                 </div>
-            </div>
-            <div class="bus-metrics">
-                <div class="metric-item">
-                    <div class="metric-value" id="parentSpeed">0 km/h</div>
-                    <div class="metric-label">Speed</div>
-                </div>
-                <div class="metric-item">
-                    <div class="metric-value" id="eta">--:--</div>
-                    <div class="metric-label">ETA</div>
-                </div>
-                <div class="metric-item">
-                    <div class="metric-value" id="distanceAway">0 km</div>
-                    <div class="metric-label">Distance</div>
+                <div class="student-holo-status status-cyber-waiting" id="childStatusBadge">
+                    AWAITING
                 </div>
             </div>
-        </div>
-
-        <div class="parent-info-card glass">
-            <div class="child-info">
-                <div class="student-avatar" id="childAvatar">
-                    E
-                </div>
-                <div class="child-details">
-                    <div class="child-name" id="childFullName">Emma Johnson</div>
-                    <div class="child-school" id="childSchool">Westwood Elementary • Grade 5</div>
-                    <div class="child-location">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <span id="childLocation">Waiting at Maple Street</span>
-                    </div>
-                </div>
-                <div class="student-status status-waiting" id="childStatusBadge">
-                    WAITING
-                </div>
-            </div>
-            <div class="child-actions">
-                <button class="child-action-btn" id="markPickedBtn">
-                    <i class="fas fa-check-circle"></i> Mark as Picked
+            
+            <div class="child-holo-actions">
+                <button class="holo-action-btn primary small" id="markPickedBtn">
+                    <i class="fas fa-check-circle"></i> CONFIRM INTERCEPT
                 </button>
-                <button class="child-action-btn secondary" id="markDroppedBtn">
-                    <i class="fas fa-home"></i> Mark as Dropped
+                <button class="holo-action-btn small" id="markDroppedBtn">
+                    <i class="fas fa-house-signal"></i> CONFIRM DELIVERY
                 </button>
             </div>
         </div>
 
-        <div class="map-controls">
-            <button class="map-control-btn glass" id="parentCenterMap" title="Center on Bus">
-                <i class="fas fa-crosshairs"></i>
+        <div class="cyber-map-controls">
+            <button class="cyber-control-btn" id="parentCenterMap" title="Track Vehicle">
+                <i class="fas fa-satellite"></i>
             </button>
-            <button class="map-control-btn glass" id="parentZoomIn" title="Zoom In">
-                <i class="fas fa-plus"></i>
+            <button class="cyber-control-btn" id="parentZoomIn">
+                <i class="fas fa-search-plus"></i>
             </button>
-            <button class="map-control-btn glass" id="parentZoomOut" title="Zoom Out">
-                <i class="fas fa-minus"></i>
+            <button class="cyber-control-btn" id="parentZoomOut">
+                <i class="fas fa-search-minus"></i>
             </button>
-            <button class="map-control-btn glass active" id="showRoute" title="Show Route">
+            <button class="cyber-control-btn active" id="showRoute">
                 <i class="fas fa-route"></i>
             </button>
-            <button class="map-control-btn glass active" id="showStops" title="Show Stops">
-                <i class="fas fa-map-marker-alt"></i>
-            </button>
-        </div>
-
-        <div class="map-theme-selector glass" id="parentMapThemeSelector" style="display: none;">
-            <div class="theme-btn active" data-theme="standard" 
-                 style="background: linear-gradient(45deg, #4CAF50, #2196F3);" title="Standard Map"></div>
-            <div class="theme-btn" data-theme="dark" 
-                 style="background: linear-gradient(45deg, #333, #666);" title="Dark Map"></div>
-            <div class="theme-btn" data-theme="satellite" 
-                 style="background: linear-gradient(45deg, #8BC34A, #689F38);" title="Satellite Map"></div>
-            <div class="theme-btn" data-theme="light" 
-                 style="background: linear-gradient(45deg, #fff, #e0e0e0);" title="Light Map"></div>
         </div>
     </div>
 
-    <!-- Student Management -->
-    <div class="student-management glass" id="studentManagement">
-        <div class="student-management-header">
-            <h2 class="student-management-title"><i class="fas fa-user-graduate"></i> Student Management</h2>
-            <button class="close-btn" id="closeStudentManagement">
+    <!-- Holo Student Management -->
+    <div class="holo-management" id="studentManagement">
+        <div class="holo-header">
+            <h2 class="holo-title"><i class="fas fa-user-helmet-safety"></i> WARD MANAGEMENT</h2>
+            <button class="hologram-btn" id="closeStudentManagement">
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <div class="student-actions">
-            <button class="student-action-btn primary" id="addStudentBtn">
-                <i class="fas fa-plus"></i> Add Student
+        
+        <div class="holo-actions">
+            <button class="holo-action-btn primary" id="addStudentBtn">
+                <i class="fas fa-plus-circle"></i> ENROLL WARD
             </button>
-            <button class="student-action-btn" id="importStudentsBtn">
-                <i class="fas fa-file-import"></i> Import CSV
+            <button class="holo-action-btn" id="importStudentsBtn">
+                <i class="fas fa-database"></i> BATCH IMPORT
             </button>
         </div>
-        <div class="student-list" id="studentListContainer">
-            <!-- Students will be loaded here -->
+        
+        <div class="student-holo-list" id="studentListContainer">
+            <!-- Wards will be loaded here -->
         </div>
     </div>
 
-    <!-- Add Student Modal -->
-    <div class="modal" id="addStudentModal">
-        <div class="modal-content glass">
-            <div class="modal-header">
-                <h2 class="modal-title">Add New Student</h2>
-                <p class="modal-subtitle">Enter student details</p>
+    <!-- Quantum Modal -->
+    <div class="quantum-modal" id="addStudentModal">
+        <div class="modal-holo-content cyber-glass">
+            <div style="text-align: center; margin-bottom: 32px;">
+                <div class="hologram-icon" style="font-size: 32px; margin-bottom: 16px;">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <h2 class="holo-title">ENROLL NEW WARD</h2>
+                <p class="font-mono" style="opacity: 0.6; margin-top: 8px;">NEURAL PROTOCOL REQUIRED</p>
             </div>
+            
             <form id="addStudentForm">
-                <div class="form-group">
-                    <label class="form-label">Student ID</label>
-                    <input type="text" class="form-input" id="newStudentId" 
-                           placeholder="e.g., STU-2024-009" required>
+                <div class="cyber-input-group">
+                    <label class="cyber-label">WARD NEURAL ID</label>
+                    <input type="text" class="cyber-input" id="newStudentId" 
+                           placeholder="e.g., WARD-001-ALPHA" required>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Full Name</label>
-                    <input type="text" class="form-input" id="newStudentName" 
-                           placeholder="First and Last Name" required>
+                
+                <div class="cyber-input-group">
+                    <label class="cyber-label">DESIGNATION</label>
+                    <input type="text" class="cyber-input" id="newStudentName" 
+                           placeholder="Ward Designation" required>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Grade</label>
-                    <input type="text" class="form-input" id="newStudentGrade" 
-                           placeholder="e.g., 5th Grade" required>
+                
+                <div class="cyber-input-group">
+                    <label class="cyber-label">PROTOCOL LEVEL</label>
+                    <input type="text" class="cyber-input" id="newStudentGrade" 
+                           placeholder="e.g., GRADE 5" required>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Parent Contact</label>
-                    <input type="tel" class="form-input" id="newStudentContact" 
-                           placeholder="Phone number" required>
+                
+                <div class="cyber-input-group">
+                    <label class="cyber-label">GUARDIAN NEURAL LINK</label>
+                    <input type="tel" class="cyber-input" id="newStudentContact" 
+                           placeholder="Neural Frequency" required>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Pickup Location</label>
-                    <input type="text" class="form-input" id="newStudentLocation" 
-                           placeholder="Address or landmark" required>
+                
+                <div class="cyber-input-group">
+                    <label class="cyber-label">INTERCEPT COORDINATES</label>
+                    <input type="text" class="cyber-input" id="newStudentLocation" 
+                           placeholder="Quantum Coordinates" required>
                 </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelAddStudent">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Student</button>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 32px;">
+                    <button type="button" class="holo-action-btn" id="cancelAddStudent">
+                        <i class="fas fa-times"></i> ABORT
+                    </button>
+                    <button type="submit" class="holo-action-btn primary">
+                        <i class="fas fa-check"></i> ENROLL
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Notifications Modal -->
-    <div class="modal" id="notificationsModal">
-        <div class="modal-content glass">
-            <div class="modal-header">
-                <h2 class="modal-title">Notifications</h2>
-                <p class="modal-subtitle">Alerts and updates</p>
+    <!-- Neural Notifications -->
+    <div class="quantum-modal" id="notificationsModal">
+        <div class="modal-holo-content cyber-glass">
+            <div style="text-align: center; margin-bottom: 32px;">
+                <div class="hologram-icon" style="font-size: 32px; margin-bottom: 16px;">
+                    <i class="fas fa-satellite-dish"></i>
+                </div>
+                <h2 class="holo-title">NEURAL FEED</h2>
+                <p class="font-mono" style="opacity: 0.6; margin-top: 8px;">REAL-TIME SYSTEM ALERTS</p>
             </div>
-            <div id="notificationsList">
-                <!-- Notifications will be loaded here -->
+            
+            <div id="notificationsList" style="max-height: 300px; overflow-y: auto;">
+                <!-- Neural alerts appear here -->
             </div>
-            <div class="form-actions">
-                <button class="btn btn-secondary" id="clearNotifications">Clear All</button>
-                <button class="btn btn-secondary" id="closeNotifications">Close</button>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px;">
+                <button class="holo-action-btn" id="clearNotifications">
+                    <i class="fas fa-trash"></i> PURGE
+                </button>
+                <button class="holo-action-btn" id="closeNotifications">
+                    <i class="fas fa-times"></i> DISMISS
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Toast Container -->
-    <div class="toast-container" id="toastContainer"></div>
+    <!-- Neural Toast Container -->
+    <div class="neural-notifications" id="toastContainer"></div>
 
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // ==================== FIREBASE CONFIGURATION ====================
-        const firebaseConfig = {
+        // ==================== QUANTUM CORE - NEXUS SYSTEM ====================
+        const NEXUS_CONFIG = {
             apiKey: "AIzaSyCEnhJWNEpEkvQ3Oeuw3g6trXuz14zsK-U",
             authDomain: "schoolbus-tracker-pro.firebaseapp.com",
             databaseURL: "https://schoolbus-tracker-pro-default-rtdb.firebaseio.com",
@@ -1618,421 +1303,460 @@
             appId: "1:372498519858:web:c1be826010b5cbf952292b"
         };
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        const auth = firebase.auth();
+        // Initialize Quantum Core
+        firebase.initializeApp(NEXUS_CONFIG);
+        const quantumDB = firebase.database();
 
-        // Application State
-        const appState = {
-            userRole: 'driver',
-            driverId: '',
-            busNumber: '',
-            parentName: '',
-            studentId: '',
-            currentTrip: 'to_school',
+        // Nexus State
+        const nexusState = {
+            protocol: 'operator',
+            operatorId: '',
+            vehicleCode: '',
+            guardianId: '',
+            wardId: '',
+            quantumTrip: 'to_academy',
             tripActive: false,
-            notifications: [],
-            mapTheme: 'standard',
-            studentsOnBoard: 0,
-            totalStudents: 0,
-            userId: null
+            neuralAlerts: [],
+            visualSpectrum: 'cyberdark',
+            wardsOnBoard: 0,
+            totalWards: 0,
+            neuralSignature: null,
+            currentPosition: null
         };
 
-        // Firebase Database References
-        const dbRefs = {
-            buses: 'buses',
-            students: 'students',
-            trips: 'trips',
-            alerts: 'alerts',
-            users: 'users'
-        };
-
-        // Enhanced Student Database (now in Firebase)
-        let studentDatabase = {};
-        
-        // Load students from Firebase on startup
-        function loadStudentsFromFirebase() {
-            database.ref(`${dbRefs.students}/${appState.busNumber}`).on('value', (snapshot) => {
-                const students = snapshot.val();
-                if (students) {
-                    studentDatabase = students;
-                    
-                    // Update student list if visible
-                    if (document.getElementById('studentManagement').classList.contains('active')) {
-                        loadStudentList();
-                    }
-                    
-                    // Update dashboard
-                    updateDashboard();
-                    
-                    // Update map stops
-                    addBusStopsToMap();
-                    
-                    // Update parent interface if applicable
-                    if (appState.userRole === 'parent' && appState.studentId) {
-                        updateChildInfo(studentDatabase[appState.studentId] || {});
-                    }
-                }
-            });
-        }
-
-        // Map Themes (unchanged)
-        const MAP_THEMES = {
-            standard: {
-                url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                attribution: '© OpenStreetMap'
+        // Demo Wards Database
+        let wardDatabase = {
+            'WARD-001': {
+                id: 'WARD-001',
+                name: 'NEURAL PRIME',
+                grade: 'GRADE 5',
+                contact: '999-888-7777',
+                location: 'QUANTUM DISTRICT',
+                avatar: 'N',
+                status: 'waiting',
+                coordinates: [40.7188, -74.0160],
+                school: 'QUANTUM ACADEMY'
             },
-            dark: {
-                url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-                attribution: '© CARTO'
+            'WARD-002': {
+                id: 'WARD-002',
+                name: 'CYBER NEXUS',
+                grade: 'GRADE 4',
+                contact: '999-888-7778',
+                location: 'NEURAL ZONE',
+                avatar: 'C',
+                status: 'waiting',
+                coordinates: [40.7088, -73.9960],
+                school: 'QUANTUM ACADEMY'
             },
-            satellite: {
-                url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-                attribution: '© Esri'
-            },
-            light: {
-                url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-                attribution: '© CARTO'
+            'WARD-003': {
+                id: 'WARD-003',
+                name: 'MATRIX PROTOCOL',
+                grade: 'GRADE 6',
+                contact: '999-888-7779',
+                location: 'DATA STREET',
+                avatar: 'M',
+                status: 'onbus',
+                coordinates: [40.7028, -74.0260],
+                school: 'QUANTUM ACADEMY'
             }
         };
 
         // Global Variables
-        let map = null;
-        let busMarker = null;
-        let busPath = null;
-        let busStops = [];
-        let currentPosition = null;
-        let watchId = null;
-        let stopMarkers = [];
-        let isMapThemeVisible = false;
-        let isParentMapThemeVisible = false;
-        let locationUpdateInterval = null;
-        let parentListener = null;
+        let quantumMap = null;
+        let vehicleMarker = null;
+        let quantumPath = null;
+        let wardMarkers = [];
+        let neuralWatchId = null;
+        let neuralUpdateInterval = null;
+        let isTripActive = false;
 
-        // Initialize Application
-        document.addEventListener('DOMContentLoaded', initApp);
+        // Initialize Quantum System
+        document.addEventListener('DOMContentLoaded', function() {
+            initNexus();
+        });
 
-        function initApp() {
-            setupLogin();
-            updateClock();
-            setInterval(updateClock, 1000);
+        function initNexus() {
+            setupQuantumAuth();
+            updateQuantumClock();
+            setInterval(updateQuantumClock, 1000);
             
-            // Check if user is already logged in (from localStorage)
-            const savedUser = localStorage.getItem('schoolbus_user');
-            if (savedUser) {
-                const userData = JSON.parse(savedUser);
-                appState.userRole = userData.role;
-                appState.userId = userData.userId;
-                appState.busNumber = userData.busNumber;
-                appState.driverId = userData.driverId;
-                appState.parentName = userData.parentName;
-                appState.studentId = userData.studentId;
-                
-                showInterface(appState.userRole);
-                if (appState.userRole === 'driver') {
-                    initDriverInterface();
-                } else {
-                    initParentInterface();
-                }
-                
-                showToast(`Welcome back, ${appState.userRole === 'driver' ? appState.driverId : appState.parentName}!`, 'success');
+            // Check for existing neural link
+            const neuralLink = localStorage.getItem('nexus_neural_link');
+            if (neuralLink) {
+                const linkData = JSON.parse(neuralLink);
+                establishNeuralLinkFromStorage(linkData);
             }
-            
-            // Prevent pull-to-refresh
-            document.body.addEventListener('touchmove', function(e) {
-                if (document.getElementById('studentManagement').classList.contains('active') ||
-                    document.getElementById('addStudentModal').classList.contains('active') ||
-                    document.getElementById('notificationsModal').classList.contains('active')) {
-                    // Allow scrolling in modals
-                    return;
-                }
-                e.preventDefault();
-            }, { passive: false });
         }
 
-        // ==================== MODIFIED FUNCTIONS FOR FIREBASE ====================
+        function setupQuantumAuth() {
+            const operatorBtn = document.getElementById('driverRoleBtn');
+            const guardianBtn = document.getElementById('parentRoleBtn');
+            const quantumBtn = document.getElementById('loginBtn');
 
-        function handleLogin() {
-            if (appState.userRole === 'driver') {
-                appState.driverId = document.getElementById('loginInput').value.trim();
-                appState.busNumber = document.getElementById('busNumber').value.trim();
+            operatorBtn.addEventListener('click', handleProtocolSelect);
+            guardianBtn.addEventListener('click', handleProtocolSelect);
+            quantumBtn.addEventListener('click', establishNeuralLink);
+        }
 
-                if (!appState.driverId || !appState.busNumber) {
-                    showToast('Please enter Driver ID and Bus Number', 'error');
+        function handleProtocolSelect(e) {
+            const isOperator = e.currentTarget.id === 'driverRoleBtn';
+            nexusState.protocol = isOperator ? 'operator' : 'guardian';
+            
+            // Update hologram cards
+            document.getElementById('driverRoleBtn').classList.toggle('active', isOperator);
+            document.getElementById('parentRoleBtn').classList.toggle('active', !isOperator);
+            
+            // Update interface
+            const loginLabel = document.getElementById('loginLabel');
+            const parentExtra = document.getElementById('parentExtra');
+            
+            if (isOperator) {
+                loginLabel.textContent = 'Operator Neural ID';
+                parentExtra.style.display = 'none';
+                document.getElementById('loginInput').value = 'OP-001';
+            } else {
+                loginLabel.textContent = 'Guardian Protocol';
+                parentExtra.style.display = 'block';
+                document.getElementById('loginInput').value = 'GUARDIAN-ALPHA';
+            }
+            
+            // Add quantum feedback
+            const btn = e.currentTarget;
+            btn.style.transform = 'scale(0.95)';
+            setTimeout(() => btn.style.transform = '', 150);
+        }
+
+        function establishNeuralLink() {
+            if (nexusState.protocol === 'operator') {
+                nexusState.operatorId = document.getElementById('loginInput').value.trim();
+                nexusState.vehicleCode = document.getElementById('busNumber').value.trim();
+
+                if (!nexusState.operatorId || !nexusState.vehicleCode) {
+                    showQuantumAlert('Quantum fields required', 'error');
                     return;
                 }
 
-                // Create user session
-                appState.userId = `driver_${Date.now()}`;
+                nexusState.neuralSignature = `operator_${Date.now()}`;
                 
-                // Save to localStorage
-                localStorage.setItem('schoolbus_user', JSON.stringify({
-                    role: 'driver',
-                    userId: appState.userId,
-                    driverId: appState.driverId,
-                    busNumber: appState.busNumber
+                // Save neural link
+                localStorage.setItem('nexus_neural_link', JSON.stringify({
+                    protocol: 'operator',
+                    neuralSignature: nexusState.neuralSignature,
+                    operatorId: nexusState.operatorId,
+                    vehicleCode: nexusState.vehicleCode
                 }));
 
-                showInterface('driver');
-                initDriverInterface();
+                activateInterface('operator');
+                initOperatorProtocol();
                 
-                // Initialize Firebase listeners
-                setupFirebaseListeners();
-                loadStudentsFromFirebase();
-                
-                showToast(`Welcome, Driver ${appState.driverId}!`, 'success');
+                showQuantumAlert(`Neural link established: ${nexusState.operatorId}`, 'success');
 
             } else {
-                appState.parentName = document.getElementById('parentName').value.trim();
-                appState.busNumber = document.getElementById('busNumber').value.trim();
-                appState.studentId = document.getElementById('studentId').value.trim();
+                nexusState.guardianId = document.getElementById('parentName').value.trim();
+                nexusState.vehicleCode = document.getElementById('busNumber').value.trim();
+                nexusState.wardId = document.getElementById('studentId').value.trim();
 
-                if (!appState.parentName || !appState.busNumber || !appState.studentId) {
-                    showToast('Please fill all fields', 'error');
+                if (!nexusState.guardianId || !nexusState.vehicleCode || !nexusState.wardId) {
+                    showQuantumAlert('All quantum fields required', 'error');
                     return;
                 }
 
-                appState.userId = `parent_${Date.now()}`;
+                nexusState.neuralSignature = `guardian_${Date.now()}`;
                 
-                // Save to localStorage
-                localStorage.setItem('schoolbus_user', JSON.stringify({
-                    role: 'parent',
-                    userId: appState.userId,
-                    parentName: appState.parentName,
-                    busNumber: appState.busNumber,
-                    studentId: appState.studentId
+                localStorage.setItem('nexus_neural_link', JSON.stringify({
+                    protocol: 'guardian',
+                    neuralSignature: nexusState.neuralSignature,
+                    guardianId: nexusState.guardianId,
+                    vehicleCode: nexusState.vehicleCode,
+                    wardId: nexusState.wardId
                 }));
 
-                showInterface('parent');
-                initParentInterface();
+                activateInterface('guardian');
+                initGuardianProtocol();
                 
-                // Initialize Firebase listeners
-                setupFirebaseListeners();
-                loadStudentsFromFirebase();
-                
-                showToast(`Welcome ${appState.parentName}!`, 'success');
+                showQuantumAlert(`Guardian protocol active: ${nexusState.guardianId}`, 'success');
             }
         }
 
-        function setupFirebaseListeners() {
-            if (appState.userRole === 'parent') {
-                // Listen for bus location updates
-                database.ref(`${dbRefs.buses}/${appState.busNumber}/location`).on('value', (snapshot) => {
-                    const locationData = snapshot.val();
-                    if (locationData) {
-                        updateBusPosition(locationData);
-                    }
-                });
+        function establishNeuralLinkFromStorage(linkData) {
+            nexusState.protocol = linkData.protocol;
+            nexusState.neuralSignature = linkData.neuralSignature;
+            
+            if (linkData.protocol === 'operator') {
+                nexusState.operatorId = linkData.operatorId;
+                nexusState.vehicleCode = linkData.vehicleCode;
+                activateInterface('operator');
+                initOperatorProtocol();
+            } else {
+                nexusState.guardianId = linkData.guardianId;
+                nexusState.vehicleCode = linkData.vehicleCode;
+                nexusState.wardId = linkData.wardId;
+                activateInterface('guardian');
+                initGuardianProtocol();
+            }
+            
+            showQuantumAlert('Neural link restored', 'info');
+        }
 
-                // Listen for bus status updates
-                database.ref(`${dbRefs.buses}/${appState.busNumber}/status`).on('value', (snapshot) => {
-                    const statusData = snapshot.val();
-                    if (statusData) {
-                        updateBusStatus(statusData);
-                    }
-                });
+        function activateInterface(protocol) {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.querySelectorAll('.interface').forEach(el => el.classList.remove('active'));
+            document.getElementById(`${protocol}Interface`).classList.add('active');
+        }
 
-                // Listen for student updates
-                database.ref(`${dbRefs.students}/${appState.busNumber}/${appState.studentId}`).on('value', (snapshot) => {
-                    const studentData = snapshot.val();
-                    if (studentData) {
-                        updateStudentFromFirebase(studentData);
-                    }
-                });
-
-                // Listen for alerts
-                database.ref(`${dbRefs.alerts}/${appState.busNumber}`).limitToLast(10).on('child_added', (snapshot) => {
-                    const alertData = snapshot.val();
-                    if (alertData) {
-                        handleAlert(alertData);
-                    }
-                });
+        // ==================== QUANTUM OPERATOR PROTOCOL ====================
+        function initOperatorProtocol() {
+            initQuantumMap('driverMap');
+            setupOperatorControls();
+            startQuantumGPS();
+            
+            // Initialize dashboard
+            updateQuantumDashboard();
+            
+            // Start simulation if no GPS
+            if (!navigator.geolocation) {
+                startQuantumSimulation();
             }
         }
 
-        function publishLocation(lat, lng, speed, heading) {
-            const studentsOnBoard = Object.values(studentDatabase).filter(s => s.status === 'onbus').length;
-            const totalStudents = Object.keys(studentDatabase).length;
+        function initQuantumMap(mapId) {
+            const quantumCoords = [40.7128, -74.0060];
             
-            const locationData = {
-                lat: lat,
-                lng: lng,
-                speed: speed || 0,
-                heading: heading || 0,
-                timestamp: Date.now(),
-                trip: appState.currentTrip,
-                tripActive: appState.tripActive,
-                studentsOnBoard: studentsOnBoard,
-                totalStudents: totalStudents,
-                driverId: appState.driverId
-            };
+            quantumMap = L.map(mapId, {
+                zoomControl: false,
+                dragging: true,
+                tap: true,
+                touchZoom: true,
+                doubleClickZoom: true,
+                keyboard: false,
+                inertia: true,
+                fadeAnimation: true,
+                markerZoomAnimation: true
+            }).setView(quantumCoords, 14);
             
-            // Update bus location in Firebase
-            database.ref(`${dbRefs.buses}/${appState.busNumber}/location`).set(locationData);
+            // Set quantum map theme
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© CARTO',
+                maxZoom: 19,
+                minZoom: 3
+            }).addTo(quantumMap);
             
-            // Also update bus status
-            database.ref(`${dbRefs.buses}/${appState.busNumber}/status`).set({
-                trip: appState.currentTrip,
-                active: appState.tripActive,
-                lastUpdate: Date.now(),
-                driver: appState.driverId
-            });
+            // Create vehicle marker
+            vehicleMarker = L.marker(quantumCoords, {
+                icon: L.divIcon({
+                    html: '<div class="quantum-pulse" style="width: 60px; height: 60px; border-radius: 16px; background: linear-gradient(135deg, var(--cyber-blue), var(--neon-purple)); display: flex; align-items: center; justify-content: center; color: white; font-size: 28px; border: 3px solid white; box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);"><i class="fas fa-shuttle-space"></i></div>',
+                    className: 'quantum-vehicle',
+                    iconSize: [60, 60],
+                    iconAnchor: [30, 30]
+                }),
+                zIndexOffset: 1000
+            }).addTo(quantumMap);
             
-            // Update trip history
-            database.ref(`${dbRefs.trips}/${appState.busNumber}/${Date.now()}`).set({
-                coordinates: [lat, lng],
-                speed: speed,
-                timestamp: Date.now()
-            });
+            // Initialize quantum path
+            quantumPath = L.polyline([], {
+                color: 'var(--cyber-blue)',
+                weight: 4,
+                opacity: 0.7,
+                lineJoin: 'round',
+                dashArray: '5, 10'
+            }).addTo(quantumMap);
+            
+            // Add ward markers
+            addWardMarkers();
         }
 
-        function publishTripStatus() {
-            const studentsOnBoard = Object.values(studentDatabase).filter(s => s.status === 'onbus').length;
-            const totalStudents = Object.keys(studentDatabase).length;
+        function setupOperatorControls() {
+            // Map controls
+            document.getElementById('centerMap').addEventListener('click', centerQuantumVehicle);
+            document.getElementById('zoomIn').addEventListener('click', () => quantumMap.zoomIn());
+            document.getElementById('zoomOut').addEventListener('click', () => quantumMap.zoomOut());
+            document.getElementById('showStudents').addEventListener('click', showWardManagement);
+            document.getElementById('startTrip').addEventListener('click', toggleQuantumTrip);
             
-            const statusData = {
-                type: 'trip_status',
-                busNumber: appState.busNumber,
-                timestamp: Date.now(),
-                trip: appState.currentTrip,
-                active: appState.tripActive,
-                driver: appState.driverId,
-                studentsOnBoard: studentsOnBoard,
-                totalStudents: totalStudents
-            };
+            // Other controls
+            document.getElementById('notificationsBtn').addEventListener('click', showNeuralFeed);
+            document.getElementById('driverLogout').addEventListener('click', disconnectNeuralLink);
             
-            database.ref(`${dbRefs.buses}/${appState.busNumber}/status`).set(statusData);
+            // Ward management
+            document.getElementById('closeStudentManagement').addEventListener('click', hideWardManagement);
+            document.getElementById('addStudentBtn').addEventListener('click', showEnrollWardModal);
+            document.getElementById('importStudentsBtn').addEventListener('click', batchImportWards);
+            document.getElementById('addStudentForm').addEventListener('submit', handleEnrollWard);
+            document.getElementById('cancelAddStudent').addEventListener('click', hideEnrollWardModal);
+            
+            // Notifications modal
+            document.getElementById('clearNotifications').addEventListener('click', purgeNeuralFeed);
+            document.getElementById('closeNotifications').addEventListener('click', hideNeuralFeedModal);
         }
 
-        function sendTripAlert(type, message) {
-            const alertData = {
-                type: type,
-                busNumber: appState.busNumber,
-                timestamp: Date.now(),
-                message: message,
-                trip: appState.currentTrip,
-                driverId: appState.driverId
-            };
-            
-            const alertRef = database.ref(`${dbRefs.alerts}/${appState.busNumber}`).push();
-            alertRef.set(alertData);
-            
-            addNotification('Bus Alert', message, 'warning');
+        function startQuantumGPS() {
+            if ('geolocation' in navigator) {
+                neuralWatchId = navigator.geolocation.watchPosition(
+                    handleQuantumPosition,
+                    handleQuantumError,
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 5000,
+                        maximumAge: 0
+                    }
+                );
+                
+                // Get initial position
+                navigator.geolocation.getCurrentPosition(
+                    handleQuantumPosition,
+                    handleQuantumError,
+                    { enableHighAccuracy: true }
+                );
+            } else {
+                showQuantumAlert('GPS offline - Quantum simulation active', 'warning');
+                startQuantumSimulation();
+            }
         }
 
-        function publishStudentStatus(studentId, status) {
-            const student = studentDatabase[studentId];
-            if (!student) return;
+        function handleQuantumPosition(position) {
+            nexusState.currentPosition = position;
+            const { latitude, longitude, speed, heading } = position.coords;
             
-            const statusData = {
-                studentId: studentId,
-                studentName: student.name,
-                status: status,
-                timestamp: Date.now(),
-                location: student.location,
-                coordinates: student.coordinates,
-                busNumber: appState.busNumber
-            };
-            
-            // Update student in Firebase
-            database.ref(`${dbRefs.students}/${appState.busNumber}/${studentId}`).set({
-                ...student,
-                status: status,
-                lastUpdated: Date.now()
-            });
-            
-            // Send alert
-            sendStudentAlert(studentId, status === 'onbus' ? 'picked_up' : 'dropped_off', 
-                           `${student.name} has been ${status === 'onbus' ? 'picked up' : 'dropped off'}`);
-        }
-
-        function sendStudentAlert(studentId, type, message) {
-            const student = studentDatabase[studentId];
-            if (!student) return;
-            
-            const alertData = {
-                type: type,
-                studentId: studentId,
-                studentName: student.name,
-                message: message,
-                timestamp: Date.now(),
-                busNumber: appState.busNumber,
-                parentContact: student.contact
-            };
-            
-            const alertRef = database.ref(`${dbRefs.alerts}/${appState.busNumber}/${studentId}`).push();
-            alertRef.set(alertData);
-            
-            addNotification('Student Update', message, 'info');
-        }
-
-        function updateBusPosition(data) {
-            if (!map || !busMarker) return;
-            
-            const lat = data.lat || data.coordinates[0];
-            const lng = data.lng || data.coordinates[1];
-            
-            busMarker.setLatLng([lat, lng]);
+            // Update vehicle
+            const quantumCoords = [latitude, longitude];
+            vehicleMarker.setLatLng(quantumCoords);
             
             // Update path
-            const currentPath = busPath.getLatLngs();
-            currentPath.push([lat, lng]);
+            const currentPath = quantumPath.getLatLngs();
+            currentPath.push(quantumCoords);
             if (currentPath.length > 50) currentPath.shift();
-            busPath.setLatLngs(currentPath);
+            quantumPath.setLatLngs(currentPath);
             
-            // Update parent dashboard
-            updateParentDashboard({
-                speed: data.speed || 0,
-                eta: calculateETA(data.timestamp),
-                distance: calculateDistance([lat, lng]),
-                trip: data.trip,
-                tripActive: data.tripActive
-            });
-        }
-
-        function updateBusStatus(data) {
-            updateParentDashboard({
-                trip: data.trip,
-                tripActive: data.active
-            });
-        }
-
-        function updateStudentFromFirebase(data) {
-            // Update local student database
-            if (data.id) {
-                studentDatabase[data.id] = data;
-            }
+            // Update quantum dashboard
+            updateQuantumDashboard(speed);
             
-            // Update UI if this is the parent's child
-            if (appState.userRole === 'parent' && data.id === appState.studentId) {
-                updateChildInfo(data);
-                
-                // Show notification for status changes
-                if (data.status && data.lastUpdated) {
-                    const now = Date.now();
-                    if (now - data.lastUpdated < 10000) { // Within 10 seconds
-                        showToast(`${data.name} is now ${data.status === 'onbus' ? 'on the bus' : data.status}`, 'info');
-                    }
-                }
+            // Check nearby wards
+            checkNearbyWards(quantumCoords);
+            
+            // Center on first position
+            if (!window.quantumCentered) {
+                quantumMap.setView(quantumCoords, 16);
+                window.quantumCentered = true;
             }
         }
 
-        function handleAlert(data) {
-            addNotification(data.type === 'trip_started' ? 'Bus Alert' : 'Student Alert', 
-                          data.message, 'warning');
+        function updateQuantumDashboard(speed = 0) {
+            // Update speed
+            const speedElement = document.getElementById('currentSpeed');
+            const newSpeed = Math.round((speed || 0) * 3.6);
+            speedElement.textContent = newSpeed;
             
-            if (data.type === 'trip_started') {
-                showToast(`Bus alert: ${data.message}`, 'warning');
+            // Update ward counts
+            const wardsOnBoard = Object.values(wardDatabase).filter(w => w.status === 'onbus').length;
+            const totalWards = Object.keys(wardDatabase).length;
+            document.getElementById('studentsCount').textContent = `${wardsOnBoard}/${totalWards}`;
+            
+            // Update next stop
+            const nextStop = getNextStop();
+            document.getElementById('nextStopName').textContent = nextStop || '--';
+            
+            // Update vehicle name
+            document.getElementById('driverBusName').textContent = nexusState.vehicleCode;
+        }
+
+        function toggleQuantumTrip() {
+            isTripActive = !isTripActive;
+            const tripBtn = document.getElementById('startTrip');
+            
+            if (isTripActive) {
+                tripBtn.classList.add('active');
+                tripBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                showQuantumAlert('QUANTUM TRIP INITIATED', 'success');
+            } else {
+                tripBtn.classList.remove('active');
+                tripBtn.innerHTML = '<i class="fas fa-play"></i>';
+                showQuantumAlert('QUANTUM TRIP PAUSED', 'info');
             }
         }
 
-        // ==================== MODIFIED STUDENT MANAGEMENT ====================
+        function centerQuantumVehicle() {
+            if (quantumMap && vehicleMarker) {
+                quantumMap.setView(vehicleMarker.getLatLng(), 16);
+                showQuantumAlert('QUANTUM SYNCHRONIZATION COMPLETE', 'info');
+            }
+        }
 
-        function handleAddStudent(e) {
+        // ==================== QUANTUM GUARDIAN PROTOCOL ====================
+        function initGuardianProtocol() {
+            initQuantumMap('parentMap');
+            setupGuardianControls();
+            
+            // Update child info
+            updateChildInfo();
+        }
+
+        function setupGuardianControls() {
+            document.getElementById('parentCenterMap').addEventListener('click', centerQuantumVehicle);
+            document.getElementById('parentZoomIn').addEventListener('click', () => quantumMap.zoomIn());
+            document.getElementById('parentZoomOut').addEventListener('click', () => quantumMap.zoomOut());
+            document.getElementById('showRoute').addEventListener('click', toggleQuantumRoute);
+            
+            document.getElementById('markPickedBtn').addEventListener('click', () => updateWardStatus('onbus'));
+            document.getElementById('markDroppedBtn').addEventListener('click', () => updateWardStatus('dropped'));
+            
+            document.getElementById('parentNotificationsBtn').addEventListener('click', showNeuralFeed);
+            document.getElementById('parentLogout').addEventListener('click', disconnectNeuralLink);
+        }
+
+        function updateChildInfo() {
+            const ward = wardDatabase[nexusState.wardId];
+            if (!ward) {
+                showQuantumAlert('WARD NOT FOUND IN DATABASE', 'error');
+                return;
+            }
+            
+            document.getElementById('childFullName').textContent = ward.name;
+            document.getElementById('childSchool').textContent = ward.grade;
+            document.getElementById('childAvatar').textContent = ward.avatar;
+            document.getElementById('childLocation').textContent = 
+                ward.status === 'onbus' ? 'ON QUANTUM VEHICLE' : `LOCATION: ${ward.location}`;
+            
+            const statusBadge = document.getElementById('childStatusBadge');
+            statusBadge.className = `student-holo-status status-cyber-${ward.status}`;
+            statusBadge.textContent = ward.status.toUpperCase();
+        }
+
+        function toggleQuantumRoute() {
+            const btn = document.getElementById('showRoute');
+            btn.classList.toggle('active');
+            
+            if (btn.classList.contains('active')) {
+                quantumPath.addTo(quantumMap);
+                showQuantumAlert('QUANTUM ROUTE VISIBLE', 'info');
+            } else {
+                quantumMap.removeLayer(quantumPath);
+                showQuantumAlert('QUANTUM ROUTE HIDDEN', 'info');
+            }
+        }
+
+        // ==================== QUANTUM WARD MANAGEMENT ====================
+        function showWardManagement() {
+            loadWardList();
+            document.getElementById('studentManagement').classList.add('active');
+        }
+
+        function hideWardManagement() {
+            document.getElementById('studentManagement').classList.remove('active');
+        }
+
+        function showEnrollWardModal() {
+            document.getElementById('addStudentModal').classList.add('active');
+        }
+
+        function hideEnrollWardModal() {
+            document.getElementById('addStudentModal').classList.remove('active');
+            document.getElementById('addStudentForm').reset();
+        }
+
+        function handleEnrollWard(e) {
             e.preventDefault();
             
-            const newStudent = {
+            const newWard = {
                 id: document.getElementById('newStudentId').value,
                 name: document.getElementById('newStudentName').value,
                 grade: document.getElementById('newStudentGrade').value,
@@ -2041,75 +1765,292 @@
                 avatar: document.getElementById('newStudentName').value.charAt(0).toUpperCase(),
                 status: 'waiting',
                 coordinates: [40.7128 + Math.random() * 0.01, -74.0060 + Math.random() * 0.01],
-                school: 'Westwood Elementary',
-                busNumber: appState.busNumber,
-                createdAt: Date.now(),
-                lastUpdated: Date.now()
+                school: 'QUANTUM ACADEMY',
+                vehicleCode: nexusState.vehicleCode,
+                enrolled: Date.now()
             };
             
-            // Save to Firebase
-            database.ref(`${dbRefs.students}/${appState.busNumber}/${newStudent.id}`).set(newStudent)
-                .then(() => {
-                    // Update map
-                    addBusStopsToMap();
-                    
-                    // Update UI
-                    loadStudentList();
-                    updateDashboard();
-                    
-                    // Close modal
-                    hideAddStudentModal();
-                    
-                    showToast(`Added student: ${newStudent.name}`, 'success');
-                })
-                .catch((error) => {
-                    showToast(`Error adding student: ${error.message}`, 'error');
-                });
+            // Add to database
+            wardDatabase[newWard.id] = newWard;
+            
+            // Update UI
+            loadWardList();
+            addWardMarkers();
+            updateQuantumDashboard();
+            hideEnrollWardModal();
+            
+            showQuantumAlert(`WARD ENROLLED: ${newWard.name}`, 'success');
         }
 
-        function removeStudent(studentId) {
-            const student = studentDatabase[studentId];
-            if (!student) return;
+        function batchImportWards() {
+            showQuantumAlert('BATCH IMPORT PROTOCOL INITIATED', 'info');
+            // For demo, add some sample wards
+            const sampleWards = [
+                {
+                    id: 'WARD-004',
+                    name: 'SYNAPSE DELTA',
+                    grade: 'GRADE 3',
+                    contact: '999-888-7780',
+                    location: 'NEURAL NET ZONE',
+                    avatar: 'S',
+                    status: 'waiting',
+                    coordinates: [40.7288, -74.0360],
+                    school: 'QUANTUM ACADEMY'
+                },
+                {
+                    id: 'WARD-005',
+                    name: 'PROTOCOL BETA',
+                    grade: 'GRADE 7',
+                    contact: '999-888-7781',
+                    location: 'DATA CENTER',
+                    avatar: 'P',
+                    status: 'waiting',
+                    coordinates: [40.6988, -73.9860],
+                    school: 'QUANTUM ACADEMY'
+                }
+            ];
             
-            if (confirm(`Remove ${student.name} from the roster?`)) {
-                database.ref(`${dbRefs.students}/${appState.busNumber}/${studentId}`).remove()
-                    .then(() => {
-                        delete studentDatabase[studentId];
-                        loadStudentList();
-                        addBusStopsToMap();
-                        updateDashboard();
-                        showToast(`Removed student: ${student.name}`, 'success');
+            sampleWards.forEach(ward => {
+                wardDatabase[ward.id] = ward;
+            });
+            
+            loadWardList();
+            addWardMarkers();
+            updateQuantumDashboard();
+            
+            showQuantumAlert(`BATCH IMPORT COMPLETE: ${sampleWards.length} WARDS ADDED`, 'success');
+        }
+
+        function loadWardList() {
+            const container = document.getElementById('studentListContainer');
+            const wards = Object.values(wardDatabase);
+            
+            if (wards.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px;">
+                        <div class="hologram-icon" style="margin-bottom: 16px;">
+                            <i class="fas fa-user-slash"></i>
+                        </div>
+                        <p style="opacity: 0.6;">NO WARDS ENROLLED</p>
+                        <button class="holo-action-btn primary" style="margin-top: 20px;" onclick="showEnrollWardModal()">
+                            <i class="fas fa-plus"></i> ENROLL FIRST WARD
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = wards.map(ward => `
+                <div class="student-holo-card">
+                    <div class="student-holo-avatar">
+                        ${ward.avatar}
+                    </div>
+                    <div class="student-holo-info">
+                        <div class="student-holo-name">${ward.name}</div>
+                        <div class="student-holo-details">
+                            <span>${ward.grade}</span>
+                            <span class="font-mono">•</span>
+                            <span>${ward.location}</span>
+                        </div>
+                    </div>
+                    <div class="student-holo-status status-cyber-${ward.status}">
+                        ${ward.status.toUpperCase()}
+                    </div>
+                    <div class="student-actions-buttons">
+                        <button class="hologram-btn" onclick="editWard('${ward.id}')" style="width: 40px; height: 40px;">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="hologram-btn" onclick="removeWard('${ward.id}')" style="width: 40px; height: 40px;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addWardMarkers() {
+            // Clear existing markers
+            if (wardMarkers.length > 0) {
+                wardMarkers.forEach(marker => quantumMap.removeLayer(marker));
+                wardMarkers = [];
+            }
+            
+            // Add new markers
+            Object.values(wardDatabase).forEach(ward => {
+                const marker = L.marker(ward.coordinates, {
+                    icon: L.divIcon({
+                        html: `<div style="width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, var(--matrix-green), var(--cyber-blue)); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px; border: 2px solid white; box-shadow: 0 0 20px rgba(0, 255, 157, 0.5);">${ward.avatar}</div>`,
+                        className: 'ward-marker',
+                        iconSize: [40, 40],
+                        iconAnchor: [20, 20]
                     })
-                    .catch((error) => {
-                        showToast(`Error removing student: ${error.message}`, 'error');
-                    });
+                }).addTo(quantumMap);
+                
+                marker.bindPopup(`
+                    <div style="padding: 10px; font-family: 'Inter', sans-serif;">
+                        <strong style="color: var(--cyber-blue);">${ward.name}</strong><br>
+                        <span style="color: var(--matrix-green);">${ward.grade}</span><br>
+                        <span style="color: rgba(255,255,255,0.7);">Status: ${ward.status.toUpperCase()}</span><br>
+                        <span style="color: rgba(255,255,255,0.7);">Location: ${ward.location}</span>
+                    </div>
+                `);
+                
+                wardMarkers.push(marker);
+            });
+        }
+
+        function updateWardStatus(status) {
+            const ward = wardDatabase[nexusState.wardId];
+            if (!ward) {
+                showQuantumAlert('WARD NOT FOUND', 'error');
+                return;
+            }
+            
+            ward.status = status;
+            
+            // Update UI
+            updateChildInfo();
+            
+            // Update markers
+            addWardMarkers();
+            
+            // Update dashboard if operator
+            if (nexusState.protocol === 'operator') {
+                updateQuantumDashboard();
+            }
+            
+            showQuantumAlert(`WARD STATUS UPDATED: ${status.toUpperCase()}`, 'success');
+        }
+
+        function editWard(wardId) {
+            const ward = wardDatabase[wardId];
+            showQuantumAlert(`EDIT WARD: ${ward.name}`, 'info');
+            // In a full implementation, this would open an edit modal
+        }
+
+        function removeWard(wardId) {
+            const ward = wardDatabase[wardId];
+            if (!ward) return;
+            
+            if (confirm(`TERMINATE WARD PROTOCOL FOR ${ward.name}?`)) {
+                delete wardDatabase[wardId];
+                loadWardList();
+                addWardMarkers();
+                updateQuantumDashboard();
+                showQuantumAlert(`WARD PROTOCOL TERMINATED: ${ward.name}`, 'success');
             }
         }
 
-        // ==================== MODIFIED LOGOUT FUNCTION ====================
+        // ==================== QUANTUM UTILITIES ====================
+        function updateQuantumClock() {
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2, '0') + ':' + 
+                           now.getMinutes().toString().padStart(2, '0') + ':' +
+                           now.getSeconds().toString().padStart(2, '0');
+            
+            document.querySelectorAll('#currentTime, #parentTime').forEach(el => {
+                if (el) el.textContent = timeStr;
+            });
+        }
 
-        function logout() {
-            // Cleanup
-            if (watchId) {
-                navigator.geolocation.clearWatch(watchId);
-                watchId = null;
+        function showQuantumAlert(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const icons = {
+                success: 'check-circle',
+                error: 'exclamation-triangle',
+                warning: 'radiation',
+                info: 'info-circle'
+            };
+            
+            const typeClass = `toast-holo-${type}`;
+            
+            toast.className = `neural-toast cyber-glass ${typeClass}`;
+            toast.innerHTML = `
+                <div class="toast-holo-icon">
+                    <i class="fas fa-${icons[type] || 'info-circle'}"></i>
+                </div>
+                <div class="toast-message font-mono">${message}</div>
+                <button class="hologram-btn" style="width: 32px; height: 32px; font-size: 12px;" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Show animation
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.style.opacity = '0';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 5000);
+            
+            // Add to neural alerts
+            nexusState.neuralAlerts.unshift({
+                id: Date.now(),
+                title: type.toUpperCase() + ' ALERT',
+                message: message,
+                type: type,
+                timestamp: Date.now()
+            });
+            
+            // Keep only last 20 alerts
+            if (nexusState.neuralAlerts.length > 20) {
+                nexusState.neuralAlerts.pop();
+            }
+        }
+
+        function showNeuralFeed() {
+            const modal = document.getElementById('notificationsModal');
+            const list = document.getElementById('notificationsList');
+            
+            if (nexusState.neuralAlerts.length === 0) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px 20px; opacity: 0.6;">NEURAL FEED QUIET</div>';
+            } else {
+                list.innerHTML = nexusState.neuralAlerts.map(alert => `
+                    <div class="student-holo-card" style="margin-bottom: 8px;">
+                        <div class="student-holo-avatar" style="background: ${alert.type === 'success' ? 'var(--matrix-green)' : alert.type === 'error' ? 'var(--critical-red)' : alert.type === 'warning' ? 'var(--warning-orange)' : 'var(--cyber-blue)'};">
+                            <i class="fas fa-${alert.type === 'success' ? 'check' : alert.type === 'error' ? 'exclamation' : alert.type === 'warning' ? 'radiation' : 'info'}"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div class="student-holo-name">${alert.title}</div>
+                            <div class="student-holo-details">${alert.message}</div>
+                            <div class="student-holo-details" style="font-size: 11px; opacity: 0.6;">
+                                ${new Date(alert.timestamp).toLocaleTimeString()}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
             }
             
-            if (locationUpdateInterval) {
-                clearInterval(locationUpdateInterval);
-                locationUpdateInterval = null;
+            modal.classList.add('active');
+        }
+
+        function hideNeuralFeedModal() {
+            document.getElementById('notificationsModal').classList.remove('active');
+        }
+
+        function purgeNeuralFeed() {
+            nexusState.neuralAlerts = [];
+            hideNeuralFeedModal();
+            showQuantumAlert('NEURAL FEED PURGED', 'success');
+        }
+
+        function disconnectNeuralLink() {
+            // Clean quantum connections
+            if (neuralWatchId) {
+                navigator.geolocation.clearWatch(neuralWatchId);
+                neuralWatchId = null;
             }
             
-            if (parentListener) {
-                database.ref(`${dbRefs.buses}/${appState.busNumber}`).off('value', parentListener);
-                parentListener = null;
-            }
-            
-            // Clear all Firebase listeners
-            if (appState.busNumber) {
-                database.ref(`${dbRefs.buses}/${appState.busNumber}`).off();
-                database.ref(`${dbRefs.students}/${appState.busNumber}`).off();
-                database.ref(`${dbRefs.alerts}/${appState.busNumber}`).off();
+            if (neuralUpdateInterval) {
+                clearInterval(neuralUpdateInterval);
+                neuralUpdateInterval = null;
             }
             
             // Reset UI
@@ -2119,913 +2060,149 @@
             document.getElementById('addStudentModal').classList.remove('active');
             document.getElementById('notificationsModal').classList.remove('active');
             
-            // Hide map theme selectors
-            hideMapThemeSelector();
-            hideParentMapThemeSelector();
+            // Clear neural link
+            localStorage.removeItem('nexus_neural_link');
             
-            // Clear localStorage
-            localStorage.removeItem('schoolbus_user');
+            // Reset quantum state
+            Object.keys(nexusState).forEach(key => {
+                if (typeof nexusState[key] === 'boolean') {
+                    nexusState[key] = false;
+                } else if (typeof nexusState[key] === 'number') {
+                    nexusState[key] = 0;
+                } else if (Array.isArray(nexusState[key])) {
+                    nexusState[key] = [];
+                } else if (key !== 'protocol') {
+                    nexusState[key] = null;
+                }
+            });
             
-            // Reset state
-            appState.userRole = 'driver';
-            appState.driverId = '';
-            appState.busNumber = '';
-            appState.parentName = '';
-            appState.studentId = '';
-            appState.tripActive = false;
-            appState.notifications = [];
-            appState.studentsOnBoard = 0;
-            appState.totalStudents = 0;
-            appState.userId = null;
+            nexusState.protocol = 'operator';
             
-            // Reset student database
-            studentDatabase = {};
-            
-            // Reset form
-            document.getElementById('addStudentForm').reset();
-            
-            showToast('Logged out', 'info');
+            showQuantumAlert('NEURAL LINK DISCONNECTED', 'info');
         }
 
-        // ==================== DEMO FUNCTIONS (for testing without GPS) ====================
-
-        function startDemoLocationUpdates() {
-            if (appState.userRole === 'driver') {
-                let demoLat = 40.7128;
-                let demoLng = -74.0060;
-                let demoIndex = 0;
+        // ==================== QUANTUM SIMULATION ====================
+        function startQuantumSimulation() {
+            let simLat = 40.7128;
+            let simLng = -74.0060;
+            let simIndex = 0;
+            
+            neuralUpdateInterval = setInterval(() => {
+                simLat += 0.0001 * (Math.random() > 0.5 ? 1 : -1);
+                simLng += 0.0001 * (Math.random() > 0.5 ? 1 : -1);
+                simIndex++;
                 
-                locationUpdateInterval = setInterval(() => {
-                    demoLat += 0.0001;
-                    demoLng += 0.0001;
-                    demoIndex++;
-                    
-                    const demoPosition = {
-                        coords: {
-                            latitude: demoLat,
-                            longitude: demoLng,
-                            speed: 8 + Math.random() * 4,
-                            heading: (demoIndex * 10) % 360
-                        }
-                    };
-                    
-                    handlePositionUpdate(demoPosition);
-                    
-                    // Auto-pickup demo students
-                    if (demoIndex % 10 === 0) {
-                        const waitingStudents = Object.values(studentDatabase).filter(s => s.status === 'waiting');
-                        if (waitingStudents.length > 0) {
-                            const randomStudent = waitingStudents[0];
-                            updateStudentStatus(randomStudent.id, 'onbus');
-                        }
+                const simPosition = {
+                    coords: {
+                        latitude: simLat,
+                        longitude: simLng,
+                        speed: 12 + Math.random() * 6,
+                        heading: (simIndex * 15) % 360
                     }
-                }, 2000);
-            }
-        }
-
-        function startParentDemoUpdates() {
-            // This will be handled by Firebase listeners now
-            // Remove the old interval-based demo
-        }
-
-        // ==================== REST OF YOUR FUNCTIONS REMAIN THE SAME ====================
-        // [All your other functions remain exactly the same, including:]
-        // - setupLogin()
-        // - handleRoleSelect()
-        // - showInterface()
-        // - initDriverInterface()
-        // - initParentInterface()
-        // - initMap()
-        // - setMapTheme()
-        // - addBusStopsToMap()
-        // - setupDriverControls()
-        // - setupParentControls()
-        // - startGPS()
-        // - handlePositionUpdate()
-        // - updateDashboard()
-        // - updateParentDashboard()
-        // - updateChildInfo()
-        // - toggleTrip()
-        // - getNextStop()
-        // - checkNearbyStops()
-        // - updateStudentStatus()
-        // - markChildStatus()
-        // - showStudentManagement()
-        // - hideStudentManagement()
-        // - loadStudentList()
-        // - showAddStudentModal()
-        // - hideAddStudentModal()
-        // - importStudents()
-        // - editStudent()
-        // - toggleMapThemeSelector()
-        // - hideMapThemeSelector()
-        // - toggleParentMapThemeSelector()
-        // - hideParentMapThemeSelector()
-        // - toggleRoute()
-        // - toggleStops()
-        // - centerOnBus()
-        // - handlePositionError()
-        // - updateClock()
-        // - showToast()
-        // - hideToast()
-        // - calculateETA()
-        // - calculateDistance()
-        // - showNotifications()
-        // - hideNotificationsModal()
-        // - addNotification()
-        // - clearNotifications()
-        // - updateNotificationBadge()
-        // - And all your CSS animations and helper functions
-
-        // Global functions for student actions
-        window.editStudent = editStudent;
-        window.removeStudent = removeStudent;
-        window.markChildStatus = markChildStatus;
-
-        // Initialize with some demo data
-        setTimeout(() => {
-            // Add initial notifications
-            addNotification('Welcome', 'SchoolBus Tracker Pro is ready!', 'info');
-            addNotification('System', 'Real-time tracking activated', 'success');
-            
-            // Update dashboard initially
-            updateDashboard();
-        }, 1000);
-
-        // ==================== ADD MISSING FUNCTIONS ====================
-        // These functions were referenced but not defined in the Firebase version
-        // I'll add the most critical ones:
-
-        function setupLogin() {
-            const driverBtn = document.getElementById('driverRoleBtn');
-            const parentBtn = document.getElementById('parentRoleBtn');
-            const loginBtn = document.getElementById('loginBtn');
-
-            driverBtn.addEventListener('click', handleRoleSelect);
-            parentBtn.addEventListener('click', handleRoleSelect);
-            loginBtn.addEventListener('click', handleLogin);
-        }
-
-        function handleRoleSelect(e) {
-            const isDriver = e.currentTarget.id === 'driverRoleBtn';
-            appState.userRole = isDriver ? 'driver' : 'parent';
-            
-            document.getElementById('driverRoleBtn').classList.toggle('active', isDriver);
-            document.getElementById('parentRoleBtn').classList.toggle('active', !isDriver);
-            
-            const loginLabel = document.getElementById('loginLabel');
-            const parentExtra = document.getElementById('parentExtra');
-            
-            if (isDriver) {
-                loginLabel.textContent = 'Driver ID';
-                parentExtra.style.display = 'none';
-                document.getElementById('loginInput').placeholder = 'Enter Driver ID';
-                document.getElementById('loginInput').value = 'DRIVER-2024';
-            } else {
-                loginLabel.textContent = 'Parent Name';
-                parentExtra.style.display = 'block';
-                document.getElementById('loginInput').placeholder = 'Your full name';
-                document.getElementById('loginInput').value = 'John Smith';
-            }
-        }
-
-        function showInterface(interfaceType) {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.querySelectorAll('.interface').forEach(el => el.classList.remove('active'));
-            document.getElementById(`${interfaceType}Interface`).classList.add('active');
-            // Note: updateDashboard() will be called separately
-        }
-
-        function initDriverInterface() {
-            initMap('driverMap');
-            setupDriverControls();
-            startGPS();
-        }
-
-        function initParentInterface() {
-            initMap('parentMap');
-            setupParentControls();
-            
-            const student = studentDatabase[appState.studentId];
-            if (student) {
-                updateChildInfo(student);
-            }
-        }
-
-        function initMap(mapId) {
-            const defaultCoords = [40.7128, -74.0060];
-            
-            map = L.map(mapId, {
-                zoomControl: false,
-                dragging: true,
-                tap: true,
-                touchZoom: true,
-                scrollWheelZoom: false,
-                doubleClickZoom: true,
-                boxZoom: false,
-                keyboard: false,
-                inertia: true,
-                inertiaDeceleration: 3000,
-                inertiaMaxSpeed: 1500,
-                easeLinearity: 0.2,
-                worldCopyJump: false,
-                maxBoundsViscosity: 1.0
-            }).setView(defaultCoords, 13);
-            
-            // Set initial map theme
-            setMapTheme(appState.mapTheme);
-            
-            // Create bus marker
-            busMarker = L.marker(defaultCoords, {
-                icon: L.divIcon({
-                    html: '<div style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, #1A56DB, #7E3AF2); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; border: 3px solid white; box-shadow: 0 0 20px rgba(26, 86, 219, 0.5);"><i class="fas fa-bus"></i></div>',
-                    className: 'bus-marker',
-                    iconSize: [50, 50],
-                    iconAnchor: [25, 25]
-                }),
-                zIndexOffset: 1000
-            }).addTo(map);
-            
-            // Initialize bus path
-            busPath = L.polyline([], {
-                color: '#1A56DB',
-                weight: 4,
-                opacity: 0.8,
-                lineJoin: 'round',
-                smoothFactor: 1
-            }).addTo(map);
-            
-            // Add bus stops
-            addBusStopsToMap();
-        }
-
-        function setMapTheme(theme) {
-            if (map) {
-                map.eachLayer(layer => {
-                    if (layer instanceof L.TileLayer) {
-                        map.removeLayer(layer);
-                    }
-                });
-                
-                const themeConfig = MAP_THEMES[theme];
-                L.tileLayer(themeConfig.url, {
-                    attribution: themeConfig.attribution,
-                    maxZoom: 19,
-                    minZoom: 3,
-                    detectRetina: true
-                }).addTo(map);
-                
-                appState.mapTheme = theme;
-                
-                // Update theme buttons
-                document.querySelectorAll('.theme-btn').forEach(btn => {
-                    btn.classList.toggle('active', btn.dataset.theme === theme);
-                });
-            }
-        }
-
-        function addBusStopsToMap() {
-            // Clear existing stops
-            if (stopMarkers) {
-                stopMarkers.forEach(marker => map.removeLayer(marker));
-            }
-            stopMarkers = [];
-            
-            Object.values(studentDatabase).forEach(student => {
-                const stopMarker = L.marker(student.coordinates, {
-                    icon: L.divIcon({
-                        html: `<div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #0E9F6E, #10B981); border: 3px solid white; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px; box-shadow: 0 0 15px rgba(14, 159, 110, 0.5);">${student.avatar}</div>`,
-                        className: 'bus-stop-marker',
-                        iconSize: [32, 32],
-                        iconAnchor: [16, 16]
-                    })
-                }).addTo(map);
-                
-                stopMarker.bindPopup(`
-                    <div style="padding: 10px;">
-                        <strong>${student.name}</strong><br>
-                        Grade: ${student.grade}<br>
-                        Status: <span class="status-${student.status}">${student.status.toUpperCase()}</span><br>
-                        Location: ${student.location}<br>
-                        School: ${student.school}
-                    </div>
-                `);
-                
-                stopMarkers.push(stopMarker);
-            });
-        }
-
-        function setupDriverControls() {
-            // Map controls
-            document.getElementById('centerMap').addEventListener('click', centerOnBus);
-            document.getElementById('zoomIn').addEventListener('click', () => map.zoomIn());
-            document.getElementById('zoomOut').addEventListener('click', () => map.zoomOut());
-            document.getElementById('showStudents').addEventListener('click', showStudentManagement);
-            document.getElementById('startTrip').addEventListener('click', toggleTrip);
-            
-            // Map themes
-            document.getElementById('mapThemesBtn').addEventListener('click', toggleMapThemeSelector);
-            document.querySelectorAll('#mapThemeSelector .theme-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const theme = this.dataset.theme;
-                    setMapTheme(theme);
-                    hideMapThemeSelector();
-                });
-            });
-            
-            // Notifications
-            document.getElementById('notificationsBtn').addEventListener('click', showNotifications);
-            
-            // Logout
-            document.getElementById('driverLogout').addEventListener('click', logout);
-            
-            // Student management close
-            document.getElementById('closeStudentManagement').addEventListener('click', hideStudentManagement);
-            
-            // Add student
-            document.getElementById('addStudentBtn').addEventListener('click', showAddStudentModal);
-            document.getElementById('importStudentsBtn').addEventListener('click', importStudents);
-            
-            // Add student modal
-            document.getElementById('addStudentForm').addEventListener('submit', handleAddStudent);
-            document.getElementById('cancelAddStudent').addEventListener('click', hideAddStudentModal);
-        }
-
-        function setupParentControls() {
-            // Map controls
-            document.getElementById('parentCenterMap').addEventListener('click', centerOnBus);
-            document.getElementById('parentZoomIn').addEventListener('click', () => map.zoomIn());
-            document.getElementById('parentZoomOut').addEventListener('click', () => map.zoomOut());
-            document.getElementById('showRoute').addEventListener('click', toggleRoute);
-            document.getElementById('showStops').addEventListener('click', toggleStops);
-            
-            // Child actions
-            document.getElementById('markPickedBtn').addEventListener('click', () => markChildStatus('onbus'));
-            document.getElementById('markDroppedBtn').addEventListener('click', () => markChildStatus('dropped'));
-            
-            // Map themes
-            document.getElementById('parentMapThemesBtn').addEventListener('click', toggleParentMapThemeSelector);
-            document.querySelectorAll('#parentMapThemeSelector .theme-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const theme = this.dataset.theme;
-                    setMapTheme(theme);
-                    hideParentMapThemeSelector();
-                });
-            });
-            
-            // Notifications
-            document.getElementById('parentNotificationsBtn').addEventListener('click', showNotifications);
-            
-            // Logout
-            document.getElementById('parentLogout').addEventListener('click', logout);
-            
-            // Notifications modal
-            document.getElementById('clearNotifications').addEventListener('click', clearNotifications);
-            document.getElementById('closeNotifications').addEventListener('click', hideNotificationsModal);
-        }
-
-        function startGPS() {
-            if ('geolocation' in navigator) {
-                const options = {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0
                 };
-
-                watchId = navigator.geolocation.watchPosition(
-                    handlePositionUpdate,
-                    handlePositionError,
-                    options
-                );
                 
-                // Initial position
-                navigator.geolocation.getCurrentPosition(handlePositionUpdate, handlePositionError, options);
-            } else {
-                showToast('GPS not available on this device', 'error');
-                // Start demo updates for testing
-                startDemoLocationUpdates();
-            }
-        }
-
-        function handlePositionUpdate(position) {
-            currentPosition = position;
-            const { latitude, longitude, speed, heading } = position.coords;
-            
-            // Update bus marker
-            const newLatLng = [latitude, longitude];
-            busMarker.setLatLng(newLatLng);
-            
-            // Update bus path
-            const currentPath = busPath.getLatLngs();
-            currentPath.push(newLatLng);
-            if (currentPath.length > 100) currentPath.shift();
-            busPath.setLatLngs(currentPath);
-            
-            // Update dashboard
-            updateDashboard(speed);
-            
-            // Publish location
-            publishLocation(latitude, longitude, speed, heading);
-            
-            // Center map on first location
-            if (!window.mapCentered) {
-                map.setView(newLatLng, 16);
-                window.mapCentered = true;
-            }
-            
-            // Check for nearby stops
-            checkNearbyStops(newLatLng);
-        }
-
-        function updateDashboard(speed = 0) {
-            const studentsOnBoard = Object.values(studentDatabase).filter(s => s.status === 'onbus').length;
-            const totalStudents = Object.keys(studentDatabase).length;
-            
-            // Update speed
-            document.getElementById('currentSpeed').textContent = 
-                Math.round((speed || 0) * 3.6) + ' km/h';
-            
-            // Update student count
-            document.getElementById('studentsCount').textContent = 
-                `${studentsOnBoard}/${totalStudents}`;
-            
-            // Update next stop
-            const nextStop = getNextStop();
-            document.getElementById('nextStopName').textContent = nextStop || '--';
-            
-            // Update trip status
-            const tripStatus = document.getElementById('tripStatus');
-            if (appState.tripActive) {
-                tripStatus.style.display = 'flex';
-                tripStatus.className = `trip-status trip-${appState.currentTrip.replace('_', '-')} glass`;
-                tripStatus.innerHTML = `
-                    <i class="fas fa-${appState.currentTrip === 'to_school' ? 'school' : 'home'}"></i>
-                    <span>Trip: ${appState.currentTrip === 'to_school' ? 'To School' : 'From School'}</span>
-                `;
-            } else {
-                tripStatus.style.display = 'none';
-            }
-            
-            // Update bus name
-            document.getElementById('driverBusName').textContent = appState.busNumber;
-            
-            // Update counts
-            appState.studentsOnBoard = studentsOnBoard;
-            appState.totalStudents = totalStudents;
-        }
-
-        function updateParentDashboard(data = null) {
-            const student = studentDatabase[appState.studentId];
-            if (!student) return;
-            
-            // Update child info
-            document.getElementById('childFullName').textContent = student.name;
-            document.getElementById('childSchool').textContent = 
-                `${student.school} • ${student.grade}`;
-            document.getElementById('childLocation').textContent = 
-                student.status === 'onbus' ? 'On the bus' : `Waiting at ${student.location}`;
-            document.getElementById('childAvatar').textContent = student.avatar;
-            
-            // Update status badge
-            const statusBadge = document.getElementById('childStatusBadge');
-            statusBadge.className = `student-status status-${student.status}`;
-            statusBadge.textContent = student.status.toUpperCase();
-            
-            // Update bus info
-            document.getElementById('parentBusName').textContent = appState.busNumber;
-            
-            if (data) {
-                // Update metrics from received data
-                if (data.speed !== undefined) {
-                    document.getElementById('parentSpeed').textContent = 
-                        Math.round(data.speed * 3.6) + ' km/h';
+                if (nexusState.protocol === 'operator') {
+                    handleQuantumPosition(simPosition);
                 }
                 
-                if (data.eta) {
-                    document.getElementById('eta').textContent = data.eta;
+                // Auto-update random ward status
+                if (simIndex % 15 === 0) {
+                    const wards = Object.values(wardDatabase);
+                    if (wards.length > 0) {
+                        const randomWard = wards[Math.floor(Math.random() * wards.length)];
+                        if (randomWard.status === 'waiting') {
+                            randomWard.status = 'onbus';
+                            showQuantumAlert(`${randomWard.name} INTERCEPTED`, 'success');
+                        } else if (randomWard.status === 'onbus' && Math.random() > 0.7) {
+                            randomWard.status = 'dropped';
+                            showQuantumAlert(`${randomWard.name} DELIVERED`, 'info');
+                        }
+                        
+                        // Update dashboard
+                        updateQuantumDashboard();
+                        
+                        // Update child info if guardian
+                        if (nexusState.protocol === 'guardian' && randomWard.id === nexusState.wardId) {
+                            updateChildInfo();
+                        }
+                    }
                 }
-                
-                if (data.distance) {
-                    document.getElementById('distanceAway').textContent = data.distance;
-                }
-                
-                // Update bus status
-                const statusText = document.getElementById('busStatusText');
-                const statusDot = document.getElementById('busStatusDot');
-                
-                if (data.tripActive) {
-                    statusText.textContent = `Online • ${data.trip === 'to_school' ? 'To School' : 'From School'}`;
-                    statusDot.className = 'status-indicator status-online';
-                } else {
-                    statusText.textContent = 'Offline';
-                    statusDot.className = 'status-indicator status-offline';
-                }
-            }
+            }, 2000);
         }
 
-        function updateChildInfo(student) {
-            document.getElementById('childFullName').textContent = student.name;
-            document.getElementById('childSchool').textContent = `${student.school} • ${student.grade}`;
-            document.getElementById('childAvatar').textContent = student.avatar;
-            document.getElementById('childLocation').textContent = 
-                student.status === 'onbus' ? 'On the bus' : `Waiting at ${student.location}`;
+        function handleQuantumError(error) {
+            let message = 'QUANTUM GPS OFFLINE';
             
-            const statusBadge = document.getElementById('childStatusBadge');
-            statusBadge.className = `student-status status-${student.status}`;
-            statusBadge.textContent = student.status.toUpperCase();
-        }
-
-        function toggleTrip() {
-            appState.tripActive = !appState.tripActive;
-            const tripBtn = document.getElementById('startTrip');
-            
-            if (appState.tripActive) {
-                // Start trip
-                tripBtn.classList.add('active');
-                tripBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                showToast(`Trip to school started`, 'success');
-                
-                // Alert parents
-                sendTripAlert('trip_started', 'Bus has started the trip to school');
-                
-            } else {
-                // End trip
-                tripBtn.classList.remove('active');
-                tripBtn.innerHTML = '<i class="fas fa-play"></i>';
-                showToast('Trip ended', 'info');
-                
-                // Switch trip direction
-                appState.currentTrip = appState.currentTrip === 'to_school' ? 'from_school' : 'to_school';
-                appState.tripActive = true;
-                
-                // Alert parents
-                const alertMsg = appState.currentTrip === 'to_school' 
-                    ? 'Bus has started the trip to school' 
-                    : 'Bus has started the trip from school';
-                sendTripAlert('trip_started', alertMsg);
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    message = 'LOCATION PERMISSION DENIED';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    message = 'LOCATION UNAVAILABLE';
+                    break;
+                case error.TIMEOUT:
+                    message = 'LOCATION REQUEST TIMEOUT';
+                    break;
             }
             
-            // Update trip status display
-            updateDashboard();
-            
-            // Publish trip status
-            publishTripStatus();
+            showQuantumAlert(message + ' - SIMULATION ACTIVE', 'warning');
+            startQuantumSimulation();
+        }
+
+        function checkNearbyWards(busCoords) {
+            Object.values(wardDatabase).forEach(ward => {
+                const distance = quantumMap.distance(busCoords, ward.coordinates);
+                
+                if (distance < 100 && ward.status === 'waiting') {
+                    ward.status = 'onbus';
+                    showQuantumAlert(`AUTO-INTERCEPT: ${ward.name}`, 'success');
+                    
+                    // Update dashboard
+                    updateQuantumDashboard();
+                    
+                    // Update markers
+                    addWardMarkers();
+                }
+            });
         }
 
         function getNextStop() {
-            const waitingStudents = Object.values(studentDatabase)
-                .filter(s => s.status === 'waiting' || s.status === 'onbus');
+            const waitingWards = Object.values(wardDatabase)
+                .filter(w => w.status === 'waiting');
             
-            if (waitingStudents.length === 0) return null;
+            if (waitingWards.length === 0) return null;
             
-            // Simple algorithm: find nearest waiting student
-            if (currentPosition) {
-                const busCoords = [currentPosition.coords.latitude, currentPosition.coords.longitude];
-                let nearest = waitingStudents[0];
+            // Simple algorithm: find nearest waiting ward
+            if (nexusState.currentPosition) {
+                const busCoords = [nexusState.currentPosition.coords.latitude, nexusState.currentPosition.coords.longitude];
+                let nearest = waitingWards[0];
                 let minDistance = Infinity;
                 
-                waitingStudents.forEach(student => {
-                    const distance = map.distance(busCoords, student.coordinates);
+                waitingWards.forEach(ward => {
+                    const distance = quantumMap.distance(busCoords, ward.coordinates);
                     if (distance < minDistance) {
                         minDistance = distance;
-                        nearest = student;
+                        nearest = ward;
                     }
                 });
                 
                 return nearest.location;
             }
             
-            return waitingStudents[0].location;
+            return waitingWards[0].location;
         }
 
-        function checkNearbyStops(busCoords) {
-            Object.values(studentDatabase).forEach(student => {
-                const distance = map.distance(busCoords, student.coordinates);
-                
-                if (distance < 100) { // Within 100 meters
-                    if (student.status === 'waiting') {
-                        // Auto-pickup when bus is nearby
-                        updateStudentStatus(student.id, 'onbus');
-                        showToast(`Auto-picked up: ${student.name}`, 'success');
-                    }
-                }
-            });
-        }
+        // Initialize quantum system
+        setTimeout(() => {
+            showQuantumAlert('QUANTUM SYSTEM ONLINE', 'success');
+            showQuantumAlert('NEXUS SECURITY ACTIVE', 'info');
+        }, 1000);
 
-        function updateStudentStatus(studentId, status) {
-            const student = studentDatabase[studentId];
-            if (!student) return;
-            
-            student.status = status;
-            
-            // Update UI if this is the parent's child
-            if (appState.userRole === 'parent' && studentId === appState.studentId) {
-                updateChildInfo(student);
-            }
-            
-            // Update student list if visible
-            if (document.getElementById('studentManagement').classList.contains('active')) {
-                loadStudentList();
-            }
-            
-            // Update dashboard
-            updateDashboard();
-            
-            // Publish student status
-            publishStudentStatus(studentId, status);
-            
-            // Send alert to parent
-            if (status === 'onbus') {
-                sendStudentAlert(studentId, 'picked_up', `${student.name} has been picked up`);
-            } else if (status === 'dropped') {
-                sendStudentAlert(studentId, 'dropped_off', `${student.name} has been dropped off`);
-            }
-        }
-
-        function markChildStatus(status) {
-            if (appState.userRole !== 'parent') return;
-            
-            updateStudentStatus(appState.studentId, status);
-            showToast(`Marked as ${status === 'onbus' ? 'picked up' : 'dropped off'}`, 'success');
-        }
-
-        function showStudentManagement() {
-            loadStudentList();
-            document.getElementById('studentManagement').classList.add('active');
-        }
-
-        function hideStudentManagement() {
-            document.getElementById('studentManagement').classList.remove('active');
-        }
-
-        function loadStudentList() {
-            const container = document.getElementById('studentListContainer');
-            container.innerHTML = '';
-            
-            Object.values(studentDatabase).forEach(student => {
-                const studentEl = document.createElement('div');
-                studentEl.className = 'student-item';
-                studentEl.innerHTML = `
-                    <div class="student-avatar">${student.avatar}</div>
-                    <div class="student-info">
-                        <div class="student-name">${student.name}</div>
-                        <div class="student-details">
-                            <span>${student.grade}</span>
-                            <span>•</span>
-                            <span>${student.location}</span>
-                        </div>
-                    </div>
-                    <div class="student-status status-${student.status}">
-                        ${student.status.toUpperCase()}
-                    </div>
-                    <div class="student-actions-buttons">
-                        <button class="student-action-icon" onclick="editStudent('${student.id}')">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="student-action-icon" onclick="removeStudent('${student.id}')">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                `;
-                container.appendChild(studentEl);
-            });
-        }
-
-        function showAddStudentModal() {
-            document.getElementById('addStudentModal').classList.add('active');
-        }
-
-        function hideAddStudentModal() {
-            document.getElementById('addStudentModal').classList.remove('active');
-            document.getElementById('addStudentForm').reset();
-        }
-
-        function importStudents() {
-            showToast('Import feature coming soon!', 'info');
-        }
-
-        function editStudent(studentId) {
-            const student = studentDatabase[studentId];
-            if (!student) return;
-            
-            // For simplicity, we'll just show an edit modal
-            showToast(`Editing ${student.name} - feature coming soon!`, 'info');
-        }
-
-        function toggleMapThemeSelector() {
-            const selector = document.getElementById('mapThemeSelector');
-            isMapThemeVisible = !isMapThemeVisible;
-            selector.style.display = isMapThemeVisible ? 'flex' : 'none';
-        }
-
-        function hideMapThemeSelector() {
-            const selector = document.getElementById('mapThemeSelector');
-            isMapThemeVisible = false;
-            selector.style.display = 'none';
-        }
-
-        function toggleParentMapThemeSelector() {
-            const selector = document.getElementById('parentMapThemeSelector');
-            isParentMapThemeVisible = !isParentMapThemeVisible;
-            selector.style.display = isParentMapThemeVisible ? 'flex' : 'none';
-        }
-
-        function hideParentMapThemeSelector() {
-            const selector = document.getElementById('parentMapThemeSelector');
-            isParentMapThemeVisible = false;
-            selector.style.display = 'none';
-        }
-
-        function toggleRoute() {
-            const btn = document.getElementById('showRoute');
-            btn.classList.toggle('active');
-            
-            if (btn.classList.contains('active')) {
-                busPath.addTo(map);
-                showToast('Route shown', 'info');
-            } else {
-                map.removeLayer(busPath);
-                showToast('Route hidden', 'info');
-            }
-        }
-
-        function toggleStops() {
-            const btn = document.getElementById('showStops');
-            btn.classList.toggle('active');
-            
-            stopMarkers.forEach(marker => {
-                if (btn.classList.contains('active')) {
-                    map.addLayer(marker);
-                } else {
-                    map.removeLayer(marker);
-                }
-            });
-            
-            showToast(btn.classList.contains('active') ? 'Stops shown' : 'Stops hidden', 'info');
-        }
-
-        function centerOnBus() {
-            if (currentPosition) {
-                const { latitude, longitude } = currentPosition.coords;
-                map.setView([latitude, longitude], 16);
-                busMarker.openPopup();
-                showToast('Centered on bus', 'info');
-            } else {
-                showToast('Waiting for GPS signal', 'info');
-            }
-        }
-
-        function handlePositionError(error) {
-            let message = 'Unable to get location';
-            
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    message = 'Location permission denied';
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    message = 'Location unavailable';
-                    break;
-                case error.TIMEOUT:
-                    message = 'Location request timeout';
-                    break;
-            }
-            
-            showToast(message, 'error');
-            
-            // Start demo updates for testing
-            startDemoLocationUpdates();
-        }
-
-        function updateClock() {
-            const now = new Date();
-            const timeStr = now.getHours().toString().padStart(2, '0') + ':' + 
-                           now.getMinutes().toString().padStart(2, '0');
-            
-            document.querySelectorAll('#currentTime, #parentTime').forEach(el => {
-                if (el) el.textContent = timeStr;
-            });
-        }
-
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            
-            const icons = {
-                success: 'check-circle',
-                error: 'exclamation-circle',
-                warning: 'exclamation-triangle',
-                info: 'info-circle'
-            };
-            
-            toast.className = `toast toast-${type}`;
-            toast.innerHTML = `
-                <i class="fas fa-${icons[type] || 'info-circle'} toast-icon"></i>
-                <div class="toast-message">${message}</div>
-                <button class="toast-close">&times;</button>
-            `;
-            
-            container.appendChild(toast);
-            
-            // Show animation
-            setTimeout(() => toast.classList.add('show'), 10);
-            
-            // Close button
-            toast.querySelector('.toast-close').onclick = () => hideToast(toast);
-            
-            // Auto-hide after 5 seconds
-            setTimeout(() => hideToast(toast), 5000);
-        }
-
-        function hideToast(toast) {
-            if (toast && toast.parentNode) {
-                toast.classList.add('hiding');
-                setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.remove();
-                    }
-                }, 300);
-            }
-        }
-
-        function calculateETA(timestamp) {
-            const now = Date.now();
-            const arrival = new Date(timestamp + 15 * 60000); // Add 15 minutes
-            return arrival.getHours().toString().padStart(2, '0') + ':' + 
-                   arrival.getMinutes().toString().padStart(2, '0');
-        }
-
-        function calculateDistance(busCoords) {
-            // Simple distance calculation (would use user location in real app)
-            const distance = Math.random() * 5 + 1;
-            return distance.toFixed(1) + ' km';
-        }
-
-        function showNotifications() {
-            const modal = document.getElementById('notificationsModal');
-            const list = document.getElementById('notificationsList');
-            
-            list.innerHTML = appState.notifications.length > 0 
-                ? appState.notifications.map(n => `
-                    <div class="student-item">
-                        <div style="flex: 1;">
-                            <div class="student-name">${n.title}</div>
-                            <div class="student-details">${n.message}</div>
-                            <div class="student-details" style="font-size: 11px; opacity: 0.6;">
-                                ${new Date(n.timestamp).toLocaleTimeString()}
-                            </div>
-                        </div>
-                    </div>
-                `).join('')
-                : '<div style="text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.6);">No notifications</div>';
-            
-            modal.classList.add('active');
-        }
-
-        function hideNotificationsModal() {
-            document.getElementById('notificationsModal').classList.remove('active');
-        }
-
-        function addNotification(title, message, type = 'info') {
-            const notification = {
-                id: Date.now(),
-                title,
-                message,
-                type,
-                timestamp: Date.now(),
-                read: false
-            };
-            
-            appState.notifications.unshift(notification);
-            
-            // Keep only last 20 notifications
-            if (appState.notifications.length > 20) {
-                appState.notifications.pop();
-            }
-            
-            // Update notification badge
-            updateNotificationBadge();
-        }
-
-        function clearNotifications() {
-            appState.notifications = [];
-            updateNotificationBadge();
-            hideNotificationsModal();
-            showToast('Notifications cleared', 'success');
-        }
-
-        function updateNotificationBadge() {
-            const unreadCount = appState.notifications.filter(n => !n.read).length;
-            const badges = document.querySelectorAll('.notification-badge');
-            
-            badges.forEach(badge => {
-                if (unreadCount > 0) {
-                    badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
-                    badge.style.display = 'flex';
-                } else {
-                    badge.style.display = 'none';
-                }
-            });
-        }
+        // Make functions available globally
+        window.editWard = editWard;
+        window.removeWard = removeWard;
+        window.updateWardStatus = updateWardStatus;
+        window.showEnrollWardModal = showEnrollWardModal;
     </script>
 </body>
 </html>
