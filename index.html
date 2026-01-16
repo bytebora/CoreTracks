@@ -15,7 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
     <style>
-        /* ========== ENHANCED STYLES ========== */
+        /* Keep all your existing CSS styles - they remain exactly the same */
         :root {
             --primary: #1A56DB;
             --primary-light: #3B82F6;
@@ -69,7 +69,79 @@
             transition: var(--transition);
         }
 
-        /* ========== LOGIN SCREEN ========== */
+        /* Add notification-specific styles */
+        .notification-item {
+            padding: 16px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 10px;
+            transition: var(--transition);
+        }
+
+        .notification-item:active {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: white;
+        }
+
+        .notification-time {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .notification-message {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .notification-btn {
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            flex: 1;
+            text-align: center;
+        }
+
+        .notification-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .notification-btn.primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-color: transparent;
+        }
+
+        /* Rest of your existing CSS remains exactly the same */
+        /* ... [All your previous CSS styles] ... */
+        
+        /* Login Screen */
         .login-container {
             position: fixed;
             top: 0;
@@ -257,7 +329,7 @@
             box-shadow: 0 6px 20px rgba(26, 86, 219, 0.3);
         }
 
-        /* ========== INTERFACE COMMON ========== */
+        /* Interface Common */
         .interface {
             position: fixed;
             top: 0;
@@ -1610,7 +1682,10 @@
             studentsOnBoard: 0,
             totalStudents: 0,
             tripStartTime: null,
-            tripTimer: null
+            tripTimer: null,
+            currentLocation: null,
+            locationUpdateInterval: null,
+            firebaseListener: null
         };
 
         // Student Database (sample data)
@@ -1678,8 +1753,8 @@
         let routeLine = null;
         let watchId = null;
         let currentPosition = null;
-        let locationUpdateInterval = null;
         let tripTimerInterval = null;
+        let driverLocationInterval = null;
 
         // Initialize Application
         document.addEventListener('DOMContentLoaded', function() {
@@ -1758,6 +1833,9 @@
                 initDriverInterface();
                 showToast(`Welcome, Driver ${driverId}!`, 'success');
                 
+                // Start tracking driver location immediately
+                startDriverLocationTracking();
+                
             } else {
                 const parentName = document.getElementById('parentName').value.trim();
                 const busNumber = document.getElementById('parentBusNumber').value.trim();
@@ -1768,15 +1846,15 @@
                     return;
                 }
                 
-                appState.parentName = parentName;
-                appState.busNumber = busNumber;
-                appState.studentId = studentId;
-                
                 // Check if student exists
                 if (!studentDatabase[studentId]) {
                     showToast('Student ID not found. Please check with the school.', 'error');
                     return;
                 }
+                
+                appState.parentName = parentName;
+                appState.busNumber = busNumber;
+                appState.studentId = studentId;
                 
                 // Save session
                 localStorage.setItem('schoolbus_session', JSON.stringify({
@@ -1790,20 +1868,222 @@
                 showInterface('parent');
                 initParentInterface();
                 showToast(`Welcome ${parentName}!`, 'success');
+                
+                // Start listening to driver location
+                startListeningToDriverLocation();
             }
         }
 
-        function showInterface(interfaceType) {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.querySelectorAll('.interface').forEach(el => el.classList.remove('active'));
-            document.getElementById(`${interfaceType}Interface`).classList.add('active');
+        // ==================== DRIVER LOCATION TRACKING ====================
+        function startDriverLocationTracking() {
+            if ('geolocation' in navigator) {
+                const options = {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                };
+
+                // Start watching position
+                watchId = navigator.geolocation.watchPosition(
+                    (position) => {
+                        handleDriverPositionUpdate(position);
+                        publishDriverLocation(position);
+                    },
+                    handlePositionError,
+                    options
+                );
+                
+                // Get initial position
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        handleDriverPositionUpdate(position);
+                        publishDriverLocation(position);
+                        showToast('Location tracking started!', 'success');
+                    },
+                    handlePositionError,
+                    options
+                );
+                
+                // Start periodic updates to Firebase
+                driverLocationInterval = setInterval(() => {
+                    if (currentPosition) {
+                        publishDriverLocation(currentPosition);
+                    }
+                }, 5000); // Update every 5 seconds
+                
+            } else {
+                showToast('GPS not available. Using demo mode.', 'warning');
+                startDemoLocationUpdates();
+            }
+        }
+
+        function handleDriverPositionUpdate(position) {
+            currentPosition = position;
+            const { latitude, longitude, speed, heading } = position.coords;
+            
+            // Update app state
+            appState.currentLocation = {
+                lat: latitude,
+                lng: longitude,
+                speed: speed || 0,
+                heading: heading || 0,
+                timestamp: Date.now()
+            };
+            
+            // Update bus marker on map
+            if (busMarker && map) {
+                const newLatLng = [latitude, longitude];
+                busMarker.setLatLng(newLatLng);
+                
+                // Update bus path
+                if (busPath) {
+                    const currentPath = busPath.getLatLngs();
+                    currentPath.push(newLatLng);
+                    if (currentPath.length > 100) currentPath.shift();
+                    busPath.setLatLngs(currentPath);
+                }
+                
+                // Center map on first location if needed
+                if (!window.mapCentered) {
+                    map.setView(newLatLng, 16);
+                    window.mapCentered = true;
+                }
+                
+                // Update dashboard
+                updateDashboard(speed);
+                
+                // Check for nearby stops
+                checkNearbyStops(newLatLng);
+            }
+        }
+
+        function publishDriverLocation(position) {
+            if (!appState.driverId || !appState.busNumber) return;
+            
+            const { latitude, longitude, speed, heading } = position.coords;
+            
+            // Create location data
+            const locationData = {
+                lat: latitude,
+                lng: longitude,
+                speed: speed || 0,
+                heading: heading || 0,
+                timestamp: Date.now(),
+                driverId: appState.driverId,
+                busNumber: appState.busNumber,
+                tripActive: appState.tripActive,
+                tripDirection: appState.currentTrip,
+                studentsOnBoard: Object.values(studentDatabase).filter(s => s.status === 'onbus').length,
+                totalStudents: Object.keys(studentDatabase).length
+            };
+            
+            // Publish to Firebase
+            try {
+                database.ref(`buses/${appState.busNumber}/location`).set(locationData);
+                
+                // Also update bus status
+                database.ref(`buses/${appState.busNumber}/status`).set({
+                    online: true,
+                    lastUpdate: Date.now(),
+                    driver: appState.driverId,
+                    tripActive: appState.tripActive,
+                    tripDirection: appState.currentTrip
+                });
+                
+            } catch (error) {
+                console.error('Error publishing location:', error);
+            }
+        }
+
+        // ==================== PARENT LOCATION LISTENING ====================
+        function startListeningToDriverLocation() {
+            if (!appState.busNumber) return;
+            
+            // Listen for driver location updates from Firebase
+            appState.firebaseListener = database.ref(`buses/${appState.busNumber}/location`).on('value', (snapshot) => {
+                const locationData = snapshot.val();
+                if (locationData) {
+                    updateParentBusLocation(locationData);
+                }
+            });
+            
+            // Also listen for bus status
+            database.ref(`buses/${appState.busNumber}/status`).on('value', (snapshot) => {
+                const statusData = snapshot.val();
+                if (statusData) {
+                    updateParentBusStatus(statusData);
+                }
+            });
+            
+            showToast('Connected to bus tracking', 'success');
+        }
+
+        function updateParentBusLocation(locationData) {
+            if (!busMarker || !map) return;
+            
+            const { lat, lng, speed, timestamp, tripActive, tripDirection, studentsOnBoard, totalStudents } = locationData;
+            
+            // Update bus marker
+            const newLatLng = [lat, lng];
+            busMarker.setLatLng(newLatLng);
+            
+            // Update bus path
+            if (busPath) {
+                const currentPath = busPath.getLatLngs();
+                currentPath.push(newLatLng);
+                if (currentPath.length > 50) currentPath.shift();
+                busPath.setLatLngs(currentPath);
+            }
+            
+            // Update parent dashboard
+            updateParentDashboard({
+                speed: speed || 0,
+                distance: calculateDistanceFromParent([lat, lng]),
+                eta: calculateETA(timestamp),
+                studentsOnBoard: studentsOnBoard || 0,
+                totalStudents: totalStudents || 0
+            });
+            
+            // Update bus status
+            document.getElementById('busStatusDot').className = 'status-indicator status-online';
+            document.getElementById('busStatusText').textContent = 
+                `Online • ${tripActive ? (tripDirection === 'to_school' ? 'To School' : 'From School') : 'Waiting'}`;
+        }
+
+        function updateParentBusStatus(statusData) {
+            const { online, tripActive, tripDirection } = statusData;
+            
+            // Update status indicator
+            const statusDot = document.getElementById('busStatusDot');
+            const statusText = document.getElementById('busStatusText');
+            
+            if (online) {
+                statusDot.className = 'status-indicator status-online';
+                statusText.textContent = `Online • ${tripActive ? (tripDirection === 'to_school' ? 'To School' : 'From School') : 'Waiting'}`;
+            } else {
+                statusDot.className = 'status-indicator status-offline';
+                statusText.textContent = 'Offline';
+            }
+        }
+
+        function calculateDistanceFromParent(busCoords) {
+            // For demo purposes, calculate random distance
+            // In real app, this would use parent's location
+            const distance = Math.random() * 5 + 1;
+            return distance.toFixed(1) + ' km';
+        }
+
+        function calculateETA(timestamp) {
+            const now = Date.now();
+            const arrival = new Date(timestamp + 15 * 60000); // Add 15 minutes
+            return arrival.getHours().toString().padStart(2, '0') + ':' + 
+                   arrival.getMinutes().toString().padStart(2, '0');
         }
 
         // ==================== DRIVER INTERFACE FUNCTIONS ====================
         function initDriverInterface() {
             initMap('driverMap');
             setupDriverControls();
-            startGPS();
             updateDashboard();
             
             // Update bus name
@@ -1812,6 +2092,10 @@
             // Show sample students
             loadStudentList();
             addBusStopsToMap();
+            
+            // Add initial notifications
+            addNotification('System', 'Welcome to SchoolBus Tracker Pro!', 'info');
+            addNotification('GPS', 'Location tracking activated', 'success');
         }
 
         function setupDriverControls() {
@@ -1848,13 +2132,16 @@
             // Add student modal
             document.getElementById('addStudentForm').addEventListener('submit', handleAddStudent);
             document.getElementById('cancelAddStudent').addEventListener('click', hideAddStudentModal);
+            
+            // Notification modal buttons
+            document.getElementById('clearNotifications').addEventListener('click', clearNotifications);
+            document.getElementById('closeNotifications').addEventListener('click', hideNotificationsModal);
         }
 
         // ==================== PARENT INTERFACE FUNCTIONS ====================
         function initParentInterface() {
             initMap('parentMap');
             setupParentControls();
-            setupParentDemoUpdates();
             
             // Update child info
             const student = studentDatabase[appState.studentId];
@@ -1864,6 +2151,10 @@
             
             // Update bus info
             document.getElementById('parentBusName').textContent = appState.busNumber;
+            
+            // Add initial notifications
+            addNotification('System', 'Welcome to SchoolBus Tracker!', 'info');
+            addNotification('Tracking', 'Connected to bus tracking system', 'success');
         }
 
         function setupParentControls() {
@@ -1893,48 +2184,6 @@
             
             // Logout
             document.getElementById('parentLogout').addEventListener('click', logout);
-            
-            // Notifications modal
-            document.getElementById('clearNotifications').addEventListener('click', clearNotifications);
-            document.getElementById('closeNotifications').addEventListener('click', hideNotificationsModal);
-        }
-
-        function setupParentDemoUpdates() {
-            // Simulate bus movement for demo
-            let demoLat = 40.7120;
-            let demoLng = -74.0050;
-            let demoIndex = 0;
-            
-            locationUpdateInterval = setInterval(() => {
-                demoLat += 0.0001;
-                demoLng += 0.0001;
-                demoIndex++;
-                
-                if (busMarker) {
-                    const newLatLng = [demoLat, demoLng];
-                    busMarker.setLatLng(newLatLng);
-                    
-                    // Update path
-                    if (busPath) {
-                        const currentPath = busPath.getLatLngs();
-                        currentPath.push(newLatLng);
-                        if (currentPath.length > 50) currentPath.shift();
-                        busPath.setLatLngs(currentPath);
-                    }
-                    
-                    // Update parent dashboard
-                    updateParentDashboard({
-                        speed: 8 + Math.random() * 4,
-                        distance: (demoIndex * 0.1).toFixed(1) + ' km',
-                        eta: calculateETA()
-                    });
-                    
-                    // Update bus status
-                    document.getElementById('busStatusDot').className = 'status-indicator status-online';
-                    document.getElementById('busStatusText').textContent = 
-                        `Online • ${appState.tripActive ? 'To School' : 'Waiting'}`;
-                }
-            }, 2000);
         }
 
         // ==================== MAP FUNCTIONS ====================
@@ -1978,6 +2227,9 @@
                 opacity: 0.6,
                 dashArray: '10, 10'
             });
+            
+            // Add bus stops
+            addBusStopsToMap();
         }
 
         function setMapTheme(theme) {
@@ -2009,7 +2261,11 @@
 
         function addBusStopsToMap() {
             // Clear existing stops
-            stopMarkers.forEach(marker => map.removeLayer(marker));
+            stopMarkers.forEach(marker => {
+                if (map.hasLayer(marker)) {
+                    map.removeLayer(marker);
+                }
+            });
             stopMarkers = [];
             
             // Add stops for each student
@@ -2028,7 +2284,7 @@
                     <div style="padding: 10px;">
                         <strong>${student.name}</strong><br>
                         Grade: ${student.grade}<br>
-                        Status: <span class="status-${student.status}">${student.status.toUpperCase()}</span><br>
+                        Status: <span style="color: ${getStatusColor(student.status)}">${student.status.toUpperCase()}</span><br>
                         Location: ${student.location}<br>
                         School: ${student.school}
                     </div>
@@ -2041,14 +2297,24 @@
             });
         }
 
+        function getStatusColor(status) {
+            switch(status) {
+                case 'waiting': return '#F59E0B';
+                case 'onbus': return '#0E9F6E';
+                case 'dropped': return '#7E3AF2';
+                default: return '#3B82F6';
+            }
+        }
+
         function centerOnBus() {
-            if (currentPosition) {
+            if (currentPosition && busMarker) {
                 const { latitude, longitude } = currentPosition.coords;
                 map.setView([latitude, longitude], 16);
             } else if (busMarker) {
                 const latLng = busMarker.getLatLng();
                 map.setView(latLng, 16);
             }
+            showToast('Centered on bus', 'info');
         }
 
         function toggleRoute() {
@@ -2057,8 +2323,10 @@
             
             if (btn.classList.contains('active')) {
                 routeLine.addTo(map);
+                showToast('Route shown', 'info');
             } else {
                 map.removeLayer(routeLine);
+                showToast('Route hidden', 'info');
             }
         }
 
@@ -2073,6 +2341,8 @@
                     map.removeLayer(marker);
                 }
             });
+            
+            showToast(btn.classList.contains('active') ? 'Stops shown' : 'Stops hidden', 'info');
         }
 
         function toggleMapThemeSelector() {
@@ -2093,36 +2363,38 @@
             document.getElementById('parentMapThemeSelector').style.display = 'none';
         }
 
-        // ==================== GPS FUNCTIONS ====================
-        function startGPS() {
-            if ('geolocation' in navigator) {
-                const options = {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0
-                };
-
-                watchId = navigator.geolocation.watchPosition(
-                    handlePositionUpdate,
-                    handlePositionError,
-                    options
-                );
-                
-                // Get initial position
-                navigator.geolocation.getCurrentPosition(handlePositionUpdate, handlePositionError, options);
-                
-            } else {
-                showToast('GPS not available. Using demo mode.', 'warning');
-                startDemoUpdates();
+        // ==================== ERROR HANDLING ====================
+        function handlePositionError(error) {
+            let message = 'Unable to get location';
+            let type = 'error';
+            
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    message = 'Location permission denied. Please enable location services.';
+                    type = 'warning';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    message = 'Location unavailable. Please check your GPS signal.';
+                    type = 'warning';
+                    break;
+                case error.TIMEOUT:
+                    message = 'Location request timeout. Trying again...';
+                    type = 'info';
+                    break;
             }
+            
+            showToast(message, type);
+            
+            // Start demo updates for testing
+            startDemoLocationUpdates();
         }
 
-        function startDemoUpdates() {
+        function startDemoLocationUpdates() {
             let demoLat = 40.7128;
             let demoLng = -74.0060;
             let demoIndex = 0;
             
-            locationUpdateInterval = setInterval(() => {
+            appState.locationUpdateInterval = setInterval(() => {
                 demoLat += 0.0001;
                 demoLng += 0.0001;
                 demoIndex++;
@@ -2136,53 +2408,32 @@
                     }
                 };
                 
-                handlePositionUpdate(demoPosition);
+                if (appState.userRole === 'driver') {
+                    handleDriverPositionUpdate(demoPosition);
+                    publishDriverLocation(demoPosition);
+                } else {
+                    // For parent demo
+                    if (busMarker) {
+                        const newLatLng = [demoLat, demoLng];
+                        busMarker.setLatLng(newLatLng);
+                        
+                        if (busPath) {
+                            const currentPath = busPath.getLatLngs();
+                            currentPath.push(newLatLng);
+                            if (currentPath.length > 50) currentPath.shift();
+                            busPath.setLatLngs(currentPath);
+                        }
+                        
+                        updateParentDashboard({
+                            speed: 8 + Math.random() * 4,
+                            distance: (demoIndex * 0.1).toFixed(1) + ' km',
+                            eta: calculateETA(Date.now())
+                        });
+                    }
+                }
             }, 2000);
-        }
-
-        function handlePositionUpdate(position) {
-            currentPosition = position;
-            const { latitude, longitude, speed, heading } = position.coords;
             
-            // Update bus marker
-            const newLatLng = [latitude, longitude];
-            busMarker.setLatLng(newLatLng);
-            
-            // Update bus path
-            const currentPath = busPath.getLatLngs();
-            currentPath.push(newLatLng);
-            if (currentPath.length > 100) currentPath.shift();
-            busPath.setLatLngs(currentPath);
-            
-            // Update dashboard
-            updateDashboard(speed);
-            
-            // Check for nearby stops
-            checkNearbyStops(newLatLng);
-            
-            // Publish to Firebase (in real app)
-            // publishLocation(latitude, longitude, speed, heading);
-        }
-
-        function handlePositionError(error) {
-            let message = 'Unable to get location';
-            
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    message = 'Location permission denied';
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    message = 'Location unavailable';
-                    break;
-                case error.TIMEOUT:
-                    message = 'Location request timeout';
-                    break;
-            }
-            
-            showToast(message, 'error');
-            
-            // Start demo updates
-            startDemoUpdates();
+            showToast('Using demo location data', 'info');
         }
 
         // ==================== TRIP FUNCTIONS ====================
@@ -2201,7 +2452,11 @@
                 // Start timer
                 startTripTimer();
                 
-                showToast('Trip started!', 'success');
+                showToast('Trip started! Parents have been notified.', 'success');
+                addNotification('Trip Started', `Bus ${appState.busNumber} has started the ${appState.currentTrip === 'to_school' ? 'morning' : 'afternoon'} trip`, 'warning');
+                
+                // Publish trip status to Firebase
+                publishTripStatus();
                 
             } else {
                 // End trip
@@ -2217,6 +2472,29 @@
                 appState.currentTrip = appState.currentTrip === 'to_school' ? 'from_school' : 'to_school';
                 
                 showToast('Trip ended. Switching direction.', 'info');
+                addNotification('Trip Ended', `Bus ${appState.busNumber} has completed the trip`, 'info');
+                
+                // Publish trip status to Firebase
+                publishTripStatus();
+            }
+        }
+
+        function publishTripStatus() {
+            if (!appState.driverId || !appState.busNumber) return;
+            
+            const statusData = {
+                tripActive: appState.tripActive,
+                tripDirection: appState.currentTrip,
+                driverId: appState.driverId,
+                timestamp: Date.now(),
+                studentsOnBoard: Object.values(studentDatabase).filter(s => s.status === 'onbus').length,
+                totalStudents: Object.keys(studentDatabase).length
+            };
+            
+            try {
+                database.ref(`buses/${appState.busNumber}/tripStatus`).set(statusData);
+            } catch (error) {
+                console.error('Error publishing trip status:', error);
             }
         }
 
@@ -2239,6 +2517,7 @@
                 clearInterval(tripTimerInterval);
                 tripTimerInterval = null;
             }
+            document.getElementById('tripDuration').textContent = '00:00';
         }
 
         // ==================== STUDENT FUNCTIONS ====================
@@ -2319,10 +2598,24 @@
             addBusStopsToMap();
             updateDashboard();
             
+            // Publish to Firebase
+            publishStudentUpdate(newStudent);
+            
             // Close modal
             hideAddStudentModal();
             
             showToast(`Added student: ${newStudent.name}`, 'success');
+            addNotification('Student Added', `New student ${newStudent.name} added to the roster`, 'info');
+        }
+
+        function publishStudentUpdate(student) {
+            if (!appState.busNumber) return;
+            
+            try {
+                database.ref(`buses/${appState.busNumber}/students/${student.id}`).set(student);
+            } catch (error) {
+                console.error('Error publishing student update:', error);
+            }
         }
 
         function importStudents() {
@@ -2333,19 +2626,62 @@
             const student = studentDatabase[studentId];
             if (!student) return;
             
+            const oldStatus = student.status;
             student.status = status;
             
             // Update UI
             loadStudentList();
             updateDashboard();
             
-            // Show toast
+            // Publish status update to Firebase
+            publishStudentStatusUpdate(studentId, status);
+            
+            // Show toast and notification
             const statusText = status === 'onbus' ? 'picked up' : 'dropped off';
             showToast(`${student.name} marked as ${statusText}`, 'success');
+            
+            if (oldStatus !== status) {
+                addNotification('Student Status', `${student.name} has been ${statusText}`, 'info');
+            }
             
             // If parent is viewing this student, update their view
             if (appState.userRole === 'parent' && appState.studentId === studentId) {
                 updateChildInfo(student);
+            }
+        }
+
+        function publishStudentStatusUpdate(studentId, status) {
+            if (!appState.busNumber) return;
+            
+            const student = studentDatabase[studentId];
+            if (!student) return;
+            
+            const statusData = {
+                studentId: studentId,
+                studentName: student.name,
+                status: status,
+                timestamp: Date.now(),
+                location: student.location,
+                busNumber: appState.busNumber,
+                driverId: appState.driverId
+            };
+            
+            try {
+                database.ref(`buses/${appState.busNumber}/studentStatus/${studentId}`).set(statusData);
+                
+                // Also send alert
+                if (status === 'onbus' || status === 'dropped') {
+                    database.ref(`buses/${appState.busNumber}/alerts`).push().set({
+                        type: 'student_status',
+                        message: `${student.name} has been ${status === 'onbus' ? 'picked up' : 'dropped off'}`,
+                        timestamp: Date.now(),
+                        studentId: studentId,
+                        studentName: student.name,
+                        status: status
+                    });
+                }
+            } catch (error) {
+                console.error('Error publishing student status:', error);
             }
         }
 
@@ -2359,6 +2695,14 @@
                 addBusStopsToMap();
                 updateDashboard();
                 showToast(`Removed student: ${student.name}`, 'success');
+                addNotification('Student Removed', `${student.name} has been removed from the roster`, 'warning');
+                
+                // Remove from Firebase
+                try {
+                    database.ref(`buses/${appState.busNumber}/students/${studentId}`).remove();
+                } catch (error) {
+                    console.error('Error removing student from Firebase:', error);
+                }
             }
         }
 
@@ -2370,9 +2714,11 @@
 
         function checkNearbyStops(busCoords) {
             Object.values(studentDatabase).forEach(student => {
+                if (!busCoords || !student.coordinates) return;
+                
                 const distance = map.distance(busCoords, student.coordinates);
                 
-                // Auto-pickup within 200 meters
+                // Auto-pickup within 200 meters when trip is active
                 if (distance < 200 && student.status === 'waiting' && appState.tripActive) {
                     updateStudentStatus(student.id, 'onbus');
                     showToast(`Auto-picked up: ${student.name}`, 'success');
@@ -2458,31 +2804,34 @@
             return waitingStudents[0];
         }
 
-        function calculateETA() {
-            const now = new Date();
-            const arrival = new Date(now.getTime() + 15 * 60000); // 15 minutes from now
-            return arrival.getHours().toString().padStart(2, '0') + ':' + 
-                   arrival.getMinutes().toString().padStart(2, '0');
-        }
-
         // ==================== NOTIFICATION FUNCTIONS ====================
         function showNotifications() {
             const modal = document.getElementById('notificationsModal');
             const list = document.getElementById('notificationsList');
             
-            list.innerHTML = appState.notifications.length > 0 
-                ? appState.notifications.map(n => `
-                    <div class="student-item">
-                        <div style="flex: 1;">
-                            <div class="student-name">${n.title}</div>
-                            <div class="student-details">${n.message}</div>
-                            <div class="student-details" style="font-size: 11px; opacity: 0.6;">
-                                ${new Date(n.timestamp).toLocaleTimeString()}
-                            </div>
+            if (appState.notifications.length === 0) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.6);">No notifications</div>';
+            } else {
+                list.innerHTML = appState.notifications.map(notification => `
+                    <div class="notification-item" data-notification-id="${notification.id}">
+                        <div class="notification-header">
+                            <div class="notification-title">${notification.title}</div>
+                            <div class="notification-time">${formatTime(notification.timestamp)}</div>
                         </div>
+                        <div class="notification-message">${notification.message}</div>
+                        ${notification.actions ? `
+                            <div class="notification-actions">
+                                ${notification.actions.map(action => `
+                                    <button class="notification-btn ${action.primary ? 'primary' : ''}" 
+                                            onclick="handleNotificationAction('${notification.id}', '${action.type}')">
+                                        ${action.label}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        ` : ''}
                     </div>
-                `).join('')
-                : '<div style="text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.6);">No notifications</div>';
+                `).join('');
+            }
             
             modal.classList.add('active');
         }
@@ -2491,19 +2840,66 @@
             document.getElementById('notificationsModal').classList.remove('active');
         }
 
-        function addNotification(title, message, type = 'info') {
+        function addNotification(title, message, type = 'info', actions = []) {
             const notification = {
                 id: Date.now(),
                 title,
                 message,
                 type,
                 timestamp: Date.now(),
-                read: false
+                read: false,
+                actions: actions
             };
             
             appState.notifications.unshift(notification);
             
+            // Keep only last 50 notifications
+            if (appState.notifications.length > 50) {
+                appState.notifications.pop();
+            }
+            
             // Update notification badge
+            updateNotificationBadge();
+            
+            // Show toast for important notifications
+            if (type === 'warning' || type === 'error') {
+                showToast(`${title}: ${message}`, type);
+            }
+            
+            return notification.id;
+        }
+
+        function handleNotificationAction(notificationId, actionType) {
+            const notification = appState.notifications.find(n => n.id == notificationId);
+            if (!notification) return;
+            
+            switch(actionType) {
+                case 'mark_read':
+                    notification.read = true;
+                    showToast('Marked as read', 'success');
+                    break;
+                    
+                case 'view_details':
+                    // Handle viewing details
+                    showToast('Showing details...', 'info');
+                    break;
+                    
+                case 'dismiss':
+                    // Remove notification
+                    appState.notifications = appState.notifications.filter(n => n.id != notificationId);
+                    showToast('Notification dismissed', 'info');
+                    break;
+                    
+                case 'respond':
+                    // Handle response action
+                    if (notification.title.includes('Parent')) {
+                        showToast('Sending response to parent...', 'success');
+                    }
+                    break;
+            }
+            
+            // Update notifications display
+            showNotifications();
             updateNotificationBadge();
         }
 
@@ -2511,7 +2907,7 @@
             appState.notifications = [];
             updateNotificationBadge();
             hideNotificationsModal();
-            showToast('Notifications cleared', 'success');
+            showToast('All notifications cleared', 'success');
         }
 
         function updateNotificationBadge() {
@@ -2529,6 +2925,17 @@
         }
 
         // ==================== UTILITY FUNCTIONS ====================
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+            if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+            return date.toLocaleDateString();
+        }
+
         function updateClock() {
             const now = new Date();
             const timeStr = now.getHours().toString().padStart(2, '0') + ':' + 
@@ -2567,9 +2974,6 @@
             
             // Auto-hide after 5 seconds
             setTimeout(() => hideToast(toast), 5000);
-            
-            // Add to notifications
-            addNotification(type.charAt(0).toUpperCase() + type.slice(1), message, type);
         }
 
         function hideToast(toast) {
@@ -2584,19 +2988,41 @@
         }
 
         function logout() {
-            // Cleanup
+            // Cleanup intervals
             if (watchId) {
                 navigator.geolocation.clearWatch(watchId);
             }
-            if (locationUpdateInterval) {
-                clearInterval(locationUpdateInterval);
+            if (driverLocationInterval) {
+                clearInterval(driverLocationInterval);
             }
             if (tripTimerInterval) {
                 clearInterval(tripTimerInterval);
             }
+            if (appState.locationUpdateInterval) {
+                clearInterval(appState.locationUpdateInterval);
+            }
+            
+            // Remove Firebase listeners
+            if (appState.firebaseListener) {
+                database.ref(`buses/${appState.busNumber}/location`).off('value', appState.firebaseListener);
+            }
+            
+            // Update Firebase status
+            if (appState.userRole === 'driver' && appState.busNumber) {
+                try {
+                    database.ref(`buses/${appState.busNumber}/status`).set({
+                        online: false,
+                        lastUpdate: Date.now(),
+                        driver: appState.driverId
+                    });
+                } catch (error) {
+                    console.error('Error updating logout status:', error);
+                }
+            }
             
             // Reset state
             appState.tripActive = false;
+            appState.currentLocation = null;
             
             // Clear session
             localStorage.removeItem('schoolbus_session');
@@ -2622,13 +3048,23 @@
                 routeLine = null;
             }
             
+            // Reset window flag
+            window.mapCentered = false;
+            
             showToast('Logged out successfully', 'info');
+        }
+
+        function showInterface(interfaceType) {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.querySelectorAll('.interface').forEach(el => el.classList.remove('active'));
+            document.getElementById(`${interfaceType}Interface`).classList.add('active');
         }
 
         // Make functions available globally for onclick handlers
         window.updateStudentStatus = updateStudentStatus;
         window.removeStudent = removeStudent;
         window.markChildStatus = markChildStatus;
+        window.handleNotificationAction = handleNotificationAction;
     </script>
 </body>
 </html>
