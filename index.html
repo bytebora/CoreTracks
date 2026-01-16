@@ -442,6 +442,10 @@
             background: rgba(255, 255, 255, 0.15);
         }
 
+        .action-btn.fullscreen {
+            font-size: 18px;
+        }
+
         /* Status Cards */
         .status-cards {
             position: fixed;
@@ -1246,6 +1250,31 @@
             transform: scale(0.95);
         }
 
+        /* Fullscreen styles */
+        :fullscreen .top-bar,
+        :-webkit-full-screen .top-bar,
+        :-moz-full-screen .top-bar {
+            background: rgba(17, 24, 39, 0.98);
+        }
+
+        :fullscreen .map-controls,
+        :-webkit-full-screen .map-controls,
+        :-moz-full-screen .map-controls {
+            bottom: 220px;
+        }
+
+        :fullscreen .parent-info-card,
+        :-webkit-full-screen .parent-info-card,
+        :-moz-full-screen .parent-info-card {
+            bottom: 26px;
+        }
+
+        :fullscreen .trip-control,
+        :-webkit-full-screen .trip-control,
+        :-moz-full-screen .trip-control {
+            bottom: 30px;
+        }
+
         /* Animations */
         @keyframes fadeInUp {
             from {
@@ -1375,6 +1404,9 @@
                 </div>
             </div>
             <div class="top-actions">
+                <button class="action-btn glass" id="fullscreenBtn" title="Fullscreen">
+                    <i class="fas fa-expand"></i>
+                </button>
                 <button class="action-btn glass" id="notificationsBtn" title="Notifications">
                     <i class="fas fa-bell"></i>
                     <span class="notification-badge" id="notificationCount" style="display: none;">0</span>
@@ -1469,6 +1501,9 @@
                 </div>
             </div>
             <div class="top-actions">
+                <button class="action-btn glass" id="parentFullscreenBtn" title="Fullscreen">
+                    <i class="fas fa-expand"></i>
+                </button>
                 <button class="action-btn glass" id="parentNotificationsBtn" title="Notifications">
                     <i class="fas fa-bell"></i>
                     <span class="notification-badge" id="parentNotificationCount" style="display: none;">0</span>
@@ -1685,7 +1720,8 @@
             tripTimer: null,
             currentLocation: null,
             locationUpdateInterval: null,
-            firebaseListener: null
+            firebaseListener: null,
+            isFullscreen: false
         };
 
         // Student Database (sample data)
@@ -1785,6 +1821,64 @@
                 
                 showToast('Welcome back!', 'success');
             }
+
+            // Listen for fullscreen changes
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+            document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        }
+
+        // ==================== FULLSCREEN FUNCTIONS ====================
+        function toggleFullscreen() {
+            const element = document.documentElement;
+            
+            if (!appState.isFullscreen) {
+                // Enter fullscreen
+                if (element.requestFullscreen) {
+                    element.requestFullscreen();
+                } else if (element.webkitRequestFullscreen) {
+                    element.webkitRequestFullscreen();
+                } else if (element.mozRequestFullScreen) {
+                    element.mozRequestFullScreen();
+                } else if (element.msRequestFullscreen) {
+                    element.msRequestFullscreen();
+                }
+            } else {
+                // Exit fullscreen
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        }
+
+        function handleFullscreenChange() {
+            const isFullscreen = !!(document.fullscreenElement || 
+                                  document.webkitFullscreenElement || 
+                                  document.mozFullScreenElement);
+            
+            appState.isFullscreen = isFullscreen;
+            
+            // Update fullscreen button icon
+            const fullscreenBtns = document.querySelectorAll('#fullscreenBtn, #parentFullscreenBtn');
+            fullscreenBtns.forEach(btn => {
+                if (btn) {
+                    btn.innerHTML = isFullscreen ? '<i class="fas fa-compress"></i>' : '<i class="fas fa-expand"></i>';
+                    btn.title = isFullscreen ? 'Exit Fullscreen' : 'Fullscreen';
+                }
+            });
+            
+            // Update map layout if needed
+            if (map) {
+                map.invalidateSize();
+            }
+            
+            showToast(isFullscreen ? 'Entered fullscreen mode' : 'Exited fullscreen mode', 'info');
         }
 
         // ==================== LOGIN FUNCTIONS ====================
@@ -2099,6 +2193,9 @@
         }
 
         function setupDriverControls() {
+            // Fullscreen button
+            document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
+            
             // Map controls
             document.getElementById('centerMap').addEventListener('click', centerOnBus);
             document.getElementById('zoomIn').addEventListener('click', () => map.zoomIn());
@@ -2158,6 +2255,9 @@
         }
 
         function setupParentControls() {
+            // Fullscreen button
+            document.getElementById('parentFullscreenBtn').addEventListener('click', toggleFullscreen);
+            
             // Map controls
             document.getElementById('parentCenterMap').addEventListener('click', centerOnBus);
             document.getElementById('parentZoomIn').addEventListener('click', () => map.zoomIn());
@@ -2988,6 +3088,11 @@
         }
 
         function logout() {
+            // Exit fullscreen if active
+            if (appState.isFullscreen) {
+                toggleFullscreen();
+            }
+            
             // Cleanup intervals
             if (watchId) {
                 navigator.geolocation.clearWatch(watchId);
@@ -3023,6 +3128,7 @@
             // Reset state
             appState.tripActive = false;
             appState.currentLocation = null;
+            appState.isFullscreen = false;
             
             // Clear session
             localStorage.removeItem('schoolbus_session');
