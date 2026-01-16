@@ -10,31 +10,34 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
-    <!-- Remove MQTT and add Firebase -->
-    <!-- <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script> -->
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     
     <style>
-        /* [Keep all your existing CSS styles - they remain exactly the same] */
+        /* ========== ENHANCED STYLES ========== */
         :root {
             --primary: #1A56DB;
+            --primary-light: #3B82F6;
             --primary-dark: #1E40AF;
             --secondary: #7E3AF2;
             --success: #0E9F6E;
+            --success-light: #10B981;
             --warning: #F59E0B;
             --danger: #DC2626;
+            --danger-light: #EF4444;
             --info: #3B82F6;
             --dark: #111827;
+            --dark-light: #1F2937;
             --light: #F9FAFB;
             --gray-100: #F3F4F6;
+            --gray-200: #E5E7EB;
             --gray-800: #1F2937;
-            --glass-bg: rgba(255, 255, 255, 0.1);
-            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-bg: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.25);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Reset & Base */
         * {
             margin: 0;
             padding: 0;
@@ -48,43 +51,40 @@
             width: 100%;
             overscroll-behavior: none;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
-            background: var(--dark);
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
             color: white;
             overflow: hidden;
             position: fixed;
             touch-action: manipulation;
-        }
-
-        /* Prevent pull-to-refresh on mobile */
-        body {
-            overscroll-behavior-y: contain;
+            font-size: 16px;
+            line-height: 1.5;
         }
 
         .glass {
             background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
             border: 1px solid var(--glass-border);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: var(--transition);
         }
 
-        /* Login Screen */
+        /* ========== LOGIN SCREEN ========== */
         .login-container {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, var(--dark) 0%, var(--gray-800) 100%);
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             padding: 20px;
             z-index: 2000;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.4s ease;
             overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
         }
 
         .login-container.hidden {
@@ -94,71 +94,72 @@
 
         .login-wrapper {
             width: 100%;
-            max-width: 400px;
-            padding: 20px;
+            max-width: 420px;
+            padding: 30px 25px;
             margin: auto;
+            animation: fadeInUp 0.6s ease;
         }
 
         .login-logo {
             text-align: center;
-            margin-bottom: 30px;
-            animation: fadeInUp 0.6s ease;
+            margin-bottom: 40px;
         }
 
         .login-logo-icon {
-            width: 80px;
-            height: 80px;
-            border-radius: 20px;
+            width: 100px;
+            height: 100px;
+            border-radius: 24px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 36px;
-            margin: 0 auto 15px;
-            box-shadow: 0 12px 32px rgba(26, 86, 219, 0.3);
+            font-size: 42px;
+            margin: 0 auto 20px;
+            box-shadow: 0 16px 40px rgba(26, 86, 219, 0.4);
         }
 
         .login-title {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 800;
             background: linear-gradient(135deg, #fff, #E5E7EB);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             letter-spacing: -0.5px;
         }
 
         .login-subtitle {
             color: rgba(255, 255, 255, 0.7);
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 400;
-            line-height: 1.4;
+            line-height: 1.5;
+            max-width: 300px;
+            margin: 0 auto;
         }
 
         .role-selector {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 25px;
+            gap: 15px;
+            margin-bottom: 30px;
             width: 100%;
-            animation: fadeInUp 0.6s ease 0.2s both;
         }
 
         .role-btn {
-            padding: 16px;
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.12);
             color: white;
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: var(--transition);
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
         .role-btn:active {
@@ -167,94 +168,96 @@
 
         .role-btn.active {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-color: rgba(255, 255, 255, 0.2);
+            border-color: transparent;
             transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(26, 86, 219, 0.3);
+            box-shadow: 0 12px 30px rgba(26, 86, 219, 0.4);
         }
 
         .role-icon {
-            font-size: 24px;
+            font-size: 28px;
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .role-btn.active .role-icon {
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .login-form {
             width: 100%;
-            animation: fadeInUp 0.6s ease 0.4s both;
         }
 
         .input-group {
-            margin-bottom: 16px;
+            margin-bottom: 20px;
+            animation: fadeIn 0.5s ease;
         }
 
         .input-label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            font-size: 15px;
             font-weight: 500;
             color: rgba(255, 255, 255, 0.9);
         }
 
+        .input-label i {
+            color: var(--primary-light);
+            font-size: 14px;
+        }
+
         .login-input {
             width: 100%;
-            padding: 14px 16px;
-            border-radius: 12px;
+            padding: 16px 18px;
+            border-radius: 14px;
             background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.15);
             color: white;
             font-size: 16px;
-            transition: all 0.3s ease;
-            -webkit-appearance: none;
+            transition: var(--transition);
         }
 
         .login-input:focus {
             outline: none;
             border-color: var(--primary);
             background: rgba(255, 255, 255, 0.12);
-            box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
+            box-shadow: 0 0 0 4px rgba(26, 86, 219, 0.15);
+        }
+
+        .login-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
         }
 
         .login-btn {
             width: 100%;
-            padding: 16px;
-            border-radius: 12px;
+            padding: 18px;
+            border-radius: 14px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             border: none;
             color: white;
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: var(--transition);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            margin-top: 8px;
-            position: relative;
-            overflow: hidden;
+            gap: 12px;
+            margin-top: 10px;
         }
 
         .login-btn:active {
-            transform: translateY(0);
+            transform: translateY(2px);
+            box-shadow: 0 6px 20px rgba(26, 86, 219, 0.3);
         }
 
-        .login-btn::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 5px;
-            height: 5px;
-            background: rgba(255, 255, 255, 0.5);
-            opacity: 0;
-            border-radius: 100%;
-            transform: scale(1, 1) translate(-50%);
-            transform-origin: 50% 50%;
-        }
-
-        .login-btn:focus:not(:active)::after {
-            animation: ripple 1s ease-out;
-        }
-
-        /* Interface Common */
+        /* ========== INTERFACE COMMON ========== */
         .interface {
             position: fixed;
             top: 0;
@@ -278,7 +281,7 @@
             z-index: 1;
         }
 
-        /* Top Bar - Mobile Optimized */
+        /* Top Bar */
         .top-bar {
             position: fixed;
             top: 0;
@@ -293,7 +296,6 @@
             pointer-events: all;
             background: linear-gradient(to bottom, rgba(17, 24, 39, 0.95), rgba(17, 24, 39, 0.8));
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            -webkit-backdrop-filter: blur(20px);
             backdrop-filter: blur(20px);
         }
 
@@ -368,7 +370,7 @@
             background: rgba(255, 255, 255, 0.15);
         }
 
-        /* Status Cards - Mobile Optimized */
+        /* Status Cards */
         .status-cards {
             position: fixed;
             top: 70px;
@@ -415,7 +417,375 @@
             text-overflow: ellipsis;
         }
 
-        /* Student Management - Mobile Optimized */
+        /* Map Controls */
+        .map-controls {
+            position: fixed;
+            bottom: 200px;
+            right: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1000;
+            pointer-events: all;
+        }
+
+        .map-control-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .map-control-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .map-control-btn.active {
+            background: var(--primary);
+        }
+
+        /* Parent Interface */
+        .parent-info-card {
+            position: fixed;
+            bottom: 16px;
+            left: 12px;
+            right: 12px;
+            padding: 16px;
+            border-radius: 18px;
+            z-index: 1000;
+            pointer-events: all;
+        }
+
+        .child-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.05);
+            margin-bottom: 12px;
+        }
+
+        .child-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .child-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .child-school {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .child-location {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .child-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .child-action-btn {
+            padding: 14px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .child-action-btn:active {
+            transform: scale(0.98);
+        }
+
+        .child-action-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Bus Info Panel */
+        .bus-info-panel {
+            position: fixed;
+            top: 70px;
+            left: 12px;
+            right: 12px;
+            padding: 16px;
+            border-radius: 18px;
+            z-index: 1000;
+            pointer-events: all;
+        }
+
+        .bus-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .bus-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .bus-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .bus-name {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .bus-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        .status-online {
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        .status-offline {
+            background: var(--danger);
+        }
+
+        .bus-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .metric-item {
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .metric-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .metric-label {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Map Theme Selector */
+        .map-theme-selector {
+            position: fixed;
+            top: 70px;
+            right: 12px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px;
+            border-radius: 14px;
+            display: none;
+        }
+
+        .theme-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: 2px solid white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-size: cover;
+        }
+
+        .theme-btn:active {
+            transform: scale(0.95);
+        }
+
+        .theme-btn.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.3);
+        }
+
+        /* Notification Badge */
+        .notification-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: var(--danger);
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Trip Status */
+        .trip-status {
+            position: fixed;
+            top: 70px;
+            left: 12px;
+            z-index: 1000;
+            padding: 10px 16px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .trip-to-school {
+            background: rgba(14, 159, 110, 0.15);
+            color: var(--success);
+        }
+
+        .trip-from-school {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--info);
+        }
+
+        /* Trip Control */
+        .trip-control {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 16px 24px;
+            border-radius: 50px;
+            background: rgba(17, 24, 39, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .trip-indicator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .trip-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        .trip-text {
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .trip-toggle-btn {
+            padding: 14px 28px;
+            border-radius: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 140px;
+            justify-content: center;
+        }
+
+        .trip-toggle-btn:active {
+            transform: scale(0.95);
+        }
+
+        .trip-toggle-btn.active {
+            background: linear-gradient(135deg, var(--danger-light), var(--danger));
+        }
+
+        /* Student Management */
         .student-management {
             position: fixed;
             top: 0;
@@ -606,236 +976,7 @@
             background: rgba(255, 255, 255, 0.15);
         }
 
-        /* Parent Interface - Mobile Optimized */
-        .parent-info-card {
-            position: fixed;
-            bottom: 16px;
-            left: 12px;
-            right: 12px;
-            padding: 16px;
-            border-radius: 18px;
-            z-index: 1000;
-            pointer-events: all;
-        }
-
-        .child-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 14px;
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.05);
-            margin-bottom: 12px;
-        }
-
-        .child-details {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .child-name {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .child-school {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 6px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .child-location {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.6);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .child-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .child-action-btn {
-            padding: 14px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border: none;
-            color: white;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-        }
-
-        .child-action-btn:active {
-            transform: scale(0.98);
-        }
-
-        .child-action-btn.secondary {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        /* Bus Info Panel - Mobile Optimized */
-        .bus-info-panel {
-            position: fixed;
-            top: 70px;
-            left: 12px;
-            right: 12px;
-            padding: 16px;
-            border-radius: 18px;
-            z-index: 1000;
-            pointer-events: all;
-        }
-
-        .bus-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .bus-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
-            flex-shrink: 0;
-        }
-
-        .bus-details {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .bus-name {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .bus-status {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 13px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .status-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-            flex-shrink: 0;
-        }
-
-        .status-online {
-            background: var(--success);
-            animation: pulse 2s infinite;
-        }
-
-        .status-offline {
-            background: var(--danger);
-        }
-
-        .bus-metrics {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-        }
-
-        .metric-item {
-            text-align: center;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-        }
-
-        .metric-value {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .metric-label {
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.6);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* Map Controls - Mobile Optimized */
-        .map-controls {
-            position: fixed;
-            bottom: 200px;
-            right: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            z-index: 1000;
-            pointer-events: all;
-        }
-
-        .map-control-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-        }
-
-        .map-control-btn:active {
-            transform: scale(0.95);
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .map-control-btn.active {
-            background: var(--primary);
-        }
-
-        /* Modal - Mobile Optimized */
+        /* Modals */
         .modal {
             position: fixed;
             top: 0;
@@ -950,7 +1091,7 @@
             border: 1px solid rgba(255, 255, 255, 0.15);
         }
 
-        /* Toast Notifications - Mobile Optimized */
+        /* Toast */
         .toast-container {
             position: fixed;
             bottom: 16px;
@@ -1013,82 +1154,6 @@
             flex-shrink: 0;
         }
 
-        /* Map Theme Selector - Mobile Optimized */
-        .map-theme-selector {
-            position: fixed;
-            top: 70px;
-            right: 12px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding: 12px;
-            border-radius: 14px;
-            display: none;
-        }
-
-        .theme-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            border: 2px solid white;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            background-size: cover;
-        }
-
-        .theme-btn:active {
-            transform: scale(0.95);
-        }
-
-        .theme-btn.active {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.3);
-        }
-
-        /* Notification Badge */
-        .notification-badge {
-            position: absolute;
-            top: -4px;
-            right: -4px;
-            background: var(--danger);
-            color: white;
-            font-size: 10px;
-            font-weight: 600;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Trip Status */
-        .trip-status {
-            position: fixed;
-            top: 70px;
-            left: 12px;
-            z-index: 1000;
-            padding: 10px 16px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 500;
-            font-size: 13px;
-            white-space: nowrap;
-        }
-
-        .trip-to-school {
-            background: rgba(14, 159, 110, 0.15);
-            color: var(--success);
-        }
-
-        .trip-from-school {
-            background: rgba(59, 130, 246, 0.15);
-            color: var(--info);
-        }
-
         /* Close Button */
         .close-btn {
             width: 36px;
@@ -1144,119 +1209,7 @@
             }
         }
 
-        @keyframes ripple {
-            0% {
-                transform: scale(0, 0);
-                opacity: 1;
-            }
-            20% {
-                transform: scale(25, 25);
-                opacity: 1;
-            }
-            100% {
-                opacity: 0;
-                transform: scale(40, 40);
-            }
-        }
-
-        /* Mobile Specific Optimizations */
-        @media (max-width: 360px) {
-            .status-cards {
-                grid-template-columns: 1fr;
-                top: 65px;
-            }
-            
-            .bus-metrics {
-                grid-template-columns: 1fr;
-            }
-            
-            .child-actions {
-                grid-template-columns: 1fr;
-            }
-            
-            .role-selector {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-height: 600px) {
-            .status-cards {
-                top: 65px;
-            }
-            
-            .bus-info-panel {
-                top: 65px;
-            }
-            
-            .parent-info-card {
-                bottom: 12px;
-            }
-            
-            .map-controls {
-                bottom: 180px;
-            }
-        }
-
-        /* Landscape Mode */
-        @media (orientation: landscape) {
-            .login-wrapper {
-                max-height: 90vh;
-                overflow-y: auto;
-                padding: 10px;
-            }
-            
-            .role-selector {
-                grid-template-columns: 1fr 1fr;
-            }
-            
-            .status-cards {
-                top: 65px;
-                grid-template-columns: repeat(3, 1fr);
-            }
-            
-            .map-controls {
-                bottom: 100px;
-            }
-        }
-
-        /* Tablet */
-        @media (min-width: 768px) {
-            .status-cards {
-                max-width: 400px;
-                left: 50%;
-                transform: translateX(-50%);
-            }
-            
-            .map-controls {
-                right: 20px;
-                bottom: 220px;
-            }
-            
-            .parent-info-card {
-                max-width: 400px;
-                left: 50%;
-                transform: translateX(-50%);
-            }
-            
-            .bus-info-panel {
-                max-width: 400px;
-                left: 50%;
-                transform: translateX(-50%);
-            }
-        }
-
-        /* Fix Leaflet Scroll */
-        .leaflet-container {
-            width: 100%;
-            height: 100%;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .leaflet-control-attribution {
-            font-size: 9px !important;
-        }
-
-        /* Safe Area Insets */
+        /* Safe Area */
         .safe-area-top {
             padding-top: env(safe-area-inset-top, 0px);
         }
@@ -1294,26 +1247,40 @@
             </div>
             
             <div class="login-form">
-                <div class="input-group">
-                    <label class="input-label" id="loginLabel">Driver ID</label>
-                    <input type="text" class="login-input glass" id="loginInput" 
-                           placeholder="Enter your Driver ID" value="DRIVER-2024">
-                </div>
-                <div class="input-group">
-                    <label class="input-label">Bus Number</label>
+                <div class="input-group" id="driverForm">
+                    <label class="input-label">
+                        <i class="fas fa-id-card"></i> Driver ID
+                    </label>
+                    <input type="text" class="login-input glass" id="driverId" 
+                           placeholder="Enter your Driver ID" value="DRIVER-001">
+                    
+                    <label class="input-label" style="margin-top: 20px;">
+                        <i class="fas fa-bus"></i> Bus Number
+                    </label>
                     <input type="text" class="login-input glass" id="busNumber" 
                            placeholder="e.g., BUS-001" value="BUS-001">
                 </div>
-                <div class="input-group" id="parentExtra" style="display: none;">
-                    <label class="input-label">Parent Name</label>
+                
+                <div class="input-group" id="parentForm" style="display: none;">
+                    <label class="input-label">
+                        <i class="fas fa-user"></i> Parent Name
+                    </label>
                     <input type="text" class="login-input glass" id="parentName" 
                            placeholder="Your full name" value="John Smith">
-                    <div style="margin-top: 12px;">
-                        <label class="input-label">Child's Student ID</label>
-                        <input type="text" class="login-input glass" id="studentId" 
-                               placeholder="e.g., STU-2024-001" value="STU-2024-001">
-                    </div>
+                    
+                    <label class="input-label" style="margin-top: 20px;">
+                        <i class="fas fa-bus"></i> Bus Number
+                    </label>
+                    <input type="text" class="login-input glass" id="parentBusNumber" 
+                           placeholder="e.g., BUS-001" value="BUS-001">
+                    
+                    <label class="input-label" style="margin-top: 20px;">
+                        <i class="fas fa-child"></i> Child's Student ID
+                    </label>
+                    <input type="text" class="login-input glass" id="studentId" 
+                           placeholder="e.g., STU-001" value="STU-001">
                 </div>
+                
                 <button class="login-btn" id="loginBtn">
                     <i class="fas fa-sign-in-alt"></i> Start Tracking
                 </button>
@@ -1350,21 +1317,21 @@
         </div>
 
         <div class="status-cards">
-            <div class="status-card glass" style="background: linear-gradient(135deg, rgba(26, 86, 219, 0.2), rgba(30, 64, 175, 0.1));">
+            <div class="status-card glass">
                 <div class="status-card-icon">
                     <i class="fas fa-tachometer-alt"></i>
                 </div>
                 <div class="status-card-value" id="currentSpeed">0 km/h</div>
                 <div class="status-card-label">Current Speed</div>
             </div>
-            <div class="status-card glass" style="background: linear-gradient(135deg, rgba(14, 159, 110, 0.2), rgba(16, 185, 129, 0.1));">
+            <div class="status-card glass">
                 <div class="status-card-icon">
                     <i class="fas fa-users"></i>
                 </div>
                 <div class="status-card-value" id="studentsCount">0/0</div>
                 <div class="status-card-label">Students On Board</div>
             </div>
-            <div class="status-card glass" style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(139, 92, 246, 0.1));">
+            <div class="status-card glass">
                 <div class="status-card-icon">
                     <i class="fas fa-map-marker-alt"></i>
                 </div>
@@ -1373,9 +1340,19 @@
             </div>
         </div>
 
-        <div class="trip-status trip-to-school glass" id="tripStatus" style="display: none;">
-            <i class="fas fa-school"></i>
-            <span>Trip: To School</span>
+        <div class="trip-control" id="tripControl">
+            <div class="trip-indicator">
+                <div class="trip-dot"></div>
+                <div class="trip-text" id="tripDirection">To School</div>
+            </div>
+            <button class="trip-toggle-btn" id="startTrip">
+                <i class="fas fa-play"></i>
+                <span>Start Trip</span>
+            </button>
+            <div class="trip-indicator">
+                <i class="fas fa-clock"></i>
+                <div class="trip-text" id="tripDuration">00:00</div>
+            </div>
         </div>
 
         <div class="map-controls">
@@ -1390,9 +1367,6 @@
             </button>
             <button class="map-control-btn glass" id="showStudents" title="Manage Students">
                 <i class="fas fa-user-graduate"></i>
-            </button>
-            <button class="map-control-btn glass" id="startTrip" title="Start Trip">
-                <i class="fas fa-play"></i>
             </button>
         </div>
 
@@ -1554,7 +1528,7 @@
                 <div class="form-group">
                     <label class="form-label">Student ID</label>
                     <input type="text" class="form-input" id="newStudentId" 
-                           placeholder="e.g., STU-2024-009" required>
+                           placeholder="e.g., STU-001" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Full Name</label>
@@ -1621,7 +1595,6 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-        const auth = firebase.auth();
 
         // Application State
         const appState = {
@@ -1636,48 +1609,48 @@
             mapTheme: 'standard',
             studentsOnBoard: 0,
             totalStudents: 0,
-            userId: null
+            tripStartTime: null,
+            tripTimer: null
         };
 
-        // Firebase Database References
-        const dbRefs = {
-            buses: 'buses',
-            students: 'students',
-            trips: 'trips',
-            alerts: 'alerts',
-            users: 'users'
+        // Student Database (sample data)
+        const studentDatabase = {
+            'STU-001': {
+                id: 'STU-001',
+                name: 'Emma Johnson',
+                grade: '5th Grade',
+                contact: '+1 (555) 123-4567',
+                location: 'Maple Street',
+                avatar: 'E',
+                status: 'waiting',
+                coordinates: [40.7120, -74.0050],
+                school: 'Westwood Elementary'
+            },
+            'STU-002': {
+                id: 'STU-002',
+                name: 'Michael Chen',
+                grade: '4th Grade',
+                contact: '+1 (555) 234-5678',
+                location: 'Oak Avenue',
+                avatar: 'M',
+                status: 'waiting',
+                coordinates: [40.7130, -74.0060],
+                school: 'Westwood Elementary'
+            },
+            'STU-003': {
+                id: 'STU-003',
+                name: 'Sophia Williams',
+                grade: '6th Grade',
+                contact: '+1 (555) 345-6789',
+                location: 'Pine Road',
+                avatar: 'S',
+                status: 'waiting',
+                coordinates: [40.7110, -74.0040],
+                school: 'Westwood Elementary'
+            }
         };
 
-        // Enhanced Student Database (now in Firebase)
-        let studentDatabase = {};
-        
-        // Load students from Firebase on startup
-        function loadStudentsFromFirebase() {
-            database.ref(`${dbRefs.students}/${appState.busNumber}`).on('value', (snapshot) => {
-                const students = snapshot.val();
-                if (students) {
-                    studentDatabase = students;
-                    
-                    // Update student list if visible
-                    if (document.getElementById('studentManagement').classList.contains('active')) {
-                        loadStudentList();
-                    }
-                    
-                    // Update dashboard
-                    updateDashboard();
-                    
-                    // Update map stops
-                    addBusStopsToMap();
-                    
-                    // Update parent interface if applicable
-                    if (appState.userRole === 'parent' && appState.studentId) {
-                        updateChildInfo(studentDatabase[appState.studentId] || {});
-                    }
-                }
-            });
-        }
-
-        // Map Themes (unchanged)
+        // Map Themes
         const MAP_THEMES = {
             standard: {
                 url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -1701,33 +1674,32 @@
         let map = null;
         let busMarker = null;
         let busPath = null;
-        let busStops = [];
-        let currentPosition = null;
-        let watchId = null;
         let stopMarkers = [];
-        let isMapThemeVisible = false;
-        let isParentMapThemeVisible = false;
+        let routeLine = null;
+        let watchId = null;
+        let currentPosition = null;
         let locationUpdateInterval = null;
-        let parentListener = null;
+        let tripTimerInterval = null;
 
         // Initialize Application
-        document.addEventListener('DOMContentLoaded', initApp);
+        document.addEventListener('DOMContentLoaded', function() {
+            initApp();
+        });
 
         function initApp() {
             setupLogin();
             updateClock();
             setInterval(updateClock, 1000);
             
-            // Check if user is already logged in (from localStorage)
-            const savedUser = localStorage.getItem('schoolbus_user');
-            if (savedUser) {
-                const userData = JSON.parse(savedUser);
-                appState.userRole = userData.role;
-                appState.userId = userData.userId;
-                appState.busNumber = userData.busNumber;
-                appState.driverId = userData.driverId;
-                appState.parentName = userData.parentName;
-                appState.studentId = userData.studentId;
+            // Check for saved session
+            const savedSession = localStorage.getItem('schoolbus_session');
+            if (savedSession) {
+                const session = JSON.parse(savedSession);
+                appState.userRole = session.role;
+                appState.driverId = session.driverId || '';
+                appState.busNumber = session.busNumber;
+                appState.parentName = session.parentName || '';
+                appState.studentId = session.studentId || '';
                 
                 showInterface(appState.userRole);
                 if (appState.userRole === 'driver') {
@@ -1736,556 +1708,88 @@
                     initParentInterface();
                 }
                 
-                showToast(`Welcome back, ${appState.userRole === 'driver' ? appState.driverId : appState.parentName}!`, 'success');
-            }
-            
-            // Prevent pull-to-refresh
-            document.body.addEventListener('touchmove', function(e) {
-                if (document.getElementById('studentManagement').classList.contains('active') ||
-                    document.getElementById('addStudentModal').classList.contains('active') ||
-                    document.getElementById('notificationsModal').classList.contains('active')) {
-                    // Allow scrolling in modals
-                    return;
-                }
-                e.preventDefault();
-            }, { passive: false });
-        }
-
-        // ==================== MODIFIED FUNCTIONS FOR FIREBASE ====================
-
-        function handleLogin() {
-            if (appState.userRole === 'driver') {
-                appState.driverId = document.getElementById('loginInput').value.trim();
-                appState.busNumber = document.getElementById('busNumber').value.trim();
-
-                if (!appState.driverId || !appState.busNumber) {
-                    showToast('Please enter Driver ID and Bus Number', 'error');
-                    return;
-                }
-
-                // Create user session
-                appState.userId = `driver_${Date.now()}`;
-                
-                // Save to localStorage
-                localStorage.setItem('schoolbus_user', JSON.stringify({
-                    role: 'driver',
-                    userId: appState.userId,
-                    driverId: appState.driverId,
-                    busNumber: appState.busNumber
-                }));
-
-                showInterface('driver');
-                initDriverInterface();
-                
-                // Initialize Firebase listeners
-                setupFirebaseListeners();
-                loadStudentsFromFirebase();
-                
-                showToast(`Welcome, Driver ${appState.driverId}!`, 'success');
-
-            } else {
-                appState.parentName = document.getElementById('parentName').value.trim();
-                appState.busNumber = document.getElementById('busNumber').value.trim();
-                appState.studentId = document.getElementById('studentId').value.trim();
-
-                if (!appState.parentName || !appState.busNumber || !appState.studentId) {
-                    showToast('Please fill all fields', 'error');
-                    return;
-                }
-
-                appState.userId = `parent_${Date.now()}`;
-                
-                // Save to localStorage
-                localStorage.setItem('schoolbus_user', JSON.stringify({
-                    role: 'parent',
-                    userId: appState.userId,
-                    parentName: appState.parentName,
-                    busNumber: appState.busNumber,
-                    studentId: appState.studentId
-                }));
-
-                showInterface('parent');
-                initParentInterface();
-                
-                // Initialize Firebase listeners
-                setupFirebaseListeners();
-                loadStudentsFromFirebase();
-                
-                showToast(`Welcome ${appState.parentName}!`, 'success');
+                showToast('Welcome back!', 'success');
             }
         }
 
-        function setupFirebaseListeners() {
-            if (appState.userRole === 'parent') {
-                // Listen for bus location updates
-                database.ref(`${dbRefs.buses}/${appState.busNumber}/location`).on('value', (snapshot) => {
-                    const locationData = snapshot.val();
-                    if (locationData) {
-                        updateBusPosition(locationData);
-                    }
-                });
-
-                // Listen for bus status updates
-                database.ref(`${dbRefs.buses}/${appState.busNumber}/status`).on('value', (snapshot) => {
-                    const statusData = snapshot.val();
-                    if (statusData) {
-                        updateBusStatus(statusData);
-                    }
-                });
-
-                // Listen for student updates
-                database.ref(`${dbRefs.students}/${appState.busNumber}/${appState.studentId}`).on('value', (snapshot) => {
-                    const studentData = snapshot.val();
-                    if (studentData) {
-                        updateStudentFromFirebase(studentData);
-                    }
-                });
-
-                // Listen for alerts
-                database.ref(`${dbRefs.alerts}/${appState.busNumber}`).limitToLast(10).on('child_added', (snapshot) => {
-                    const alertData = snapshot.val();
-                    if (alertData) {
-                        handleAlert(alertData);
-                    }
-                });
-            }
-        }
-
-        function publishLocation(lat, lng, speed, heading) {
-            const studentsOnBoard = Object.values(studentDatabase).filter(s => s.status === 'onbus').length;
-            const totalStudents = Object.keys(studentDatabase).length;
-            
-            const locationData = {
-                lat: lat,
-                lng: lng,
-                speed: speed || 0,
-                heading: heading || 0,
-                timestamp: Date.now(),
-                trip: appState.currentTrip,
-                tripActive: appState.tripActive,
-                studentsOnBoard: studentsOnBoard,
-                totalStudents: totalStudents,
-                driverId: appState.driverId
-            };
-            
-            // Update bus location in Firebase
-            database.ref(`${dbRefs.buses}/${appState.busNumber}/location`).set(locationData);
-            
-            // Also update bus status
-            database.ref(`${dbRefs.buses}/${appState.busNumber}/status`).set({
-                trip: appState.currentTrip,
-                active: appState.tripActive,
-                lastUpdate: Date.now(),
-                driver: appState.driverId
-            });
-            
-            // Update trip history
-            database.ref(`${dbRefs.trips}/${appState.busNumber}/${Date.now()}`).set({
-                coordinates: [lat, lng],
-                speed: speed,
-                timestamp: Date.now()
-            });
-        }
-
-        function publishTripStatus() {
-            const studentsOnBoard = Object.values(studentDatabase).filter(s => s.status === 'onbus').length;
-            const totalStudents = Object.keys(studentDatabase).length;
-            
-            const statusData = {
-                type: 'trip_status',
-                busNumber: appState.busNumber,
-                timestamp: Date.now(),
-                trip: appState.currentTrip,
-                active: appState.tripActive,
-                driver: appState.driverId,
-                studentsOnBoard: studentsOnBoard,
-                totalStudents: totalStudents
-            };
-            
-            database.ref(`${dbRefs.buses}/${appState.busNumber}/status`).set(statusData);
-        }
-
-        function sendTripAlert(type, message) {
-            const alertData = {
-                type: type,
-                busNumber: appState.busNumber,
-                timestamp: Date.now(),
-                message: message,
-                trip: appState.currentTrip,
-                driverId: appState.driverId
-            };
-            
-            const alertRef = database.ref(`${dbRefs.alerts}/${appState.busNumber}`).push();
-            alertRef.set(alertData);
-            
-            addNotification('Bus Alert', message, 'warning');
-        }
-
-        function publishStudentStatus(studentId, status) {
-            const student = studentDatabase[studentId];
-            if (!student) return;
-            
-            const statusData = {
-                studentId: studentId,
-                studentName: student.name,
-                status: status,
-                timestamp: Date.now(),
-                location: student.location,
-                coordinates: student.coordinates,
-                busNumber: appState.busNumber
-            };
-            
-            // Update student in Firebase
-            database.ref(`${dbRefs.students}/${appState.busNumber}/${studentId}`).set({
-                ...student,
-                status: status,
-                lastUpdated: Date.now()
-            });
-            
-            // Send alert
-            sendStudentAlert(studentId, status === 'onbus' ? 'picked_up' : 'dropped_off', 
-                           `${student.name} has been ${status === 'onbus' ? 'picked up' : 'dropped off'}`);
-        }
-
-        function sendStudentAlert(studentId, type, message) {
-            const student = studentDatabase[studentId];
-            if (!student) return;
-            
-            const alertData = {
-                type: type,
-                studentId: studentId,
-                studentName: student.name,
-                message: message,
-                timestamp: Date.now(),
-                busNumber: appState.busNumber,
-                parentContact: student.contact
-            };
-            
-            const alertRef = database.ref(`${dbRefs.alerts}/${appState.busNumber}/${studentId}`).push();
-            alertRef.set(alertData);
-            
-            addNotification('Student Update', message, 'info');
-        }
-
-        function updateBusPosition(data) {
-            if (!map || !busMarker) return;
-            
-            const lat = data.lat || data.coordinates[0];
-            const lng = data.lng || data.coordinates[1];
-            
-            busMarker.setLatLng([lat, lng]);
-            
-            // Update path
-            const currentPath = busPath.getLatLngs();
-            currentPath.push([lat, lng]);
-            if (currentPath.length > 50) currentPath.shift();
-            busPath.setLatLngs(currentPath);
-            
-            // Update parent dashboard
-            updateParentDashboard({
-                speed: data.speed || 0,
-                eta: calculateETA(data.timestamp),
-                distance: calculateDistance([lat, lng]),
-                trip: data.trip,
-                tripActive: data.tripActive
-            });
-        }
-
-        function updateBusStatus(data) {
-            updateParentDashboard({
-                trip: data.trip,
-                tripActive: data.active
-            });
-        }
-
-        function updateStudentFromFirebase(data) {
-            // Update local student database
-            if (data.id) {
-                studentDatabase[data.id] = data;
-            }
-            
-            // Update UI if this is the parent's child
-            if (appState.userRole === 'parent' && data.id === appState.studentId) {
-                updateChildInfo(data);
-                
-                // Show notification for status changes
-                if (data.status && data.lastUpdated) {
-                    const now = Date.now();
-                    if (now - data.lastUpdated < 10000) { // Within 10 seconds
-                        showToast(`${data.name} is now ${data.status === 'onbus' ? 'on the bus' : data.status}`, 'info');
-                    }
-                }
-            }
-        }
-
-        function handleAlert(data) {
-            addNotification(data.type === 'trip_started' ? 'Bus Alert' : 'Student Alert', 
-                          data.message, 'warning');
-            
-            if (data.type === 'trip_started') {
-                showToast(`Bus alert: ${data.message}`, 'warning');
-            }
-        }
-
-        // ==================== MODIFIED STUDENT MANAGEMENT ====================
-
-        function handleAddStudent(e) {
-            e.preventDefault();
-            
-            const newStudent = {
-                id: document.getElementById('newStudentId').value,
-                name: document.getElementById('newStudentName').value,
-                grade: document.getElementById('newStudentGrade').value,
-                contact: document.getElementById('newStudentContact').value,
-                location: document.getElementById('newStudentLocation').value,
-                avatar: document.getElementById('newStudentName').value.charAt(0).toUpperCase(),
-                status: 'waiting',
-                coordinates: [40.7128 + Math.random() * 0.01, -74.0060 + Math.random() * 0.01],
-                school: 'Westwood Elementary',
-                busNumber: appState.busNumber,
-                createdAt: Date.now(),
-                lastUpdated: Date.now()
-            };
-            
-            // Save to Firebase
-            database.ref(`${dbRefs.students}/${appState.busNumber}/${newStudent.id}`).set(newStudent)
-                .then(() => {
-                    // Update map
-                    addBusStopsToMap();
-                    
-                    // Update UI
-                    loadStudentList();
-                    updateDashboard();
-                    
-                    // Close modal
-                    hideAddStudentModal();
-                    
-                    showToast(`Added student: ${newStudent.name}`, 'success');
-                })
-                .catch((error) => {
-                    showToast(`Error adding student: ${error.message}`, 'error');
-                });
-        }
-
-        function removeStudent(studentId) {
-            const student = studentDatabase[studentId];
-            if (!student) return;
-            
-            if (confirm(`Remove ${student.name} from the roster?`)) {
-                database.ref(`${dbRefs.students}/${appState.busNumber}/${studentId}`).remove()
-                    .then(() => {
-                        delete studentDatabase[studentId];
-                        loadStudentList();
-                        addBusStopsToMap();
-                        updateDashboard();
-                        showToast(`Removed student: ${student.name}`, 'success');
-                    })
-                    .catch((error) => {
-                        showToast(`Error removing student: ${error.message}`, 'error');
-                    });
-            }
-        }
-
-        // ==================== MODIFIED LOGOUT FUNCTION ====================
-
-        function logout() {
-            // Cleanup
-            if (watchId) {
-                navigator.geolocation.clearWatch(watchId);
-                watchId = null;
-            }
-            
-            if (locationUpdateInterval) {
-                clearInterval(locationUpdateInterval);
-                locationUpdateInterval = null;
-            }
-            
-            if (parentListener) {
-                database.ref(`${dbRefs.buses}/${appState.busNumber}`).off('value', parentListener);
-                parentListener = null;
-            }
-            
-            // Clear all Firebase listeners
-            if (appState.busNumber) {
-                database.ref(`${dbRefs.buses}/${appState.busNumber}`).off();
-                database.ref(`${dbRefs.students}/${appState.busNumber}`).off();
-                database.ref(`${dbRefs.alerts}/${appState.busNumber}`).off();
-            }
-            
-            // Reset UI
-            document.getElementById('loginScreen').classList.remove('hidden');
-            document.querySelectorAll('.interface').forEach(el => el.classList.remove('active'));
-            document.getElementById('studentManagement').classList.remove('active');
-            document.getElementById('addStudentModal').classList.remove('active');
-            document.getElementById('notificationsModal').classList.remove('active');
-            
-            // Hide map theme selectors
-            hideMapThemeSelector();
-            hideParentMapThemeSelector();
-            
-            // Clear localStorage
-            localStorage.removeItem('schoolbus_user');
-            
-            // Reset state
-            appState.userRole = 'driver';
-            appState.driverId = '';
-            appState.busNumber = '';
-            appState.parentName = '';
-            appState.studentId = '';
-            appState.tripActive = false;
-            appState.notifications = [];
-            appState.studentsOnBoard = 0;
-            appState.totalStudents = 0;
-            appState.userId = null;
-            
-            // Reset student database
-            studentDatabase = {};
-            
-            // Reset form
-            document.getElementById('addStudentForm').reset();
-            
-            showToast('Logged out', 'info');
-        }
-
-        // ==================== DEMO FUNCTIONS (for testing without GPS) ====================
-
-        function startDemoLocationUpdates() {
-            if (appState.userRole === 'driver') {
-                let demoLat = 40.7128;
-                let demoLng = -74.0060;
-                let demoIndex = 0;
-                
-                locationUpdateInterval = setInterval(() => {
-                    demoLat += 0.0001;
-                    demoLng += 0.0001;
-                    demoIndex++;
-                    
-                    const demoPosition = {
-                        coords: {
-                            latitude: demoLat,
-                            longitude: demoLng,
-                            speed: 8 + Math.random() * 4,
-                            heading: (demoIndex * 10) % 360
-                        }
-                    };
-                    
-                    handlePositionUpdate(demoPosition);
-                    
-                    // Auto-pickup demo students
-                    if (demoIndex % 10 === 0) {
-                        const waitingStudents = Object.values(studentDatabase).filter(s => s.status === 'waiting');
-                        if (waitingStudents.length > 0) {
-                            const randomStudent = waitingStudents[0];
-                            updateStudentStatus(randomStudent.id, 'onbus');
-                        }
-                    }
-                }, 2000);
-            }
-        }
-
-        function startParentDemoUpdates() {
-            // This will be handled by Firebase listeners now
-            // Remove the old interval-based demo
-        }
-
-        // ==================== REST OF YOUR FUNCTIONS REMAIN THE SAME ====================
-        // [All your other functions remain exactly the same, including:]
-        // - setupLogin()
-        // - handleRoleSelect()
-        // - showInterface()
-        // - initDriverInterface()
-        // - initParentInterface()
-        // - initMap()
-        // - setMapTheme()
-        // - addBusStopsToMap()
-        // - setupDriverControls()
-        // - setupParentControls()
-        // - startGPS()
-        // - handlePositionUpdate()
-        // - updateDashboard()
-        // - updateParentDashboard()
-        // - updateChildInfo()
-        // - toggleTrip()
-        // - getNextStop()
-        // - checkNearbyStops()
-        // - updateStudentStatus()
-        // - markChildStatus()
-        // - showStudentManagement()
-        // - hideStudentManagement()
-        // - loadStudentList()
-        // - showAddStudentModal()
-        // - hideAddStudentModal()
-        // - importStudents()
-        // - editStudent()
-        // - toggleMapThemeSelector()
-        // - hideMapThemeSelector()
-        // - toggleParentMapThemeSelector()
-        // - hideParentMapThemeSelector()
-        // - toggleRoute()
-        // - toggleStops()
-        // - centerOnBus()
-        // - handlePositionError()
-        // - updateClock()
-        // - showToast()
-        // - hideToast()
-        // - calculateETA()
-        // - calculateDistance()
-        // - showNotifications()
-        // - hideNotificationsModal()
-        // - addNotification()
-        // - clearNotifications()
-        // - updateNotificationBadge()
-        // - And all your CSS animations and helper functions
-
-        // Global functions for student actions
-        window.editStudent = editStudent;
-        window.removeStudent = removeStudent;
-        window.markChildStatus = markChildStatus;
-
-        // Initialize with some demo data
-        setTimeout(() => {
-            // Add initial notifications
-            addNotification('Welcome', 'SchoolBus Tracker Pro is ready!', 'info');
-            addNotification('System', 'Real-time tracking activated', 'success');
-            
-            // Update dashboard initially
-            updateDashboard();
-        }, 1000);
-
-        // ==================== ADD MISSING FUNCTIONS ====================
-        // These functions were referenced but not defined in the Firebase version
-        // I'll add the most critical ones:
-
+        // ==================== LOGIN FUNCTIONS ====================
         function setupLogin() {
-            const driverBtn = document.getElementById('driverRoleBtn');
-            const parentBtn = document.getElementById('parentRoleBtn');
-            const loginBtn = document.getElementById('loginBtn');
-
-            driverBtn.addEventListener('click', handleRoleSelect);
-            parentBtn.addEventListener('click', handleRoleSelect);
-            loginBtn.addEventListener('click', handleLogin);
+            // Role selection
+            document.getElementById('driverRoleBtn').addEventListener('click', handleRoleSelect);
+            document.getElementById('parentRoleBtn').addEventListener('click', handleRoleSelect);
+            
+            // Login button
+            document.getElementById('loginBtn').addEventListener('click', handleLogin);
         }
 
         function handleRoleSelect(e) {
             const isDriver = e.currentTarget.id === 'driverRoleBtn';
             appState.userRole = isDriver ? 'driver' : 'parent';
             
+            // Update UI
             document.getElementById('driverRoleBtn').classList.toggle('active', isDriver);
             document.getElementById('parentRoleBtn').classList.toggle('active', !isDriver);
-            
-            const loginLabel = document.getElementById('loginLabel');
-            const parentExtra = document.getElementById('parentExtra');
-            
-            if (isDriver) {
-                loginLabel.textContent = 'Driver ID';
-                parentExtra.style.display = 'none';
-                document.getElementById('loginInput').placeholder = 'Enter Driver ID';
-                document.getElementById('loginInput').value = 'DRIVER-2024';
+            document.getElementById('driverForm').style.display = isDriver ? 'block' : 'none';
+            document.getElementById('parentForm').style.display = isDriver ? 'none' : 'block';
+        }
+
+        function handleLogin() {
+            if (appState.userRole === 'driver') {
+                const driverId = document.getElementById('driverId').value.trim();
+                const busNumber = document.getElementById('busNumber').value.trim();
+                
+                if (!driverId || !busNumber) {
+                    showToast('Please enter Driver ID and Bus Number', 'error');
+                    return;
+                }
+                
+                appState.driverId = driverId;
+                appState.busNumber = busNumber;
+                
+                // Save session
+                localStorage.setItem('schoolbus_session', JSON.stringify({
+                    role: 'driver',
+                    driverId: driverId,
+                    busNumber: busNumber,
+                    timestamp: Date.now()
+                }));
+                
+                showInterface('driver');
+                initDriverInterface();
+                showToast(`Welcome, Driver ${driverId}!`, 'success');
+                
             } else {
-                loginLabel.textContent = 'Parent Name';
-                parentExtra.style.display = 'block';
-                document.getElementById('loginInput').placeholder = 'Your full name';
-                document.getElementById('loginInput').value = 'John Smith';
+                const parentName = document.getElementById('parentName').value.trim();
+                const busNumber = document.getElementById('parentBusNumber').value.trim();
+                const studentId = document.getElementById('studentId').value.trim();
+                
+                if (!parentName || !busNumber || !studentId) {
+                    showToast('Please fill all fields', 'error');
+                    return;
+                }
+                
+                appState.parentName = parentName;
+                appState.busNumber = busNumber;
+                appState.studentId = studentId;
+                
+                // Check if student exists
+                if (!studentDatabase[studentId]) {
+                    showToast('Student ID not found. Please check with the school.', 'error');
+                    return;
+                }
+                
+                // Save session
+                localStorage.setItem('schoolbus_session', JSON.stringify({
+                    role: 'parent',
+                    parentName: parentName,
+                    busNumber: busNumber,
+                    studentId: studentId,
+                    timestamp: Date.now()
+                }));
+                
+                showInterface('parent');
+                initParentInterface();
+                showToast(`Welcome ${parentName}!`, 'success');
             }
         }
 
@@ -2293,126 +1797,21 @@
             document.getElementById('loginScreen').classList.add('hidden');
             document.querySelectorAll('.interface').forEach(el => el.classList.remove('active'));
             document.getElementById(`${interfaceType}Interface`).classList.add('active');
-            // Note: updateDashboard() will be called separately
         }
 
+        // ==================== DRIVER INTERFACE FUNCTIONS ====================
         function initDriverInterface() {
             initMap('driverMap');
             setupDriverControls();
             startGPS();
-        }
-
-        function initParentInterface() {
-            initMap('parentMap');
-            setupParentControls();
+            updateDashboard();
             
-            const student = studentDatabase[appState.studentId];
-            if (student) {
-                updateChildInfo(student);
-            }
-        }
-
-        function initMap(mapId) {
-            const defaultCoords = [40.7128, -74.0060];
+            // Update bus name
+            document.getElementById('driverBusName').textContent = appState.busNumber;
             
-            map = L.map(mapId, {
-                zoomControl: false,
-                dragging: true,
-                tap: true,
-                touchZoom: true,
-                scrollWheelZoom: false,
-                doubleClickZoom: true,
-                boxZoom: false,
-                keyboard: false,
-                inertia: true,
-                inertiaDeceleration: 3000,
-                inertiaMaxSpeed: 1500,
-                easeLinearity: 0.2,
-                worldCopyJump: false,
-                maxBoundsViscosity: 1.0
-            }).setView(defaultCoords, 13);
-            
-            // Set initial map theme
-            setMapTheme(appState.mapTheme);
-            
-            // Create bus marker
-            busMarker = L.marker(defaultCoords, {
-                icon: L.divIcon({
-                    html: '<div style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, #1A56DB, #7E3AF2); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; border: 3px solid white; box-shadow: 0 0 20px rgba(26, 86, 219, 0.5);"><i class="fas fa-bus"></i></div>',
-                    className: 'bus-marker',
-                    iconSize: [50, 50],
-                    iconAnchor: [25, 25]
-                }),
-                zIndexOffset: 1000
-            }).addTo(map);
-            
-            // Initialize bus path
-            busPath = L.polyline([], {
-                color: '#1A56DB',
-                weight: 4,
-                opacity: 0.8,
-                lineJoin: 'round',
-                smoothFactor: 1
-            }).addTo(map);
-            
-            // Add bus stops
+            // Show sample students
+            loadStudentList();
             addBusStopsToMap();
-        }
-
-        function setMapTheme(theme) {
-            if (map) {
-                map.eachLayer(layer => {
-                    if (layer instanceof L.TileLayer) {
-                        map.removeLayer(layer);
-                    }
-                });
-                
-                const themeConfig = MAP_THEMES[theme];
-                L.tileLayer(themeConfig.url, {
-                    attribution: themeConfig.attribution,
-                    maxZoom: 19,
-                    minZoom: 3,
-                    detectRetina: true
-                }).addTo(map);
-                
-                appState.mapTheme = theme;
-                
-                // Update theme buttons
-                document.querySelectorAll('.theme-btn').forEach(btn => {
-                    btn.classList.toggle('active', btn.dataset.theme === theme);
-                });
-            }
-        }
-
-        function addBusStopsToMap() {
-            // Clear existing stops
-            if (stopMarkers) {
-                stopMarkers.forEach(marker => map.removeLayer(marker));
-            }
-            stopMarkers = [];
-            
-            Object.values(studentDatabase).forEach(student => {
-                const stopMarker = L.marker(student.coordinates, {
-                    icon: L.divIcon({
-                        html: `<div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #0E9F6E, #10B981); border: 3px solid white; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px; box-shadow: 0 0 15px rgba(14, 159, 110, 0.5);">${student.avatar}</div>`,
-                        className: 'bus-stop-marker',
-                        iconSize: [32, 32],
-                        iconAnchor: [16, 16]
-                    })
-                }).addTo(map);
-                
-                stopMarker.bindPopup(`
-                    <div style="padding: 10px;">
-                        <strong>${student.name}</strong><br>
-                        Grade: ${student.grade}<br>
-                        Status: <span class="status-${student.status}">${student.status.toUpperCase()}</span><br>
-                        Location: ${student.location}<br>
-                        School: ${student.school}
-                    </div>
-                `);
-                
-                stopMarkers.push(stopMarker);
-            });
         }
 
         function setupDriverControls() {
@@ -2421,6 +1820,8 @@
             document.getElementById('zoomIn').addEventListener('click', () => map.zoomIn());
             document.getElementById('zoomOut').addEventListener('click', () => map.zoomOut());
             document.getElementById('showStudents').addEventListener('click', showStudentManagement);
+            
+            // Trip control
             document.getElementById('startTrip').addEventListener('click', toggleTrip);
             
             // Map themes
@@ -2439,16 +1840,30 @@
             // Logout
             document.getElementById('driverLogout').addEventListener('click', logout);
             
-            // Student management close
+            // Student management
             document.getElementById('closeStudentManagement').addEventListener('click', hideStudentManagement);
-            
-            // Add student
             document.getElementById('addStudentBtn').addEventListener('click', showAddStudentModal);
             document.getElementById('importStudentsBtn').addEventListener('click', importStudents);
             
             // Add student modal
             document.getElementById('addStudentForm').addEventListener('submit', handleAddStudent);
             document.getElementById('cancelAddStudent').addEventListener('click', hideAddStudentModal);
+        }
+
+        // ==================== PARENT INTERFACE FUNCTIONS ====================
+        function initParentInterface() {
+            initMap('parentMap');
+            setupParentControls();
+            setupParentDemoUpdates();
+            
+            // Update child info
+            const student = studentDatabase[appState.studentId];
+            if (student) {
+                updateChildInfo(student);
+            }
+            
+            // Update bus info
+            document.getElementById('parentBusName').textContent = appState.busNumber;
         }
 
         function setupParentControls() {
@@ -2484,6 +1899,201 @@
             document.getElementById('closeNotifications').addEventListener('click', hideNotificationsModal);
         }
 
+        function setupParentDemoUpdates() {
+            // Simulate bus movement for demo
+            let demoLat = 40.7120;
+            let demoLng = -74.0050;
+            let demoIndex = 0;
+            
+            locationUpdateInterval = setInterval(() => {
+                demoLat += 0.0001;
+                demoLng += 0.0001;
+                demoIndex++;
+                
+                if (busMarker) {
+                    const newLatLng = [demoLat, demoLng];
+                    busMarker.setLatLng(newLatLng);
+                    
+                    // Update path
+                    if (busPath) {
+                        const currentPath = busPath.getLatLngs();
+                        currentPath.push(newLatLng);
+                        if (currentPath.length > 50) currentPath.shift();
+                        busPath.setLatLngs(currentPath);
+                    }
+                    
+                    // Update parent dashboard
+                    updateParentDashboard({
+                        speed: 8 + Math.random() * 4,
+                        distance: (demoIndex * 0.1).toFixed(1) + ' km',
+                        eta: calculateETA()
+                    });
+                    
+                    // Update bus status
+                    document.getElementById('busStatusDot').className = 'status-indicator status-online';
+                    document.getElementById('busStatusText').textContent = 
+                        `Online • ${appState.tripActive ? 'To School' : 'Waiting'}`;
+                }
+            }, 2000);
+        }
+
+        // ==================== MAP FUNCTIONS ====================
+        function initMap(mapId) {
+            const defaultCoords = [40.7128, -74.0060]; // New York City
+            
+            map = L.map(mapId, {
+                zoomControl: false,
+                dragging: true,
+                touchZoom: true,
+                scrollWheelZoom: false,
+                doubleClickZoom: true
+            }).setView(defaultCoords, 14);
+            
+            // Set initial map theme
+            setMapTheme(appState.mapTheme);
+            
+            // Create bus marker
+            busMarker = L.marker(defaultCoords, {
+                icon: L.divIcon({
+                    html: '<div style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, #1A56DB, #7E3AF2); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; border: 3px solid white; box-shadow: 0 0 20px rgba(26, 86, 219, 0.5);"><i class="fas fa-bus"></i></div>',
+                    className: 'bus-marker',
+                    iconSize: [50, 50],
+                    iconAnchor: [25, 25]
+                }),
+                zIndexOffset: 1000
+            }).addTo(map);
+            
+            // Initialize bus path
+            busPath = L.polyline([], {
+                color: '#1A56DB',
+                weight: 4,
+                opacity: 0.8,
+                lineJoin: 'round'
+            }).addTo(map);
+            
+            // Create route line
+            routeLine = L.polyline([], {
+                color: '#0E9F6E',
+                weight: 3,
+                opacity: 0.6,
+                dashArray: '10, 10'
+            });
+        }
+
+        function setMapTheme(theme) {
+            if (map) {
+                // Remove existing tile layers
+                map.eachLayer(layer => {
+                    if (layer instanceof L.TileLayer) {
+                        map.removeLayer(layer);
+                    }
+                });
+                
+                // Add new tile layer
+                const themeConfig = MAP_THEMES[theme];
+                L.tileLayer(themeConfig.url, {
+                    attribution: themeConfig.attribution,
+                    maxZoom: 19,
+                    minZoom: 3
+                }).addTo(map);
+                
+                // Update state
+                appState.mapTheme = theme;
+                
+                // Update active theme button
+                document.querySelectorAll('.theme-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.theme === theme);
+                });
+            }
+        }
+
+        function addBusStopsToMap() {
+            // Clear existing stops
+            stopMarkers.forEach(marker => map.removeLayer(marker));
+            stopMarkers = [];
+            
+            // Add stops for each student
+            Object.values(studentDatabase).forEach(student => {
+                const stopMarker = L.marker(student.coordinates, {
+                    icon: L.divIcon({
+                        html: `<div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #0E9F6E, #10B981); border: 3px solid white; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px; box-shadow: 0 0 15px rgba(14, 159, 110, 0.5);">${student.avatar}</div>`,
+                        className: 'bus-stop-marker',
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16]
+                    })
+                }).addTo(map);
+                
+                // Add popup with student info
+                stopMarker.bindPopup(`
+                    <div style="padding: 10px;">
+                        <strong>${student.name}</strong><br>
+                        Grade: ${student.grade}<br>
+                        Status: <span class="status-${student.status}">${student.status.toUpperCase()}</span><br>
+                        Location: ${student.location}<br>
+                        School: ${student.school}
+                    </div>
+                `);
+                
+                stopMarkers.push(stopMarker);
+                
+                // Add to route line
+                routeLine.addLatLng(student.coordinates);
+            });
+        }
+
+        function centerOnBus() {
+            if (currentPosition) {
+                const { latitude, longitude } = currentPosition.coords;
+                map.setView([latitude, longitude], 16);
+            } else if (busMarker) {
+                const latLng = busMarker.getLatLng();
+                map.setView(latLng, 16);
+            }
+        }
+
+        function toggleRoute() {
+            const btn = document.getElementById('showRoute');
+            btn.classList.toggle('active');
+            
+            if (btn.classList.contains('active')) {
+                routeLine.addTo(map);
+            } else {
+                map.removeLayer(routeLine);
+            }
+        }
+
+        function toggleStops() {
+            const btn = document.getElementById('showStops');
+            btn.classList.toggle('active');
+            
+            stopMarkers.forEach(marker => {
+                if (btn.classList.contains('active')) {
+                    map.addLayer(marker);
+                } else {
+                    map.removeLayer(marker);
+                }
+            });
+        }
+
+        function toggleMapThemeSelector() {
+            const selector = document.getElementById('mapThemeSelector');
+            selector.style.display = selector.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function hideMapThemeSelector() {
+            document.getElementById('mapThemeSelector').style.display = 'none';
+        }
+
+        function toggleParentMapThemeSelector() {
+            const selector = document.getElementById('parentMapThemeSelector');
+            selector.style.display = selector.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function hideParentMapThemeSelector() {
+            document.getElementById('parentMapThemeSelector').style.display = 'none';
+        }
+
+        // ==================== GPS FUNCTIONS ====================
         function startGPS() {
             if ('geolocation' in navigator) {
                 const options = {
@@ -2498,13 +2108,36 @@
                     options
                 );
                 
-                // Initial position
+                // Get initial position
                 navigator.geolocation.getCurrentPosition(handlePositionUpdate, handlePositionError, options);
+                
             } else {
-                showToast('GPS not available on this device', 'error');
-                // Start demo updates for testing
-                startDemoLocationUpdates();
+                showToast('GPS not available. Using demo mode.', 'warning');
+                startDemoUpdates();
             }
+        }
+
+        function startDemoUpdates() {
+            let demoLat = 40.7128;
+            let demoLng = -74.0060;
+            let demoIndex = 0;
+            
+            locationUpdateInterval = setInterval(() => {
+                demoLat += 0.0001;
+                demoLng += 0.0001;
+                demoIndex++;
+                
+                const demoPosition = {
+                    coords: {
+                        latitude: demoLat,
+                        longitude: demoLng,
+                        speed: 8 + Math.random() * 4,
+                        heading: (demoIndex * 10) % 360
+                    }
+                };
+                
+                handlePositionUpdate(demoPosition);
+            }, 2000);
         }
 
         function handlePositionUpdate(position) {
@@ -2524,240 +2157,91 @@
             // Update dashboard
             updateDashboard(speed);
             
-            // Publish location
-            publishLocation(latitude, longitude, speed, heading);
-            
-            // Center map on first location
-            if (!window.mapCentered) {
-                map.setView(newLatLng, 16);
-                window.mapCentered = true;
-            }
-            
             // Check for nearby stops
             checkNearbyStops(newLatLng);
+            
+            // Publish to Firebase (in real app)
+            // publishLocation(latitude, longitude, speed, heading);
         }
 
-        function updateDashboard(speed = 0) {
-            const studentsOnBoard = Object.values(studentDatabase).filter(s => s.status === 'onbus').length;
-            const totalStudents = Object.keys(studentDatabase).length;
+        function handlePositionError(error) {
+            let message = 'Unable to get location';
             
-            // Update speed
-            document.getElementById('currentSpeed').textContent = 
-                Math.round((speed || 0) * 3.6) + ' km/h';
-            
-            // Update student count
-            document.getElementById('studentsCount').textContent = 
-                `${studentsOnBoard}/${totalStudents}`;
-            
-            // Update next stop
-            const nextStop = getNextStop();
-            document.getElementById('nextStopName').textContent = nextStop || '--';
-            
-            // Update trip status
-            const tripStatus = document.getElementById('tripStatus');
-            if (appState.tripActive) {
-                tripStatus.style.display = 'flex';
-                tripStatus.className = `trip-status trip-${appState.currentTrip.replace('_', '-')} glass`;
-                tripStatus.innerHTML = `
-                    <i class="fas fa-${appState.currentTrip === 'to_school' ? 'school' : 'home'}"></i>
-                    <span>Trip: ${appState.currentTrip === 'to_school' ? 'To School' : 'From School'}</span>
-                `;
-            } else {
-                tripStatus.style.display = 'none';
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    message = 'Location permission denied';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    message = 'Location unavailable';
+                    break;
+                case error.TIMEOUT:
+                    message = 'Location request timeout';
+                    break;
             }
             
-            // Update bus name
-            document.getElementById('driverBusName').textContent = appState.busNumber;
+            showToast(message, 'error');
             
-            // Update counts
-            appState.studentsOnBoard = studentsOnBoard;
-            appState.totalStudents = totalStudents;
+            // Start demo updates
+            startDemoUpdates();
         }
 
-        function updateParentDashboard(data = null) {
-            const student = studentDatabase[appState.studentId];
-            if (!student) return;
-            
-            // Update child info
-            document.getElementById('childFullName').textContent = student.name;
-            document.getElementById('childSchool').textContent = 
-                `${student.school} • ${student.grade}`;
-            document.getElementById('childLocation').textContent = 
-                student.status === 'onbus' ? 'On the bus' : `Waiting at ${student.location}`;
-            document.getElementById('childAvatar').textContent = student.avatar;
-            
-            // Update status badge
-            const statusBadge = document.getElementById('childStatusBadge');
-            statusBadge.className = `student-status status-${student.status}`;
-            statusBadge.textContent = student.status.toUpperCase();
-            
-            // Update bus info
-            document.getElementById('parentBusName').textContent = appState.busNumber;
-            
-            if (data) {
-                // Update metrics from received data
-                if (data.speed !== undefined) {
-                    document.getElementById('parentSpeed').textContent = 
-                        Math.round(data.speed * 3.6) + ' km/h';
-                }
-                
-                if (data.eta) {
-                    document.getElementById('eta').textContent = data.eta;
-                }
-                
-                if (data.distance) {
-                    document.getElementById('distanceAway').textContent = data.distance;
-                }
-                
-                // Update bus status
-                const statusText = document.getElementById('busStatusText');
-                const statusDot = document.getElementById('busStatusDot');
-                
-                if (data.tripActive) {
-                    statusText.textContent = `Online • ${data.trip === 'to_school' ? 'To School' : 'From School'}`;
-                    statusDot.className = 'status-indicator status-online';
-                } else {
-                    statusText.textContent = 'Offline';
-                    statusDot.className = 'status-indicator status-offline';
-                }
-            }
-        }
-
-        function updateChildInfo(student) {
-            document.getElementById('childFullName').textContent = student.name;
-            document.getElementById('childSchool').textContent = `${student.school} • ${student.grade}`;
-            document.getElementById('childAvatar').textContent = student.avatar;
-            document.getElementById('childLocation').textContent = 
-                student.status === 'onbus' ? 'On the bus' : `Waiting at ${student.location}`;
-            
-            const statusBadge = document.getElementById('childStatusBadge');
-            statusBadge.className = `student-status status-${student.status}`;
-            statusBadge.textContent = student.status.toUpperCase();
-        }
-
+        // ==================== TRIP FUNCTIONS ====================
         function toggleTrip() {
-            appState.tripActive = !appState.tripActive;
             const tripBtn = document.getElementById('startTrip');
             
-            if (appState.tripActive) {
+            if (!appState.tripActive) {
                 // Start trip
-                tripBtn.classList.add('active');
-                tripBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                showToast(`Trip to school started`, 'success');
+                appState.tripActive = true;
+                appState.tripStartTime = Date.now();
                 
-                // Alert parents
-                sendTripAlert('trip_started', 'Bus has started the trip to school');
+                tripBtn.classList.add('active');
+                tripBtn.innerHTML = '<i class="fas fa-pause"></i><span>End Trip</span>';
+                document.getElementById('tripDirection').textContent = appState.currentTrip === 'to_school' ? 'To School' : 'From School';
+                
+                // Start timer
+                startTripTimer();
+                
+                showToast('Trip started!', 'success');
                 
             } else {
                 // End trip
+                appState.tripActive = false;
+                
                 tripBtn.classList.remove('active');
-                tripBtn.innerHTML = '<i class="fas fa-play"></i>';
-                showToast('Trip ended', 'info');
+                tripBtn.innerHTML = '<i class="fas fa-play"></i><span>Start Trip</span>';
+                
+                // Stop timer
+                stopTripTimer();
                 
                 // Switch trip direction
                 appState.currentTrip = appState.currentTrip === 'to_school' ? 'from_school' : 'to_school';
-                appState.tripActive = true;
                 
-                // Alert parents
-                const alertMsg = appState.currentTrip === 'to_school' 
-                    ? 'Bus has started the trip to school' 
-                    : 'Bus has started the trip from school';
-                sendTripAlert('trip_started', alertMsg);
+                showToast('Trip ended. Switching direction.', 'info');
             }
-            
-            // Update trip status display
-            updateDashboard();
-            
-            // Publish trip status
-            publishTripStatus();
         }
 
-        function getNextStop() {
-            const waitingStudents = Object.values(studentDatabase)
-                .filter(s => s.status === 'waiting' || s.status === 'onbus');
+        function startTripTimer() {
+            if (tripTimerInterval) clearInterval(tripTimerInterval);
             
-            if (waitingStudents.length === 0) return null;
-            
-            // Simple algorithm: find nearest waiting student
-            if (currentPosition) {
-                const busCoords = [currentPosition.coords.latitude, currentPosition.coords.longitude];
-                let nearest = waitingStudents[0];
-                let minDistance = Infinity;
-                
-                waitingStudents.forEach(student => {
-                    const distance = map.distance(busCoords, student.coordinates);
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        nearest = student;
-                    }
-                });
-                
-                return nearest.location;
-            }
-            
-            return waitingStudents[0].location;
-        }
-
-        function checkNearbyStops(busCoords) {
-            Object.values(studentDatabase).forEach(student => {
-                const distance = map.distance(busCoords, student.coordinates);
-                
-                if (distance < 100) { // Within 100 meters
-                    if (student.status === 'waiting') {
-                        // Auto-pickup when bus is nearby
-                        updateStudentStatus(student.id, 'onbus');
-                        showToast(`Auto-picked up: ${student.name}`, 'success');
-                    }
+            tripTimerInterval = setInterval(() => {
+                if (appState.tripStartTime) {
+                    const elapsed = Date.now() - appState.tripStartTime;
+                    const minutes = Math.floor(elapsed / 60000);
+                    const seconds = Math.floor((elapsed % 60000) / 1000);
+                    document.getElementById('tripDuration').textContent = 
+                        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 }
-            });
+            }, 1000);
         }
 
-        function updateStudentStatus(studentId, status) {
-            const student = studentDatabase[studentId];
-            if (!student) return;
-            
-            student.status = status;
-            
-            // Update UI if this is the parent's child
-            if (appState.userRole === 'parent' && studentId === appState.studentId) {
-                updateChildInfo(student);
-            }
-            
-            // Update student list if visible
-            if (document.getElementById('studentManagement').classList.contains('active')) {
-                loadStudentList();
-            }
-            
-            // Update dashboard
-            updateDashboard();
-            
-            // Publish student status
-            publishStudentStatus(studentId, status);
-            
-            // Send alert to parent
-            if (status === 'onbus') {
-                sendStudentAlert(studentId, 'picked_up', `${student.name} has been picked up`);
-            } else if (status === 'dropped') {
-                sendStudentAlert(studentId, 'dropped_off', `${student.name} has been dropped off`);
+        function stopTripTimer() {
+            if (tripTimerInterval) {
+                clearInterval(tripTimerInterval);
+                tripTimerInterval = null;
             }
         }
 
-        function markChildStatus(status) {
-            if (appState.userRole !== 'parent') return;
-            
-            updateStudentStatus(appState.studentId, status);
-            showToast(`Marked as ${status === 'onbus' ? 'picked up' : 'dropped off'}`, 'success');
-        }
-
-        function showStudentManagement() {
-            loadStudentList();
-            document.getElementById('studentManagement').classList.add('active');
-        }
-
-        function hideStudentManagement() {
-            document.getElementById('studentManagement').classList.remove('active');
-        }
-
+        // ==================== STUDENT FUNCTIONS ====================
         function loadStudentList() {
             const container = document.getElementById('studentListContainer');
             container.innerHTML = '';
@@ -2779,8 +2263,11 @@
                         ${student.status.toUpperCase()}
                     </div>
                     <div class="student-actions-buttons">
-                        <button class="student-action-icon" onclick="editStudent('${student.id}')">
-                            <i class="fas fa-edit"></i>
+                        <button class="student-action-icon" onclick="updateStudentStatus('${student.id}', 'onbus')">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="student-action-icon" onclick="updateStudentStatus('${student.id}', 'dropped')">
+                            <i class="fas fa-home"></i>
                         </button>
                         <button class="student-action-icon" onclick="removeStudent('${student.id}')">
                             <i class="fas fa-trash"></i>
@@ -2789,6 +2276,15 @@
                 `;
                 container.appendChild(studentEl);
             });
+        }
+
+        function showStudentManagement() {
+            loadStudentList();
+            document.getElementById('studentManagement').classList.add('active');
+        }
+
+        function hideStudentManagement() {
+            document.getElementById('studentManagement').classList.remove('active');
         }
 
         function showAddStudentModal() {
@@ -2800,102 +2296,239 @@
             document.getElementById('addStudentForm').reset();
         }
 
+        function handleAddStudent(e) {
+            e.preventDefault();
+            
+            const newStudent = {
+                id: document.getElementById('newStudentId').value,
+                name: document.getElementById('newStudentName').value,
+                grade: document.getElementById('newStudentGrade').value,
+                contact: document.getElementById('newStudentContact').value,
+                location: document.getElementById('newStudentLocation').value,
+                avatar: document.getElementById('newStudentName').value.charAt(0).toUpperCase(),
+                status: 'waiting',
+                coordinates: [40.7128 + Math.random() * 0.01, -74.0060 + Math.random() * 0.01],
+                school: 'Westwood Elementary'
+            };
+            
+            // Add to database
+            studentDatabase[newStudent.id] = newStudent;
+            
+            // Update UI
+            loadStudentList();
+            addBusStopsToMap();
+            updateDashboard();
+            
+            // Close modal
+            hideAddStudentModal();
+            
+            showToast(`Added student: ${newStudent.name}`, 'success');
+        }
+
         function importStudents() {
             showToast('Import feature coming soon!', 'info');
         }
 
-        function editStudent(studentId) {
+        function updateStudentStatus(studentId, status) {
             const student = studentDatabase[studentId];
             if (!student) return;
             
-            // For simplicity, we'll just show an edit modal
-            showToast(`Editing ${student.name} - feature coming soon!`, 'info');
-        }
-
-        function toggleMapThemeSelector() {
-            const selector = document.getElementById('mapThemeSelector');
-            isMapThemeVisible = !isMapThemeVisible;
-            selector.style.display = isMapThemeVisible ? 'flex' : 'none';
-        }
-
-        function hideMapThemeSelector() {
-            const selector = document.getElementById('mapThemeSelector');
-            isMapThemeVisible = false;
-            selector.style.display = 'none';
-        }
-
-        function toggleParentMapThemeSelector() {
-            const selector = document.getElementById('parentMapThemeSelector');
-            isParentMapThemeVisible = !isParentMapThemeVisible;
-            selector.style.display = isParentMapThemeVisible ? 'flex' : 'none';
-        }
-
-        function hideParentMapThemeSelector() {
-            const selector = document.getElementById('parentMapThemeSelector');
-            isParentMapThemeVisible = false;
-            selector.style.display = 'none';
-        }
-
-        function toggleRoute() {
-            const btn = document.getElementById('showRoute');
-            btn.classList.toggle('active');
+            student.status = status;
             
-            if (btn.classList.contains('active')) {
-                busPath.addTo(map);
-                showToast('Route shown', 'info');
-            } else {
-                map.removeLayer(busPath);
-                showToast('Route hidden', 'info');
+            // Update UI
+            loadStudentList();
+            updateDashboard();
+            
+            // Show toast
+            const statusText = status === 'onbus' ? 'picked up' : 'dropped off';
+            showToast(`${student.name} marked as ${statusText}`, 'success');
+            
+            // If parent is viewing this student, update their view
+            if (appState.userRole === 'parent' && appState.studentId === studentId) {
+                updateChildInfo(student);
             }
         }
 
-        function toggleStops() {
-            const btn = document.getElementById('showStops');
-            btn.classList.toggle('active');
+        function removeStudent(studentId) {
+            const student = studentDatabase[studentId];
+            if (!student) return;
             
-            stopMarkers.forEach(marker => {
-                if (btn.classList.contains('active')) {
-                    map.addLayer(marker);
-                } else {
-                    map.removeLayer(marker);
+            if (confirm(`Remove ${student.name} from the roster?`)) {
+                delete studentDatabase[studentId];
+                loadStudentList();
+                addBusStopsToMap();
+                updateDashboard();
+                showToast(`Removed student: ${student.name}`, 'success');
+            }
+        }
+
+        function markChildStatus(status) {
+            if (appState.userRole !== 'parent') return;
+            
+            updateStudentStatus(appState.studentId, status);
+        }
+
+        function checkNearbyStops(busCoords) {
+            Object.values(studentDatabase).forEach(student => {
+                const distance = map.distance(busCoords, student.coordinates);
+                
+                // Auto-pickup within 200 meters
+                if (distance < 200 && student.status === 'waiting' && appState.tripActive) {
+                    updateStudentStatus(student.id, 'onbus');
+                    showToast(`Auto-picked up: ${student.name}`, 'success');
                 }
             });
-            
-            showToast(btn.classList.contains('active') ? 'Stops shown' : 'Stops hidden', 'info');
         }
 
-        function centerOnBus() {
+        // ==================== DASHBOARD FUNCTIONS ====================
+        function updateDashboard(speed = 0) {
+            const studentsOnBoard = Object.values(studentDatabase).filter(s => s.status === 'onbus').length;
+            const totalStudents = Object.keys(studentDatabase).length;
+            
+            // Update speed
+            document.getElementById('currentSpeed').textContent = 
+                Math.round((speed || 0) * 3.6) + ' km/h';
+            
+            // Update student count
+            document.getElementById('studentsCount').textContent = 
+                `${studentsOnBoard}/${totalStudents}`;
+            
+            // Update next stop
+            const nextStop = getNextStop();
+            document.getElementById('nextStopName').textContent = nextStop ? nextStop.location : '--';
+            
+            // Update counts
+            appState.studentsOnBoard = studentsOnBoard;
+            appState.totalStudents = totalStudents;
+        }
+
+        function updateParentDashboard(data = {}) {
+            // Update speed
+            if (data.speed !== undefined) {
+                document.getElementById('parentSpeed').textContent = 
+                    Math.round(data.speed * 3.6) + ' km/h';
+            }
+            
+            // Update ETA
+            if (data.eta) {
+                document.getElementById('eta').textContent = data.eta;
+            }
+            
+            // Update distance
+            if (data.distance) {
+                document.getElementById('distanceAway').textContent = data.distance;
+            }
+        }
+
+        function updateChildInfo(student) {
+            document.getElementById('childFullName').textContent = student.name;
+            document.getElementById('childSchool').textContent = `${student.school} • ${student.grade}`;
+            document.getElementById('childAvatar').textContent = student.avatar;
+            document.getElementById('childLocation').textContent = 
+                student.status === 'onbus' ? 'On the bus' : `Waiting at ${student.location}`;
+            
+            const statusBadge = document.getElementById('childStatusBadge');
+            statusBadge.className = `student-status status-${student.status}`;
+            statusBadge.textContent = student.status.toUpperCase();
+        }
+
+        function getNextStop() {
+            const waitingStudents = Object.values(studentDatabase)
+                .filter(s => s.status === 'waiting');
+            
+            if (waitingStudents.length === 0) return null;
+            
+            // Simple nearest stop calculation
             if (currentPosition) {
-                const { latitude, longitude } = currentPosition.coords;
-                map.setView([latitude, longitude], 16);
-                busMarker.openPopup();
-                showToast('Centered on bus', 'info');
-            } else {
-                showToast('Waiting for GPS signal', 'info');
-            }
-        }
-
-        function handlePositionError(error) {
-            let message = 'Unable to get location';
-            
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    message = 'Location permission denied';
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    message = 'Location unavailable';
-                    break;
-                case error.TIMEOUT:
-                    message = 'Location request timeout';
-                    break;
+                const busCoords = [currentPosition.coords.latitude, currentPosition.coords.longitude];
+                let nearest = waitingStudents[0];
+                let minDistance = Infinity;
+                
+                waitingStudents.forEach(student => {
+                    const distance = map.distance(busCoords, student.coordinates);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        nearest = student;
+                    }
+                });
+                
+                return nearest;
             }
             
-            showToast(message, 'error');
-            
-            // Start demo updates for testing
-            startDemoLocationUpdates();
+            return waitingStudents[0];
         }
 
+        function calculateETA() {
+            const now = new Date();
+            const arrival = new Date(now.getTime() + 15 * 60000); // 15 minutes from now
+            return arrival.getHours().toString().padStart(2, '0') + ':' + 
+                   arrival.getMinutes().toString().padStart(2, '0');
+        }
+
+        // ==================== NOTIFICATION FUNCTIONS ====================
+        function showNotifications() {
+            const modal = document.getElementById('notificationsModal');
+            const list = document.getElementById('notificationsList');
+            
+            list.innerHTML = appState.notifications.length > 0 
+                ? appState.notifications.map(n => `
+                    <div class="student-item">
+                        <div style="flex: 1;">
+                            <div class="student-name">${n.title}</div>
+                            <div class="student-details">${n.message}</div>
+                            <div class="student-details" style="font-size: 11px; opacity: 0.6;">
+                                ${new Date(n.timestamp).toLocaleTimeString()}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')
+                : '<div style="text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.6);">No notifications</div>';
+            
+            modal.classList.add('active');
+        }
+
+        function hideNotificationsModal() {
+            document.getElementById('notificationsModal').classList.remove('active');
+        }
+
+        function addNotification(title, message, type = 'info') {
+            const notification = {
+                id: Date.now(),
+                title,
+                message,
+                type,
+                timestamp: Date.now(),
+                read: false
+            };
+            
+            appState.notifications.unshift(notification);
+            
+            // Update notification badge
+            updateNotificationBadge();
+        }
+
+        function clearNotifications() {
+            appState.notifications = [];
+            updateNotificationBadge();
+            hideNotificationsModal();
+            showToast('Notifications cleared', 'success');
+        }
+
+        function updateNotificationBadge() {
+            const unreadCount = appState.notifications.filter(n => !n.read).length;
+            const badges = document.querySelectorAll('.notification-badge');
+            
+            badges.forEach(badge => {
+                if (unreadCount > 0) {
+                    badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            });
+        }
+
+        // ==================== UTILITY FUNCTIONS ====================
         function updateClock() {
             const now = new Date();
             const timeStr = now.getHours().toString().padStart(2, '0') + ':' + 
@@ -2934,6 +2567,9 @@
             
             // Auto-hide after 5 seconds
             setTimeout(() => hideToast(toast), 5000);
+            
+            // Add to notifications
+            addNotification(type.charAt(0).toUpperCase() + type.slice(1), message, type);
         }
 
         function hideToast(toast) {
@@ -2947,85 +2583,52 @@
             }
         }
 
-        function calculateETA(timestamp) {
-            const now = Date.now();
-            const arrival = new Date(timestamp + 15 * 60000); // Add 15 minutes
-            return arrival.getHours().toString().padStart(2, '0') + ':' + 
-                   arrival.getMinutes().toString().padStart(2, '0');
-        }
-
-        function calculateDistance(busCoords) {
-            // Simple distance calculation (would use user location in real app)
-            const distance = Math.random() * 5 + 1;
-            return distance.toFixed(1) + ' km';
-        }
-
-        function showNotifications() {
-            const modal = document.getElementById('notificationsModal');
-            const list = document.getElementById('notificationsList');
-            
-            list.innerHTML = appState.notifications.length > 0 
-                ? appState.notifications.map(n => `
-                    <div class="student-item">
-                        <div style="flex: 1;">
-                            <div class="student-name">${n.title}</div>
-                            <div class="student-details">${n.message}</div>
-                            <div class="student-details" style="font-size: 11px; opacity: 0.6;">
-                                ${new Date(n.timestamp).toLocaleTimeString()}
-                            </div>
-                        </div>
-                    </div>
-                `).join('')
-                : '<div style="text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.6);">No notifications</div>';
-            
-            modal.classList.add('active');
-        }
-
-        function hideNotificationsModal() {
-            document.getElementById('notificationsModal').classList.remove('active');
-        }
-
-        function addNotification(title, message, type = 'info') {
-            const notification = {
-                id: Date.now(),
-                title,
-                message,
-                type,
-                timestamp: Date.now(),
-                read: false
-            };
-            
-            appState.notifications.unshift(notification);
-            
-            // Keep only last 20 notifications
-            if (appState.notifications.length > 20) {
-                appState.notifications.pop();
+        function logout() {
+            // Cleanup
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+            }
+            if (locationUpdateInterval) {
+                clearInterval(locationUpdateInterval);
+            }
+            if (tripTimerInterval) {
+                clearInterval(tripTimerInterval);
             }
             
-            // Update notification badge
-            updateNotificationBadge();
-        }
-
-        function clearNotifications() {
-            appState.notifications = [];
-            updateNotificationBadge();
-            hideNotificationsModal();
-            showToast('Notifications cleared', 'success');
-        }
-
-        function updateNotificationBadge() {
-            const unreadCount = appState.notifications.filter(n => !n.read).length;
-            const badges = document.querySelectorAll('.notification-badge');
+            // Reset state
+            appState.tripActive = false;
             
-            badges.forEach(badge => {
-                if (unreadCount > 0) {
-                    badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
-                    badge.style.display = 'flex';
-                } else {
-                    badge.style.display = 'none';
-                }
-            });
+            // Clear session
+            localStorage.removeItem('schoolbus_session');
+            
+            // Reset UI
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.querySelectorAll('.interface').forEach(el => el.classList.remove('active'));
+            document.getElementById('studentManagement').classList.remove('active');
+            document.getElementById('addStudentModal').classList.remove('active');
+            document.getElementById('notificationsModal').classList.remove('active');
+            
+            // Hide theme selectors
+            hideMapThemeSelector();
+            hideParentMapThemeSelector();
+            
+            // Reset map
+            if (map) {
+                map.remove();
+                map = null;
+                busMarker = null;
+                busPath = null;
+                stopMarkers = [];
+                routeLine = null;
+            }
+            
+            showToast('Logged out successfully', 'info');
         }
+
+        // Make functions available globally for onclick handlers
+        window.updateStudentStatus = updateStudentStatus;
+        window.removeStudent = removeStudent;
+        window.markChildStatus = markChildStatus;
     </script>
 </body>
 </html>
