@@ -10,12 +10,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
-    <!-- Firebase -->
+    <!-- Firebase with Auth -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
+    <!-- Security Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha256/0.9.0/sha256.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     
     <style>
-        /* Keep all your existing CSS styles - they remain exactly the same */
+        /* ==================== ROOT VARIABLES ==================== */
         :root {
             --primary: #1A56DB;
             --primary-light: #3B82F6;
@@ -35,9 +40,19 @@
             --gray-800: #1F2937;
             --glass-bg: rgba(255, 255, 255, 0.15);
             --glass-border: rgba(255, 255, 255, 0.25);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --radius-sm: 10px;
+            --radius-md: 14px;
+            --radius-lg: 18px;
+            --radius-xl: 24px;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.15);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.2);
+            --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.25);
         }
 
+        /* ==================== BASE STYLES ==================== */
         * {
             margin: 0;
             padding: 0;
@@ -60,88 +75,162 @@
             line-height: 1.5;
         }
 
+        /* Focus styles */
+        *:focus {
+            outline: 3px solid var(--primary);
+            outline-offset: 3px;
+        }
+
+        *:focus:not(:focus-visible) {
+            outline: none;
+        }
+
+        /* ==================== GLASS MORPHISM ==================== */
         .glass {
             background: var(--glass-bg);
             backdrop-filter: blur(20px) saturate(180%);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
             border: 1px solid var(--glass-border);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            box-shadow: var(--glass-shadow);
             transition: var(--transition);
         }
 
-        /* Add notification-specific styles */
-        .notification-item {
-            padding: 16px;
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: 10px;
-            transition: var(--transition);
-        }
-
-        .notification-item:active {
-            background: rgba(255, 255, 255, 0.08);
-        }
-
-        .notification-header {
+        /* ==================== LOADING SCREEN ==================== */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--dark);
             display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 8px;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 1;
+            transition: opacity 0.3s ease;
         }
 
-        .notification-title {
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 24px;
+        }
+
+        .loading-text {
+            font-size: 18px;
             font-weight: 600;
+            margin-bottom: 8px;
+            color: white;
+        }
+
+        .loading-subtext {
             font-size: 14px;
-            color: white;
-        }
-
-        .notification-time {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .notification-message {
-            font-size: 13px;
             color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 12px;
-            line-height: 1.4;
-        }
-
-        .notification-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .notification-btn {
-            padding: 8px 12px;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: white;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: var(--transition);
-            flex: 1;
             text-align: center;
+            max-width: 300px;
+            line-height: 1.5;
         }
 
-        .notification-btn:active {
-            transform: scale(0.95);
-            background: rgba(255, 255, 255, 0.15);
+        /* ==================== SECURITY INDICATOR ==================== */
+        .security-indicator {
+            position: fixed;
+            top: 70px;
+            right: 16px;
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 500;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            transition: var(--transition);
+            border: 1px solid;
+            pointer-events: none;
+            user-select: none;
         }
 
-        .notification-btn.primary {
+        .security-safe {
+            background: rgba(14, 159, 110, 0.2);
+            color: var(--success);
+            border-color: rgba(14, 159, 110, 0.3);
+        }
+
+        .security-warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+            border-color: rgba(245, 158, 11, 0.3);
+            animation: pulse 1.5s infinite;
+        }
+
+        .security-danger {
+            background: rgba(220, 38, 38, 0.2);
+            color: var(--danger);
+            border-color: rgba(220, 38, 38, 0.3);
+            animation: pulse 1s infinite;
+        }
+
+        /* ==================== INSTALL PROMPT ==================== */
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 16px;
+            right: 16px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-color: transparent;
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            z-index: 9998;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow-xl);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
         }
 
-        /* Rest of your existing CSS remains exactly the same */
-        /* ... [All your previous CSS styles] ... */
-        
-        /* Login Screen */
+        .install-prompt.active {
+            display: flex;
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .install-text {
+            flex: 1;
+            margin-right: 16px;
+        }
+
+        .install-title {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .install-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .install-actions {
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        /* ==================== LOGIN SCREEN ==================== */
         .login-container {
             position: fixed;
             top: 0;
@@ -166,28 +255,28 @@
 
         .login-wrapper {
             width: 100%;
-            max-width: 420px;
-            padding: 30px 25px;
+            max-width: 440px;
+            padding: 32px 28px;
             margin: auto;
             animation: fadeInUp 0.6s ease;
         }
 
         .login-logo {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 48px;
         }
 
         .login-logo-icon {
             width: 100px;
             height: 100px;
-            border-radius: 24px;
+            border-radius: var(--radius-xl);
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-size: 42px;
-            margin: 0 auto 20px;
+            margin: 0 auto 24px;
             box-shadow: 0 16px 40px rgba(26, 86, 219, 0.4);
         }
 
@@ -197,6 +286,7 @@
             background: linear-gradient(135deg, #fff, #E5E7EB);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
             margin-bottom: 12px;
             letter-spacing: -0.5px;
         }
@@ -206,25 +296,25 @@
             font-size: 16px;
             font-weight: 400;
             line-height: 1.5;
-            max-width: 300px;
+            max-width: 320px;
             margin: 0 auto;
         }
 
         .role-selector {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
             width: 100%;
         }
 
         .role-btn {
-            padding: 20px;
-            border-radius: 16px;
+            padding: 20px 16px;
+            border-radius: var(--radius-lg);
             background: rgba(255, 255, 255, 0.08);
             border: 2px solid rgba(255, 255, 255, 0.12);
             color: white;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             transition: var(--transition);
@@ -246,10 +336,10 @@
         }
 
         .role-icon {
-            font-size: 28px;
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
+            font-size: 24px;
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -265,7 +355,7 @@
         }
 
         .input-group {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
             animation: fadeIn 0.5s ease;
         }
 
@@ -273,7 +363,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             font-size: 15px;
             font-weight: 500;
             color: rgba(255, 255, 255, 0.9);
@@ -286,8 +376,8 @@
 
         .login-input {
             width: 100%;
-            padding: 16px 18px;
-            border-radius: 14px;
+            padding: 18px 20px;
+            border-radius: var(--radius-md);
             background: rgba(255, 255, 255, 0.08);
             border: 2px solid rgba(255, 255, 255, 0.15);
             color: white;
@@ -308,8 +398,8 @@
 
         .login-btn {
             width: 100%;
-            padding: 18px;
-            border-radius: 14px;
+            padding: 20px;
+            border-radius: var(--radius-md);
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             border: none;
             color: white;
@@ -329,7 +419,30 @@
             box-shadow: 0 6px 20px rgba(26, 86, 219, 0.3);
         }
 
-        /* Interface Common */
+        .login-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .login-links {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        .login-link {
+            color: var(--primary-light);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .login-link:hover {
+            text-decoration: underline;
+        }
+
+        /* ==================== INTERFACE COMMON ==================== */
         .interface {
             position: fixed;
             top: 0;
@@ -353,13 +466,13 @@
             z-index: 1;
         }
 
-        /* Top Bar */
+        /* ==================== TOP BAR ==================== */
         .top-bar {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            height: 60px;
+            height: 64px;
             padding: 0 16px;
             display: flex;
             align-items: center;
@@ -369,25 +482,26 @@
             background: linear-gradient(to bottom, rgba(17, 24, 39, 0.95), rgba(17, 24, 39, 0.8));
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
         }
 
         .app-logo {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             min-width: 0;
         }
 
         .app-logo-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 16px;
+            font-size: 18px;
             flex-shrink: 0;
         }
 
@@ -396,7 +510,7 @@
         }
 
         .app-logo-text h1 {
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 700;
             color: white;
             line-height: 1.2;
@@ -406,7 +520,7 @@
         }
 
         .app-logo-text p {
-            font-size: 10px;
+            font-size: 11px;
             color: rgba(255, 255, 255, 0.6);
             letter-spacing: 0.5px;
             white-space: nowrap;
@@ -422,9 +536,9 @@
         }
 
         .action-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-md);
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.15);
             color: white;
@@ -433,7 +547,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
+            transition: var(--transition);
             position: relative;
         }
 
@@ -442,14 +556,10 @@
             background: rgba(255, 255, 255, 0.15);
         }
 
-        .action-btn.fullscreen {
-            font-size: 18px;
-        }
-
-        /* Status Cards */
+        /* ==================== STATUS CARDS ==================== */
         .status-cards {
             position: fixed;
-            top: 70px;
+            top: 74px;
             left: 12px;
             right: 12px;
             display: grid;
@@ -460,12 +570,12 @@
         }
 
         .status-card {
-            padding: 12px;
-            border-radius: 14px;
+            padding: 16px 12px;
+            border-radius: var(--radius-md);
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            min-height: 70px;
+            gap: 8px;
+            min-height: 80px;
         }
 
         .status-card-icon {
@@ -474,7 +584,7 @@
         }
 
         .status-card-value {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 700;
             color: white;
             line-height: 1;
@@ -484,7 +594,7 @@
         }
 
         .status-card-label {
-            font-size: 10px;
+            font-size: 11px;
             color: rgba(255, 255, 255, 0.7);
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -493,10 +603,10 @@
             text-overflow: ellipsis;
         }
 
-        /* Map Controls */
+        /* ==================== MAP CONTROLS ==================== */
         .map-controls {
             position: fixed;
-            bottom: 200px;
+            bottom: 220px;
             right: 12px;
             display: flex;
             flex-direction: column;
@@ -506,19 +616,20 @@
         }
 
         .map-control-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
             background: var(--glass-bg);
             backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
             color: white;
-            font-size: 16px;
+            font-size: 18px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
+            transition: var(--transition);
         }
 
         .map-control-btn:active {
@@ -528,102 +639,17 @@
 
         .map-control-btn.active {
             background: var(--primary);
+            border-color: transparent;
         }
 
-        /* Parent Interface */
-        .parent-info-card {
-            position: fixed;
-            bottom: 16px;
-            left: 12px;
-            right: 12px;
-            padding: 16px;
-            border-radius: 18px;
-            z-index: 1000;
-            pointer-events: all;
-        }
-
-        .child-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 14px;
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.05);
-            margin-bottom: 12px;
-        }
-
-        .child-details {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .child-name {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .child-school {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 6px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .child-location {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.6);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .child-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .child-action-btn {
-            padding: 14px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border: none;
-            color: white;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-        }
-
-        .child-action-btn:active {
-            transform: scale(0.98);
-        }
-
-        .child-action-btn.secondary {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        /* Bus Info Panel */
+        /* ==================== BUS INFO PANEL ==================== */
         .bus-info-panel {
             position: fixed;
-            top: 70px;
+            top: 74px;
             left: 12px;
             right: 12px;
-            padding: 16px;
-            border-radius: 18px;
+            padding: 20px;
+            border-radius: var(--radius-lg);
             z-index: 1000;
             pointer-events: all;
         }
@@ -631,20 +657,20 @@
         .bus-header {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
+            gap: 16px;
+            margin-bottom: 20px;
         }
 
         .bus-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 20px;
+            font-size: 22px;
             flex-shrink: 0;
         }
 
@@ -654,9 +680,9 @@
         }
 
         .bus-name {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 700;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -665,16 +691,16 @@
         .bus-status {
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 13px;
+            gap: 8px;
+            font-size: 14px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
         .status-indicator {
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
             display: inline-block;
             flex-shrink: 0;
@@ -692,28 +718,28 @@
         .bus-metrics {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            gap: 12px;
         }
 
         .metric-item {
             text-align: center;
-            padding: 10px;
+            padding: 12px;
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
+            border-radius: var(--radius-sm);
         }
 
         .metric-value {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 700;
             color: var(--primary);
-            margin-bottom: 4px;
+            margin-bottom: 6px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
         .metric-label {
-            font-size: 10px;
+            font-size: 11px;
             color: rgba(255, 255, 255, 0.6);
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -722,96 +748,108 @@
             text-overflow: ellipsis;
         }
 
-        /* Map Theme Selector */
-        .map-theme-selector {
+        /* ==================== PARENT INFO CARD ==================== */
+        .parent-info-card {
             position: fixed;
-            top: 70px;
+            bottom: 20px;
+            left: 12px;
             right: 12px;
+            padding: 20px;
+            border-radius: var(--radius-lg);
             z-index: 1000;
+            pointer-events: all;
+        }
+
+        .child-info {
             display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding: 12px;
-            border-radius: 14px;
-            display: none;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.05);
+            margin-bottom: 16px;
         }
 
-        .theme-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            border: 2px solid white;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            background-size: cover;
+        .child-details {
+            flex: 1;
+            min-width: 0;
         }
 
-        .theme-btn:active {
-            transform: scale(0.95);
-        }
-
-        .theme-btn.active {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.3);
-        }
-
-        /* Notification Badge */
-        .notification-badge {
-            position: absolute;
-            top: -4px;
-            right: -4px;
-            background: var(--danger);
-            color: white;
-            font-size: 10px;
+        .child-name {
+            font-size: 17px;
             font-weight: 600;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
+            margin-bottom: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .child-school {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .child-location {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .child-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .child-action-btn {
+            padding: 16px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 10px;
+            transition: var(--transition);
         }
 
-        /* Trip Status */
-        .trip-status {
-            position: fixed;
-            top: 70px;
-            left: 12px;
-            z-index: 1000;
-            padding: 10px 16px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 500;
-            font-size: 13px;
-            white-space: nowrap;
+        .child-action-btn:active {
+            transform: scale(0.98);
         }
 
-        .trip-to-school {
-            background: rgba(14, 159, 110, 0.15);
-            color: var(--success);
+        .child-action-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
         }
 
-        .trip-from-school {
-            background: rgba(59, 130, 246, 0.15);
-            color: var(--info);
-        }
-
-        /* Trip Control */
+        /* ==================== TRIP CONTROL ==================== */
         .trip-control {
             position: fixed;
-            bottom: 20px;
+            bottom: 24px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 1000;
             display: flex;
             align-items: center;
-            gap: 15px;
-            padding: 16px 24px;
+            gap: 20px;
+            padding: 20px 28px;
             border-radius: 50px;
             background: rgba(17, 24, 39, 0.95);
             backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
@@ -819,37 +857,37 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
         }
 
         .trip-dot {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
             background: var(--success);
             animation: pulse 2s infinite;
         }
 
         .trip-text {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 500;
             color: rgba(255, 255, 255, 0.8);
         }
 
         .trip-toggle-btn {
-            padding: 14px 28px;
+            padding: 16px 32px;
             border-radius: 40px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             border: none;
             color: white;
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 600;
             cursor: pointer;
             transition: var(--transition);
             display: flex;
             align-items: center;
-            gap: 10px;
-            min-width: 140px;
+            gap: 12px;
+            min-width: 160px;
             justify-content: center;
         }
 
@@ -861,7 +899,7 @@
             background: linear-gradient(135deg, var(--danger-light), var(--danger));
         }
 
-        /* Student Management */
+        /* ==================== STUDENT MANAGEMENT ==================== */
         .student-management {
             position: fixed;
             top: 0;
@@ -870,6 +908,7 @@
             bottom: 0;
             background: rgba(17, 24, 39, 0.98);
             backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
             z-index: 2000;
             padding: 20px 16px;
             padding-top: calc(env(safe-area-inset-top, 0px) + 20px);
@@ -888,41 +927,41 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 16px;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .student-management-title {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 600;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             color: white;
         }
 
         .student-actions {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 12px;
+            margin-bottom: 24px;
         }
 
         .student-action-btn {
-            padding: 14px;
-            border-radius: 12px;
+            padding: 16px;
+            border-radius: var(--radius-md);
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.15);
             color: white;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 500;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            transition: all 0.2s ease;
+            gap: 10px;
+            transition: var(--transition);
             text-align: center;
         }
 
@@ -932,24 +971,25 @@
 
         .student-action-btn.primary {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-color: transparent;
         }
 
         .student-list {
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            margin-bottom: 80px;
+            gap: 12px;
+            margin-bottom: 100px;
         }
 
         .student-item {
-            padding: 16px;
-            border-radius: 14px;
+            padding: 20px;
+            border-radius: var(--radius-md);
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
             align-items: center;
-            gap: 12px;
-            transition: all 0.2s ease;
+            gap: 16px;
+            transition: var(--transition);
         }
 
         .student-item:active {
@@ -957,16 +997,16 @@
         }
 
         .student-avatar {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
             background: linear-gradient(135deg, var(--info), var(--secondary));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-weight: 600;
-            font-size: 16px;
+            font-size: 18px;
             flex-shrink: 0;
         }
 
@@ -977,8 +1017,8 @@
 
         .student-name {
             font-weight: 600;
-            font-size: 14px;
-            margin-bottom: 4px;
+            font-size: 15px;
+            margin-bottom: 6px;
             color: white;
             white-space: nowrap;
             overflow: hidden;
@@ -986,20 +1026,20 @@
         }
 
         .student-details {
-            font-size: 12px;
+            font-size: 13px;
             color: rgba(255, 255, 255, 0.6);
             display: flex;
             flex-wrap: wrap;
-            gap: 6px;
+            gap: 8px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
         .student-status {
-            padding: 6px 10px;
+            padding: 8px 12px;
             border-radius: 20px;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -1010,33 +1050,37 @@
         .status-waiting {
             background: rgba(245, 158, 11, 0.15);
             color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.3);
         }
 
         .status-picked {
             background: rgba(59, 130, 246, 0.15);
             color: var(--info);
+            border: 1px solid rgba(59, 130, 246, 0.3);
         }
 
         .status-onbus {
             background: rgba(14, 159, 110, 0.15);
             color: var(--success);
+            border: 1px solid rgba(14, 159, 110, 0.3);
         }
 
         .status-dropped {
             background: rgba(124, 58, 237, 0.15);
             color: var(--secondary);
+            border: 1px solid rgba(124, 58, 237, 0.3);
         }
 
         .student-actions-buttons {
             display: flex;
-            gap: 6px;
+            gap: 8px;
             flex-shrink: 0;
         }
 
         .student-action-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
             background: rgba(255, 255, 255, 0.1);
             border: none;
             color: white;
@@ -1044,7 +1088,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
+            transition: var(--transition);
         }
 
         .student-action-icon:active {
@@ -1052,7 +1096,126 @@
             background: rgba(255, 255, 255, 0.15);
         }
 
-        /* Modals */
+        /* ==================== MAP THEME SELECTOR ==================== */
+        .map-theme-selector {
+            position: fixed;
+            top: 74px;
+            right: 12px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            display: none;
+        }
+
+        .theme-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            border: 2px solid white;
+            cursor: pointer;
+            transition: var(--transition);
+            background-size: cover;
+        }
+
+        .theme-btn:active {
+            transform: scale(0.95);
+        }
+
+        .theme-btn.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.3);
+        }
+
+        /* ==================== NOTIFICATION BADGE ==================== */
+        .notification-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: var(--danger);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ==================== NOTIFICATION ITEM ==================== */
+        .notification-item {
+            padding: 20px;
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 12px;
+            transition: var(--transition);
+        }
+
+        .notification-item:active {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            font-size: 15px;
+            color: white;
+        }
+
+        .notification-time {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .notification-message {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 16px;
+            line-height: 1.4;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .notification-btn {
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            flex: 1;
+            text-align: center;
+        }
+
+        .notification-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .notification-btn.primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-color: transparent;
+        }
+
+        /* ==================== MODALS ==================== */
         .modal {
             position: fixed;
             top: 0;
@@ -1061,6 +1224,7 @@
             bottom: 0;
             background: rgba(0, 0, 0, 0.9);
             backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1078,22 +1242,22 @@
 
         .modal-content {
             width: 100%;
-            max-width: 500px;
+            max-width: 520px;
             max-height: 85vh;
             overflow-y: auto;
-            border-radius: 20px;
-            padding: 24px;
+            border-radius: var(--radius-lg);
+            padding: 28px;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
         }
 
         .modal-header {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
             text-align: center;
         }
 
         .modal-title {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 700;
             margin-bottom: 8px;
             color: white;
@@ -1101,30 +1265,30 @@
 
         .modal-subtitle {
             color: rgba(255, 255, 255, 0.7);
-            font-size: 14px;
+            font-size: 15px;
         }
 
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 20px;
         }
 
         .form-label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             font-weight: 500;
             color: rgba(255, 255, 255, 0.9);
-            font-size: 14px;
+            font-size: 15px;
         }
 
         .form-input {
             width: 100%;
-            padding: 14px 16px;
-            border-radius: 10px;
+            padding: 16px 18px;
+            border-radius: var(--radius-md);
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.15);
             color: white;
-            font-size: 15px;
-            transition: all 0.2s ease;
+            font-size: 16px;
+            transition: var(--transition);
             -webkit-appearance: none;
         }
 
@@ -1137,18 +1301,18 @@
         .form-actions {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 24px;
+            gap: 12px;
+            margin-top: 28px;
         }
 
         .btn {
-            padding: 14px;
-            border-radius: 12px;
-            font-size: 15px;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            font-size: 16px;
             font-weight: 500;
             cursor: pointer;
             border: none;
-            transition: all 0.2s ease;
+            transition: var(--transition);
             text-align: center;
         }
 
@@ -1167,28 +1331,448 @@
             border: 1px solid rgba(255, 255, 255, 0.15);
         }
 
-        /* Toast */
-        .toast-container {
+        /* ==================== TWO-FACTOR MODAL ==================== */
+        .two-factor-modal .modal-content {
+            max-width: 440px;
+        }
+
+        .auth-code-container {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin: 24px 0;
+        }
+
+        .auth-code-input {
+            width: 52px;
+            height: 64px;
+            font-size: 24px;
+            text-align: center;
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            transition: var(--transition);
+        }
+
+        .auth-code-input:focus {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.15);
+            outline: none;
+        }
+
+        .auth-timer {
+            text-align: center;
+            margin: 16px 0;
+            font-size: 15px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .resend-code {
+            background: none;
+            border: none;
+            color: var(--primary-light);
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 15px;
+            margin-top: 12px;
+            display: block;
+            width: 100%;
+            text-align: center;
+            padding: 12px;
+        }
+
+        /* ==================== EMERGENCY MODAL ==================== */
+        .emergency-modal .modal-content {
+            max-width: 480px;
+        }
+
+        .emergency-icon {
+            font-size: 64px;
+            color: var(--danger);
+            text-align: center;
+            margin-bottom: 20px;
+            animation: pulse 1s infinite;
+        }
+
+        .emergency-text {
+            text-align: center;
+            margin-bottom: 24px;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .emergency-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        /* ==================== CHAT PANEL ==================== */
+        .chat-panel {
             position: fixed;
-            bottom: 16px;
+            bottom: 200px;
+            right: 16px;
+            width: 320px;
+            max-height: 420px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .chat-panel.active {
+            display: flex;
+        }
+
+        .chat-header {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-title {
+            font-weight: 600;
+            font-size: 17px;
+        }
+
+        .chat-close {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 8px;
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+
+        .chat-close:active {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .message.received {
+            background: rgba(255, 255, 255, 0.1);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.sent {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-time {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-top: 6px;
+            text-align: right;
+        }
+
+        .message-sender {
+            font-weight: 600;
+            font-size: 12px;
+            margin-bottom: 4px;
+            opacity: 0.8;
+        }
+
+        /* Audio Message */
+        .audio-message {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-sm);
+        }
+
+        .audio-play-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .audio-play-btn:active {
+            transform: scale(0.95);
+        }
+
+        .audio-duration {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Quick Messages */
+        .quick-messages {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .quick-message-btn {
+            padding: 10px 14px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 13px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .quick-message-btn:active {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(0.95);
+        }
+
+        /* Chat Input */
+        .chat-input-container {
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 14px 18px;
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 15px;
+            transition: var(--transition);
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .send-message-btn {
+            padding: 14px 24px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .send-message-btn:active {
+            transform: scale(0.95);
+        }
+
+        .audio-message-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .audio-message-btn:active {
+            transform: scale(0.95);
+        }
+
+        .audio-message-btn.recording {
+            background: linear-gradient(135deg, #DC2626, #EF4444);
+            animation: pulse 1.5s infinite;
+        }
+
+        /* ==================== ATTENDANCE CARD ==================== */
+        .attendance-card {
+            position: fixed;
+            top: 150px;
             left: 12px;
             right: 12px;
+            z-index: 1000;
+            pointer-events: all;
+            display: none;
+            animation: slideInDown 0.3s ease;
+        }
+
+        .attendance-card.active {
+            display: block;
+        }
+
+        .attendance-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .attendance-stat {
+            text-align: center;
+            padding: 16px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--radius-sm);
+        }
+
+        .attendance-number {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--primary);
+        }
+
+        .attendance-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ==================== ADMIN DASHBOARD ==================== */
+        .admin-dashboard {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--dark);
+            z-index: 2000;
+            padding: 20px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .admin-dashboard.active {
+            display: block;
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            margin-top: 24px;
+        }
+
+        .admin-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            transition: var(--transition);
+        }
+
+        .admin-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .admin-card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+
+        .admin-card-content {
+            margin-top: 16px;
+        }
+
+        /* ==================== EMERGENCY BUTTON ==================== */
+        .emergency-btn {
+            position: fixed;
+            bottom: 120px;
+            right: 20px;
+            z-index: 1000;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #DC2626, #EF4444);
+            border: 3px solid white;
+            color: white;
+            font-size: 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 12px 32px rgba(220, 38, 38, 0.4);
+            transition: var(--transition);
+            animation: emergency-pulse 2s infinite;
+        }
+
+        .emergency-btn:active {
+            transform: scale(0.9);
+            background: linear-gradient(135deg, #991B1B, #DC2626);
+        }
+
+        /* ==================== TOAST CONTAINER ==================== */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            left: 16px;
+            right: 16px;
             z-index: 4000;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
             pointer-events: none;
         }
 
         .toast {
-            padding: 14px 16px;
-            border-radius: 14px;
+            padding: 16px 20px;
+            border-radius: var(--radius-md);
             background: var(--glass-bg);
             backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
             border: 1px solid var(--glass-border);
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
             animation: slideInUp 0.3s ease;
             transform: translateY(100px);
             opacity: 0;
@@ -1205,7 +1789,7 @@
         }
 
         .toast-icon {
-            font-size: 18px;
+            font-size: 20px;
             flex-shrink: 0;
         }
 
@@ -1216,7 +1800,7 @@
 
         .toast-message {
             flex: 1;
-            font-size: 14px;
+            font-size: 15px;
             line-height: 1.4;
         }
 
@@ -1225,16 +1809,22 @@
             border: none;
             color: rgba(255, 255, 255, 0.6);
             cursor: pointer;
-            padding: 4px;
-            font-size: 14px;
+            padding: 6px;
+            font-size: 16px;
             flex-shrink: 0;
+            border-radius: 6px;
+            transition: var(--transition);
         }
 
-        /* Close Button */
+        .toast-close:active {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* ==================== CLOSE BUTTON ==================== */
         .close-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
             background: rgba(255, 255, 255, 0.1);
             border: none;
             color: white;
@@ -1243,43 +1833,27 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
+            transition: var(--transition);
         }
 
         .close-btn:active {
             transform: scale(0.95);
         }
 
-        /* Fullscreen styles */
-        :fullscreen .top-bar,
-        :-webkit-full-screen .top-bar,
-        :-moz-full-screen .top-bar {
-            background: rgba(17, 24, 39, 0.98);
+        /* ==================== SAFE AREA SUPPORT ==================== */
+        .safe-area-top {
+            padding-top: env(safe-area-inset-top, 0px);
         }
 
-        :fullscreen .map-controls,
-        :-webkit-full-screen .map-controls,
-        :-moz-full-screen .map-controls {
-            bottom: 220px;
+        .safe-area-bottom {
+            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
-        :fullscreen .parent-info-card,
-        :-webkit-full-screen .parent-info-card,
-        :-moz-full-screen .parent-info-card {
-            bottom: 26px;
-        }
-
-        :fullscreen .trip-control,
-        :-webkit-full-screen .trip-control,
-        :-moz-full-screen .trip-control {
-            bottom: 30px;
-        }
-
-        /* Animations */
+        /* ==================== ANIMATIONS ==================== */
         @keyframes fadeInUp {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(30px);
             }
             to {
                 opacity: 1;
@@ -1287,14 +1861,56 @@
             }
         }
 
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        @keyframes emergency-pulse {
+            0%, 100% {
+                box-shadow: 0 12px 32px rgba(220, 38, 38, 0.4);
+            }
+            50% {
+                box-shadow: 0 12px 42px rgba(220, 38, 38, 0.6);
+            }
         }
 
         @keyframes slideInUp {
             from {
                 transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideInDown {
+            from {
+                transform: translateY(-100px);
                 opacity: 0;
             }
             to {
@@ -1310,17 +1926,279 @@
             }
         }
 
-        /* Safe Area */
-        .safe-area-top {
-            padding-top: env(safe-area-inset-top, 0px);
+        /* ==================== RESPONSIVE DESIGN ==================== */
+        @media (max-width: 480px) {
+            .role-selector {
+                grid-template-columns: 1fr;
+            }
+            
+            .status-cards {
+                grid-template-columns: 1fr;
+                top: 84px;
+            }
+            
+            .bus-metrics {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .child-actions {
+                grid-template-columns: 1fr;
+            }
+            
+            .trip-control {
+                flex-direction: column;
+                gap: 16px;
+                padding: 20px;
+                border-radius: var(--radius-lg);
+            }
+            
+            .chat-panel {
+                width: calc(100% - 32px);
+                right: 16px;
+                bottom: 220px;
+            }
+            
+            .admin-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .install-prompt {
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .install-actions {
+                width: 100%;
+            }
         }
 
-        .safe-area-bottom {
-            padding-bottom: env(safe-area-inset-bottom, 0px);
+        /* ==================== FULLSCREEN STYLES ==================== */
+        :fullscreen .top-bar {
+            background: rgba(17, 24, 39, 0.98);
+        }
+
+        :fullscreen .map-controls {
+            bottom: 240px;
+        }
+
+        :fullscreen .parent-info-card {
+            bottom: 30px;
+        }
+
+        :fullscreen .trip-control {
+            bottom: 40px;
+        }
+
+        :fullscreen .emergency-btn {
+            bottom: 140px;
         }
     </style>
 </head>
 <body>
+    <!-- Loading Screen -->
+    <div class="loading-screen glass" id="loadingScreen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Initializing Secure System</div>
+        <div class="loading-subtext" id="loadingStatus">Checking security protocols...</div>
+    </div>
+
+    <!-- Install Prompt -->
+    <div class="install-prompt glass" id="installPrompt">
+        <div class="install-text">
+            <div class="install-title">Install SchoolBus Tracker Pro</div>
+            <div class="install-subtitle">Get quick access and offline functionality</div>
+        </div>
+        <div class="install-actions">
+            <button class="btn btn-secondary" id="installCancel">Later</button>
+            <button class="btn btn-primary" id="installBtn">Install</button>
+        </div>
+    </div>
+
+    <!-- Security Indicator -->
+    <div class="security-indicator security-safe" id="securityIndicator">
+        <i class="fas fa-shield-alt"></i>
+        <span>Secure Connection</span>
+    </div>
+
+    <!-- Emergency Button -->
+    <button class="emergency-btn" id="emergencyBtn" aria-label="Emergency SOS button">
+        <i class="fas fa-exclamation-triangle"></i>
+    </button>
+
+    <!-- Chat Panel -->
+    <div class="chat-panel glass" id="chatPanel">
+        <div class="chat-header">
+            <div class="chat-title">School Communication</div>
+            <button class="chat-close" id="closeChat">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="quick-messages" id="quickMessages">
+            <button class="quick-message-btn" data-message="Running 5 minutes late">Running Late</button>
+            <button class="quick-message-btn" data-message="Student not at stop">Student Missing</button>
+            <button class="quick-message-btn" data-message="Emergency delay">Emergency</button>
+            <button class="quick-message-btn" data-message="Early arrival">Early Arrival</button>
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-container">
+            <input type="text" class="chat-input" id="chatInput" placeholder="Type message..." 
+                   aria-label="Chat message input">
+            <button class="audio-message-btn" id="audioMessageBtn" title="Record voice message">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <button class="send-message-btn" id="sendMessageBtn">Send</button>
+        </div>
+    </div>
+
+    <!-- Attendance Card -->
+    <div class="attendance-card glass" id="attendanceCard">
+        <div class="bus-header">
+            <div class="bus-icon">
+                <i class="fas fa-clipboard-check"></i>
+            </div>
+            <div class="bus-details">
+                <div class="bus-name">Daily Attendance</div>
+                <div class="bus-status">
+                    <span id="attendanceDate">Today</span>
+                </div>
+            </div>
+        </div>
+        <div class="attendance-stats">
+            <div class="attendance-stat">
+                <div class="attendance-number" id="totalStudents">0</div>
+                <div class="attendance-label">Total</div>
+            </div>
+            <div class="attendance-stat">
+                <div class="attendance-number" id="presentStudents">0</div>
+                <div class="attendance-label">Present</div>
+            </div>
+            <div class="attendance-stat">
+                <div class="attendance-number" id="absentStudents">0</div>
+                <div class="attendance-label">Absent</div>
+            </div>
+            <div class="attendance-stat">
+                <div class="attendance-number" id="lateStudents">0</div>
+                <div class="attendance-label">Late</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div class="admin-dashboard" id="adminDashboard">
+        <div class="top-bar glass">
+            <div class="app-logo">
+                <div class="app-logo-icon">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <div class="app-logo-text">
+                    <h1>Admin Dashboard</h1>
+                    <p>School Management System</p>
+                </div>
+            </div>
+            <div class="top-actions">
+                <button class="action-btn glass" id="closeAdminDashboard">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="admin-grid">
+            <div class="admin-card">
+                <div class="admin-card-title">
+                    <span>System Analytics</span>
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="admin-card-content">
+                    <div id="analyticsChart">Chart will be displayed here</div>
+                </div>
+            </div>
+            
+            <div class="admin-card">
+                <div class="admin-card-title">
+                    <span>Active Sessions</span>
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="admin-card-content" id="activeSessions">
+                    <div class="notification-item">
+                        <div class="notification-header">
+                            <div class="notification-title">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="admin-card">
+                <div class="admin-card-title">
+                    <span>Recent Alerts</span>
+                    <i class="fas fa-bell"></i>
+                </div>
+                <div class="admin-card-content" id="adminAlerts">
+                    <div class="notification-item">
+                        <div class="notification-header">
+                            <div class="notification-title">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="admin-card">
+                <div class="admin-card-title">
+                    <span>Database Status</span>
+                    <i class="fas fa-database"></i>
+                </div>
+                <div class="admin-card-content" id="databaseStatus">Checking...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two-Factor Authentication Modal -->
+    <div class="modal two-factor-modal" id="twoFactorModal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h2 class="modal-title">Two-Factor Authentication</h2>
+                <p class="modal-subtitle">Enter verification code sent to your email</p>
+            </div>
+            <div class="auth-code-container">
+                <input type="text" class="auth-code-input" maxlength="1" id="code1" autocomplete="off">
+                <input type="text" class="auth-code-input" maxlength="1" id="code2" autocomplete="off">
+                <input type="text" class="auth-code-input" maxlength="1" id="code3" autocomplete="off">
+                <input type="text" class="auth-code-input" maxlength="1" id="code4" autocomplete="off">
+                <input type="text" class="auth-code-input" maxlength="1" id="code5" autocomplete="off">
+                <input type="text" class="auth-code-input" maxlength="1" id="code6" autocomplete="off">
+            </div>
+            <div class="auth-timer" id="authTimer">Code expires in: 05:00</div>
+            <div class="form-actions">
+                <button class="btn btn-secondary" id="cancel2FA">Cancel</button>
+                <button class="btn btn-primary" id="verify2FA">Verify</button>
+            </div>
+            <button class="resend-code" id="resendCode">Resend Code</button>
+        </div>
+    </div>
+
+    <!-- Emergency Modal -->
+    <div class="modal emergency-modal" id="emergencyModal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h2 class="modal-title">🚨 EMERGENCY ALERT</h2>
+                <p class="modal-subtitle" id="emergencySubtitle">Confirm emergency situation</p>
+            </div>
+            <div class="emergency-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="emergency-text">
+                This will immediately notify school administration, emergency contacts, 
+                and nearby emergency services with your current location.
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-secondary" id="cancelEmergency">Cancel</button>
+                <button class="btn btn-primary" id="confirmEmergency" style="background: linear-gradient(135deg, #DC2626, #EF4444);">
+                    CONFIRM EMERGENCY
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Login Screen -->
     <div class="login-container glass" id="loginScreen">
         <div class="login-wrapper">
@@ -1345,46 +2223,80 @@
                     </div>
                     <span>Parent</span>
                 </button>
+                <button class="role-btn glass" id="adminRoleBtn">
+                    <div class="role-icon">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <span>Admin</span>
+                </button>
             </div>
             
             <div class="login-form">
                 <div class="input-group" id="driverForm">
                     <label class="input-label">
-                        <i class="fas fa-id-card"></i> Driver ID
+                        <i class="fas fa-envelope"></i> Email
                     </label>
-                    <input type="text" class="login-input glass" id="driverId" 
-                           placeholder="Enter your Driver ID" value="DRIVER-001">
+                    <input type="email" class="login-input glass" id="driverEmail" 
+                           placeholder="driver@school.edu" value="driver@school.edu">
                     
                     <label class="input-label" style="margin-top: 20px;">
-                        <i class="fas fa-bus"></i> Bus Number
+                        <i class="fas fa-lock"></i> Password
                     </label>
-                    <input type="text" class="login-input glass" id="busNumber" 
-                           placeholder="e.g., BUS-001" value="BUS-001">
+                    <input type="password" class="login-input glass" id="driverPassword" 
+                           placeholder="Enter your password" value="password123">
+                    
+                    <div class="login-links">
+                        <a href="#" class="login-link" id="forgotPassword">Forgot password?</a>
+                        <a href="#" class="login-link" id="showPrivacyPolicy">Privacy Policy</a>
+                    </div>
                 </div>
                 
                 <div class="input-group" id="parentForm" style="display: none;">
                     <label class="input-label">
-                        <i class="fas fa-user"></i> Parent Name
+                        <i class="fas fa-envelope"></i> Email
                     </label>
-                    <input type="text" class="login-input glass" id="parentName" 
-                           placeholder="Your full name" value="John Smith">
+                    <input type="email" class="login-input glass" id="parentEmail" 
+                           placeholder="parent@email.com" value="parent@email.com">
                     
                     <label class="input-label" style="margin-top: 20px;">
-                        <i class="fas fa-bus"></i> Bus Number
+                        <i class="fas fa-lock"></i> Password
                     </label>
-                    <input type="text" class="login-input glass" id="parentBusNumber" 
-                           placeholder="e.g., BUS-001" value="BUS-001">
+                    <input type="password" class="login-input glass" id="parentPassword" 
+                           placeholder="Enter your password" value="password123">
+                    
+                    <div class="login-links">
+                        <a href="#" class="login-link" id="parentForgotPassword">Forgot password?</a>
+                        <a href="#" class="login-link" id="parentTerms">Terms of Service</a>
+                    </div>
+                </div>
+                
+                <div class="input-group" id="adminForm" style="display: none;">
+                    <label class="input-label">
+                        <i class="fas fa-envelope"></i> Admin Email
+                    </label>
+                    <input type="email" class="login-input glass" id="adminEmail" 
+                           placeholder="admin@school.edu" value="admin@school.edu">
                     
                     <label class="input-label" style="margin-top: 20px;">
-                        <i class="fas fa-child"></i> Child's Student ID
+                        <i class="fas fa-lock"></i> Password
                     </label>
-                    <input type="text" class="login-input glass" id="studentId" 
-                           placeholder="e.g., STU-001" value="STU-001">
+                    <input type="password" class="login-input glass" id="adminPassword" 
+                           placeholder="Enter admin password" value="admin123">
+                    
+                    <div class="login-links">
+                        <a href="#" class="login-link" id="adminDocs">System Documentation</a>
+                    </div>
                 </div>
                 
                 <button class="login-btn" id="loginBtn">
-                    <i class="fas fa-sign-in-alt"></i> Start Tracking
+                    <i class="fas fa-sign-in-alt"></i> Secure Login
                 </button>
+                
+                <div style="text-align: center; margin-top: 24px;">
+                    <a href="#" id="registerLink" class="login-link">
+                        Don't have an account? Register
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -1404,17 +2316,20 @@
                 </div>
             </div>
             <div class="top-actions">
-                <button class="action-btn glass" id="fullscreenBtn" title="Fullscreen">
+                <button class="action-btn glass" id="fullscreenBtn" title="Fullscreen" aria-label="Toggle fullscreen">
                     <i class="fas fa-expand"></i>
                 </button>
-                <button class="action-btn glass" id="notificationsBtn" title="Notifications">
+                <button class="action-btn glass" id="notificationsBtn" title="Notifications" aria-label="View notifications">
                     <i class="fas fa-bell"></i>
                     <span class="notification-badge" id="notificationCount" style="display: none;">0</span>
                 </button>
-                <button class="action-btn glass" id="mapThemesBtn" title="Map Themes">
-                    <i class="fas fa-layer-group"></i>
+                <button class="action-btn glass" id="chatBtn" title="Communication" aria-label="Open communication chat">
+                    <i class="fas fa-comments"></i>
                 </button>
-                <button class="action-btn glass" id="driverLogout" title="Logout">
+                <button class="action-btn glass" id="attendanceBtn" title="Attendance" aria-label="View attendance dashboard">
+                    <i class="fas fa-clipboard-check"></i>
+                </button>
+                <button class="action-btn glass" id="driverLogout" title="Logout" aria-label="Logout from system">
                     <i class="fas fa-sign-out-alt"></i>
                 </button>
             </div>
@@ -1432,14 +2347,14 @@
                 <div class="status-card-icon">
                     <i class="fas fa-users"></i>
                 </div>
-                <div class="status-card-value" id="studentsCount">0/0</div>
+                <div class="status-card-value" id="studentsCount">0/3</div>
                 <div class="status-card-label">Students On Board</div>
             </div>
             <div class="status-card glass">
                 <div class="status-card-icon">
                     <i class="fas fa-map-marker-alt"></i>
                 </div>
-                <div class="status-card-value" id="nextStopName">--</div>
+                <div class="status-card-value" id="nextStopName">Maple Street</div>
                 <div class="status-card-label">Next Stop</div>
             </div>
         </div>
@@ -1449,7 +2364,7 @@
                 <div class="trip-dot"></div>
                 <div class="trip-text" id="tripDirection">To School</div>
             </div>
-            <button class="trip-toggle-btn" id="startTrip">
+            <button class="trip-toggle-btn" id="startTrip" aria-label="Start or end trip">
                 <i class="fas fa-play"></i>
                 <span>Start Trip</span>
             </button>
@@ -1460,17 +2375,20 @@
         </div>
 
         <div class="map-controls">
-            <button class="map-control-btn glass" id="centerMap" title="Center on Bus">
+            <button class="map-control-btn glass" id="centerMap" title="Center on Bus" aria-label="Center map on bus location">
                 <i class="fas fa-crosshairs"></i>
             </button>
-            <button class="map-control-btn glass" id="zoomIn" title="Zoom In">
+            <button class="map-control-btn glass" id="zoomIn" title="Zoom In" aria-label="Zoom in map">
                 <i class="fas fa-plus"></i>
             </button>
-            <button class="map-control-btn glass" id="zoomOut" title="Zoom Out">
+            <button class="map-control-btn glass" id="zoomOut" title="Zoom Out" aria-label="Zoom out map">
                 <i class="fas fa-minus"></i>
             </button>
-            <button class="map-control-btn glass" id="showStudents" title="Manage Students">
+            <button class="map-control-btn glass" id="showStudents" title="Manage Students" aria-label="Manage students">
                 <i class="fas fa-user-graduate"></i>
+            </button>
+            <button class="map-control-btn glass" id="mapThemesBtn" title="Map Themes" aria-label="Change map theme">
+                <i class="fas fa-layer-group"></i>
             </button>
         </div>
 
@@ -1501,17 +2419,20 @@
                 </div>
             </div>
             <div class="top-actions">
-                <button class="action-btn glass" id="parentFullscreenBtn" title="Fullscreen">
+                <button class="action-btn glass" id="parentFullscreenBtn" title="Fullscreen" aria-label="Toggle fullscreen">
                     <i class="fas fa-expand"></i>
                 </button>
-                <button class="action-btn glass" id="parentNotificationsBtn" title="Notifications">
+                <button class="action-btn glass" id="parentNotificationsBtn" title="Notifications" aria-label="View notifications">
                     <i class="fas fa-bell"></i>
                     <span class="notification-badge" id="parentNotificationCount" style="display: none;">0</span>
                 </button>
-                <button class="action-btn glass" id="parentMapThemesBtn" title="Map Themes">
-                    <i class="fas fa-layer-group"></i>
+                <button class="action-btn glass" id="parentChatBtn" title="Communication" aria-label="Open communication chat">
+                    <i class="fas fa-comments"></i>
                 </button>
-                <button class="action-btn glass" id="parentLogout" title="Logout">
+                <button class="action-btn glass" id="parentEmergencyBtn" title="Emergency" aria-label="Report emergency">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </button>
+                <button class="action-btn glass" id="parentLogout" title="Logout" aria-label="Logout from system">
                     <i class="fas fa-sign-out-alt"></i>
                 </button>
             </div>
@@ -1536,11 +2457,11 @@
                     <div class="metric-label">Speed</div>
                 </div>
                 <div class="metric-item">
-                    <div class="metric-value" id="eta">--:--</div>
+                    <div class="metric-value" id="eta">08:15</div>
                     <div class="metric-label">ETA</div>
                 </div>
                 <div class="metric-item">
-                    <div class="metric-value" id="distanceAway">0 km</div>
+                    <div class="metric-value" id="distanceAway">2.3 km</div>
                     <div class="metric-label">Distance</div>
                 </div>
             </div>
@@ -1574,20 +2495,23 @@
         </div>
 
         <div class="map-controls">
-            <button class="map-control-btn glass" id="parentCenterMap" title="Center on Bus">
+            <button class="map-control-btn glass" id="parentCenterMap" title="Center on Bus" aria-label="Center map on bus location">
                 <i class="fas fa-crosshairs"></i>
             </button>
-            <button class="map-control-btn glass" id="parentZoomIn" title="Zoom In">
+            <button class="map-control-btn glass" id="parentZoomIn" title="Zoom In" aria-label="Zoom in map">
                 <i class="fas fa-plus"></i>
             </button>
-            <button class="map-control-btn glass" id="parentZoomOut" title="Zoom Out">
+            <button class="map-control-btn glass" id="parentZoomOut" title="Zoom Out" aria-label="Zoom out map">
                 <i class="fas fa-minus"></i>
             </button>
-            <button class="map-control-btn glass active" id="showRoute" title="Show Route">
+            <button class="map-control-btn glass active" id="showRoute" title="Show Route" aria-label="Show route on map">
                 <i class="fas fa-route"></i>
             </button>
-            <button class="map-control-btn glass active" id="showStops" title="Show Stops">
+            <button class="map-control-btn glass active" id="showStops" title="Show Stops" aria-label="Show bus stops on map">
                 <i class="fas fa-map-marker-alt"></i>
+            </button>
+            <button class="map-control-btn glass" id="parentMapThemesBtn" title="Map Themes" aria-label="Change map theme">
+                <i class="fas fa-layer-group"></i>
             </button>
         </div>
 
@@ -1688,76 +2612,83 @@
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // ==================== FIREBASE CONFIGURATION ====================
-        const firebaseConfig = {
-            apiKey: "AIzaSyCEnhJWNEpEkvQ3Oeuw3g6trXuz14zsK-U",
-            authDomain: "schoolbus-tracker-pro.firebaseapp.com",
-            databaseURL: "https://schoolbus-tracker-pro-default-rtdb.firebaseio.com",
-            projectId: "schoolbus-tracker-pro",
-            storageBucket: "schoolbus-tracker-pro.firebasestorage.app",
-            messagingSenderId: "372498519858",
-            appId: "1:372498519858:web:c1be826010b5cbf952292b"
-        };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-
-        // Application State
+        // ==================== APPLICATION STATE ====================
         const appState = {
             userRole: 'driver',
             driverId: '',
-            busNumber: '',
+            busNumber: 'BUS-001',
             parentName: '',
-            studentId: '',
+            studentId: 'STU-001',
             currentTrip: 'to_school',
             tripActive: false,
             notifications: [],
             mapTheme: 'standard',
             studentsOnBoard: 0,
-            totalStudents: 0,
+            totalStudents: 3,
             tripStartTime: null,
             tripTimer: null,
             currentLocation: null,
             locationUpdateInterval: null,
             firebaseListener: null,
-            isFullscreen: false
-        };
-
-        // Student Database (sample data)
-        const studentDatabase = {
-            'STU-001': {
-                id: 'STU-001',
-                name: 'Emma Johnson',
-                grade: '5th Grade',
-                contact: '+1 (555) 123-4567',
-                location: 'Maple Street',
-                avatar: 'E',
-                status: 'waiting',
-                coordinates: [40.7120, -74.0050],
-                school: 'Westwood Elementary'
-            },
-            'STU-002': {
-                id: 'STU-002',
-                name: 'Michael Chen',
-                grade: '4th Grade',
-                contact: '+1 (555) 234-5678',
-                location: 'Oak Avenue',
-                avatar: 'M',
-                status: 'waiting',
-                coordinates: [40.7130, -74.0060],
-                school: 'Westwood Elementary'
-            },
-            'STU-003': {
-                id: 'STU-003',
-                name: 'Sophia Williams',
-                grade: '6th Grade',
-                contact: '+1 (555) 345-6789',
-                location: 'Pine Road',
-                avatar: 'S',
-                status: 'waiting',
-                coordinates: [40.7110, -74.0040],
-                school: 'Westwood Elementary'
+            isFullscreen: false,
+            emergencyCooldown: false,
+            isAuthenticated: false,
+            currentUser: null,
+            chatHistory: [],
+            attendanceRecords: [],
+            securityLevel: 'high',
+            lastLocationUpdate: 0,
+            isOnline: navigator.onLine,
+            map: null,
+            busMarker: null,
+            busPath: null,
+            stopMarkers: [],
+            routeLine: null,
+            watchId: null,
+            currentPosition: { coords: { latitude: 40.7128, longitude: -74.0060 }},
+            tripTimerInterval: null,
+            driverLocationInterval: null,
+            authTimerInterval: null,
+            notificationListener: null,
+            chatListener: null,
+            locationListener: null,
+            studentDatabase: {
+                'STU-001': {
+                    id: 'STU-001',
+                    name: 'Emma Johnson',
+                    grade: '5th Grade',
+                    contact: '+1 (555) 123-4567',
+                    location: 'Maple Street',
+                    avatar: 'E',
+                    status: 'waiting',
+                    coordinates: [40.7120, -74.0050],
+                    school: 'Westwood Elementary',
+                    parentEmail: 'parent1@email.com'
+                },
+                'STU-002': {
+                    id: 'STU-002',
+                    name: 'Michael Chen',
+                    grade: '4th Grade',
+                    contact: '+1 (555) 234-5678',
+                    location: 'Oak Avenue',
+                    avatar: 'M',
+                    status: 'waiting',
+                    coordinates: [40.7130, -74.0060],
+                    school: 'Westwood Elementary',
+                    parentEmail: 'parent2@email.com'
+                },
+                'STU-003': {
+                    id: 'STU-003',
+                    name: 'Sophia Williams',
+                    grade: '6th Grade',
+                    contact: '+1 (555) 345-6789',
+                    location: 'Pine Road',
+                    avatar: 'S',
+                    status: 'waiting',
+                    coordinates: [40.7110, -74.0040],
+                    school: 'Westwood Elementary',
+                    parentEmail: 'parent3@email.com'
+                }
             }
         };
 
@@ -1781,827 +2712,729 @@
             }
         };
 
-        // Global Variables
-        let map = null;
-        let busMarker = null;
-        let busPath = null;
-        let stopMarkers = [];
-        let routeLine = null;
-        let watchId = null;
-        let currentPosition = null;
-        let tripTimerInterval = null;
-        let driverLocationInterval = null;
+        // ==================== UTILITY FUNCTIONS ====================
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const icons = {
+                success: 'check-circle',
+                error: 'exclamation-circle',
+                warning: 'exclamation-triangle',
+                info: 'info-circle'
+            };
+            
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <i class="fas fa-${icons[type] || 'info-circle'} toast-icon"></i>
+                <div class="toast-message">${message}</div>
+                <button class="toast-close">&times;</button>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            toast.querySelector('.toast-close').onclick = () => {
+                toast.classList.add('hiding');
+                setTimeout(() => toast.remove(), 300);
+            };
+            
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.classList.add('hiding');
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 5000);
+        }
 
-        // Initialize Application
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2, '0') + ':' + 
+                           now.getMinutes().toString().padStart(2, '0');
+            
+            document.querySelectorAll('#currentTime, #parentTime').forEach(el => {
+                if (el) el.textContent = timeStr;
+            });
+        }
+
+        function showInterface(interfaceType) {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.querySelectorAll('.interface').forEach(el => el.classList.remove('active'));
+            document.getElementById(`${interfaceType}Interface`).classList.add('active');
+        }
+
+        function showLoginScreen() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.querySelectorAll('.interface').forEach(el => el.classList.remove('active'));
+            document.getElementById('adminDashboard').classList.remove('active');
+            document.getElementById('studentManagement').classList.remove('active');
+            document.getElementById('addStudentModal').classList.remove('active');
+            document.getElementById('notificationsModal').classList.remove('active');
+            document.getElementById('chatPanel').classList.remove('active');
+            document.getElementById('attendanceCard').classList.remove('active');
+            document.getElementById('twoFactorModal').classList.remove('active');
+            document.getElementById('emergencyModal').classList.remove('active');
+            
+            // Reset forms
+            document.getElementById('driverEmail').value = 'driver@school.edu';
+            document.getElementById('driverPassword').value = 'password123';
+            document.getElementById('parentEmail').value = 'parent@email.com';
+            document.getElementById('parentPassword').value = 'password123';
+            document.getElementById('adminEmail').value = 'admin@school.edu';
+            document.getElementById('adminPassword').value = 'admin123';
+        }
+
+        // ==================== BUTTON FUNCTIONALITY ====================
         document.addEventListener('DOMContentLoaded', function() {
-            initApp();
-        });
-
-        function initApp() {
-            setupLogin();
+            // Hide loading screen
+            setTimeout(() => {
+                document.getElementById('loadingScreen').style.display = 'none';
+            }, 2000);
+            
+            // Start clock
             updateClock();
             setInterval(updateClock, 1000);
             
-            // Check for saved session
-            const savedSession = localStorage.getItem('schoolbus_session');
-            if (savedSession) {
-                const session = JSON.parse(savedSession);
-                appState.userRole = session.role;
-                appState.driverId = session.driverId || '';
-                appState.busNumber = session.busNumber;
-                appState.parentName = session.parentName || '';
-                appState.studentId = session.studentId || '';
-                
-                showInterface(appState.userRole);
-                if (appState.userRole === 'driver') {
-                    initDriverInterface();
-                } else {
-                    initParentInterface();
-                }
-                
-                showToast('Welcome back!', 'success');
-            }
-
-            // Listen for fullscreen changes
-            document.addEventListener('fullscreenchange', handleFullscreenChange);
-            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-            document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-        }
-
-        // ==================== FULLSCREEN FUNCTIONS ====================
-        function toggleFullscreen() {
-            const element = document.documentElement;
+            // Setup all button event listeners
+            setupAllButtonListeners();
             
-            if (!appState.isFullscreen) {
-                // Enter fullscreen
-                if (element.requestFullscreen) {
-                    element.requestFullscreen();
-                } else if (element.webkitRequestFullscreen) {
-                    element.webkitRequestFullscreen();
-                } else if (element.mozRequestFullScreen) {
-                    element.mozRequestFullScreen();
-                } else if (element.msRequestFullscreen) {
-                    element.msRequestFullscreen();
-                }
-            } else {
-                // Exit fullscreen
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                } else if (document.mozCancelFullScreen) {
-                    document.mozCancelFullScreen();
-                } else if (document.msExitFullscreen) {
-                    document.msExitFullscreen();
-                }
-            }
-        }
+            // Load initial data
+            loadInitialData();
+        });
 
-        function handleFullscreenChange() {
-            const isFullscreen = !!(document.fullscreenElement || 
-                                  document.webkitFullscreenElement || 
-                                  document.mozFullScreenElement);
-            
-            appState.isFullscreen = isFullscreen;
-            
-            // Update fullscreen button icon
-            const fullscreenBtns = document.querySelectorAll('#fullscreenBtn, #parentFullscreenBtn');
-            fullscreenBtns.forEach(btn => {
-                if (btn) {
-                    btn.innerHTML = isFullscreen ? '<i class="fas fa-compress"></i>' : '<i class="fas fa-expand"></i>';
-                    btn.title = isFullscreen ? 'Exit Fullscreen' : 'Fullscreen';
-                }
+        function setupAllButtonListeners() {
+            // ========== LOGIN SCREEN BUTTONS ==========
+            // Role selection buttons
+            document.getElementById('driverRoleBtn').addEventListener('click', function() {
+                document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById('driverForm').style.display = 'block';
+                document.getElementById('parentForm').style.display = 'none';
+                document.getElementById('adminForm').style.display = 'none';
+                appState.userRole = 'driver';
             });
-            
-            // Update map layout if needed
-            if (map) {
-                map.invalidateSize();
-            }
-            
-            showToast(isFullscreen ? 'Entered fullscreen mode' : 'Exited fullscreen mode', 'info');
-        }
 
-        // ==================== LOGIN FUNCTIONS ====================
-        function setupLogin() {
-            // Role selection
-            document.getElementById('driverRoleBtn').addEventListener('click', handleRoleSelect);
-            document.getElementById('parentRoleBtn').addEventListener('click', handleRoleSelect);
-            
+            document.getElementById('parentRoleBtn').addEventListener('click', function() {
+                document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById('driverForm').style.display = 'none';
+                document.getElementById('parentForm').style.display = 'block';
+                document.getElementById('adminForm').style.display = 'none';
+                appState.userRole = 'parent';
+            });
+
+            document.getElementById('adminRoleBtn').addEventListener('click', function() {
+                document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById('driverForm').style.display = 'none';
+                document.getElementById('parentForm').style.display = 'none';
+                document.getElementById('adminForm').style.display = 'block';
+                appState.userRole = 'admin';
+            });
+
             // Login button
-            document.getElementById('loginBtn').addEventListener('click', handleLogin);
-        }
-
-        function handleRoleSelect(e) {
-            const isDriver = e.currentTarget.id === 'driverRoleBtn';
-            appState.userRole = isDriver ? 'driver' : 'parent';
-            
-            // Update UI
-            document.getElementById('driverRoleBtn').classList.toggle('active', isDriver);
-            document.getElementById('parentRoleBtn').classList.toggle('active', !isDriver);
-            document.getElementById('driverForm').style.display = isDriver ? 'block' : 'none';
-            document.getElementById('parentForm').style.display = isDriver ? 'none' : 'block';
-        }
-
-        function handleLogin() {
-            if (appState.userRole === 'driver') {
-                const driverId = document.getElementById('driverId').value.trim();
-                const busNumber = document.getElementById('busNumber').value.trim();
+            document.getElementById('loginBtn').addEventListener('click', function() {
+                const loadingHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+                const originalHTML = this.innerHTML;
+                this.innerHTML = loadingHTML;
+                this.disabled = true;
                 
-                if (!driverId || !busNumber) {
-                    showToast('Please enter Driver ID and Bus Number', 'error');
-                    return;
-                }
-                
-                appState.driverId = driverId;
-                appState.busNumber = busNumber;
-                
-                // Save session
-                localStorage.setItem('schoolbus_session', JSON.stringify({
-                    role: 'driver',
-                    driverId: driverId,
-                    busNumber: busNumber,
-                    timestamp: Date.now()
-                }));
-                
-                showInterface('driver');
-                initDriverInterface();
-                showToast(`Welcome, Driver ${driverId}!`, 'success');
-                
-                // Start tracking driver location immediately
-                startDriverLocationTracking();
-                
-            } else {
-                const parentName = document.getElementById('parentName').value.trim();
-                const busNumber = document.getElementById('parentBusNumber').value.trim();
-                const studentId = document.getElementById('studentId').value.trim();
-                
-                if (!parentName || !busNumber || !studentId) {
-                    showToast('Please fill all fields', 'error');
-                    return;
-                }
-                
-                // Check if student exists
-                if (!studentDatabase[studentId]) {
-                    showToast('Student ID not found. Please check with the school.', 'error');
-                    return;
-                }
-                
-                appState.parentName = parentName;
-                appState.busNumber = busNumber;
-                appState.studentId = studentId;
-                
-                // Save session
-                localStorage.setItem('schoolbus_session', JSON.stringify({
-                    role: 'parent',
-                    parentName: parentName,
-                    busNumber: busNumber,
-                    studentId: studentId,
-                    timestamp: Date.now()
-                }));
-                
-                showInterface('parent');
-                initParentInterface();
-                showToast(`Welcome ${parentName}!`, 'success');
-                
-                // Start listening to driver location
-                startListeningToDriverLocation();
-            }
-        }
-
-        // ==================== DRIVER LOCATION TRACKING ====================
-        function startDriverLocationTracking() {
-            if ('geolocation' in navigator) {
-                const options = {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0
-                };
-
-                // Start watching position
-                watchId = navigator.geolocation.watchPosition(
-                    (position) => {
-                        handleDriverPositionUpdate(position);
-                        publishDriverLocation(position);
-                    },
-                    handlePositionError,
-                    options
-                );
-                
-                // Get initial position
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        handleDriverPositionUpdate(position);
-                        publishDriverLocation(position);
-                        showToast('Location tracking started!', 'success');
-                    },
-                    handlePositionError,
-                    options
-                );
-                
-                // Start periodic updates to Firebase
-                driverLocationInterval = setInterval(() => {
-                    if (currentPosition) {
-                        publishDriverLocation(currentPosition);
+                setTimeout(() => {
+                    this.innerHTML = originalHTML;
+                    this.disabled = false;
+                    
+                    if (appState.userRole === 'driver') {
+                        showToast('Driver login successful!', 'success');
+                        showInterface('driver');
+                        initDriverInterface();
+                    } else if (appState.userRole === 'parent') {
+                        showToast('Parent login successful!', 'success');
+                        showInterface('parent');
+                        initParentInterface();
+                    } else if (appState.userRole === 'admin') {
+                        showToast('Admin login successful!', 'success');
+                        document.getElementById('adminDashboard').classList.add('active');
+                        document.getElementById('loginScreen').classList.add('hidden');
+                        loadAdminData();
                     }
-                }, 5000); // Update every 5 seconds
-                
-            } else {
-                showToast('GPS not available. Using demo mode.', 'warning');
-                startDemoLocationUpdates();
-            }
-        }
-
-        function handleDriverPositionUpdate(position) {
-            currentPosition = position;
-            const { latitude, longitude, speed, heading } = position.coords;
-            
-            // Update app state
-            appState.currentLocation = {
-                lat: latitude,
-                lng: longitude,
-                speed: speed || 0,
-                heading: heading || 0,
-                timestamp: Date.now()
-            };
-            
-            // Update bus marker on map
-            if (busMarker && map) {
-                const newLatLng = [latitude, longitude];
-                busMarker.setLatLng(newLatLng);
-                
-                // Update bus path
-                if (busPath) {
-                    const currentPath = busPath.getLatLngs();
-                    currentPath.push(newLatLng);
-                    if (currentPath.length > 100) currentPath.shift();
-                    busPath.setLatLngs(currentPath);
-                }
-                
-                // Center map on first location if needed
-                if (!window.mapCentered) {
-                    map.setView(newLatLng, 16);
-                    window.mapCentered = true;
-                }
-                
-                // Update dashboard
-                updateDashboard(speed);
-                
-                // Check for nearby stops
-                checkNearbyStops(newLatLng);
-            }
-        }
-
-        function publishDriverLocation(position) {
-            if (!appState.driverId || !appState.busNumber) return;
-            
-            const { latitude, longitude, speed, heading } = position.coords;
-            
-            // Create location data
-            const locationData = {
-                lat: latitude,
-                lng: longitude,
-                speed: speed || 0,
-                heading: heading || 0,
-                timestamp: Date.now(),
-                driverId: appState.driverId,
-                busNumber: appState.busNumber,
-                tripActive: appState.tripActive,
-                tripDirection: appState.currentTrip,
-                studentsOnBoard: Object.values(studentDatabase).filter(s => s.status === 'onbus').length,
-                totalStudents: Object.keys(studentDatabase).length
-            };
-            
-            // Publish to Firebase
-            try {
-                database.ref(`buses/${appState.busNumber}/location`).set(locationData);
-                
-                // Also update bus status
-                database.ref(`buses/${appState.busNumber}/status`).set({
-                    online: true,
-                    lastUpdate: Date.now(),
-                    driver: appState.driverId,
-                    tripActive: appState.tripActive,
-                    tripDirection: appState.currentTrip
-                });
-                
-            } catch (error) {
-                console.error('Error publishing location:', error);
-            }
-        }
-
-        // ==================== PARENT LOCATION LISTENING ====================
-        function startListeningToDriverLocation() {
-            if (!appState.busNumber) return;
-            
-            // Listen for driver location updates from Firebase
-            appState.firebaseListener = database.ref(`buses/${appState.busNumber}/location`).on('value', (snapshot) => {
-                const locationData = snapshot.val();
-                if (locationData) {
-                    updateParentBusLocation(locationData);
-                }
+                }, 1500);
             });
-            
-            // Also listen for bus status
-            database.ref(`buses/${appState.busNumber}/status`).on('value', (snapshot) => {
-                const statusData = snapshot.val();
-                if (statusData) {
-                    updateParentBusStatus(statusData);
-                }
+
+            // Forgot password links
+            document.getElementById('forgotPassword').addEventListener('click', function(e) {
+                e.preventDefault();
+                showToast('Password reset instructions sent to your email', 'info');
             });
-            
-            showToast('Connected to bus tracking', 'success');
-        }
 
-        function updateParentBusLocation(locationData) {
-            if (!busMarker || !map) return;
-            
-            const { lat, lng, speed, timestamp, tripActive, tripDirection, studentsOnBoard, totalStudents } = locationData;
-            
-            // Update bus marker
-            const newLatLng = [lat, lng];
-            busMarker.setLatLng(newLatLng);
-            
-            // Update bus path
-            if (busPath) {
-                const currentPath = busPath.getLatLngs();
-                currentPath.push(newLatLng);
-                if (currentPath.length > 50) currentPath.shift();
-                busPath.setLatLngs(currentPath);
-            }
-            
-            // Update parent dashboard
-            updateParentDashboard({
-                speed: speed || 0,
-                distance: calculateDistanceFromParent([lat, lng]),
-                eta: calculateETA(timestamp),
-                studentsOnBoard: studentsOnBoard || 0,
-                totalStudents: totalStudents || 0
+            document.getElementById('parentForgotPassword').addEventListener('click', function(e) {
+                e.preventDefault();
+                showToast('Password reset instructions sent to your email', 'info');
             });
-            
-            // Update bus status
-            document.getElementById('busStatusDot').className = 'status-indicator status-online';
-            document.getElementById('busStatusText').textContent = 
-                `Online • ${tripActive ? (tripDirection === 'to_school' ? 'To School' : 'From School') : 'Waiting'}`;
-        }
 
-        function updateParentBusStatus(statusData) {
-            const { online, tripActive, tripDirection } = statusData;
-            
-            // Update status indicator
-            const statusDot = document.getElementById('busStatusDot');
-            const statusText = document.getElementById('busStatusText');
-            
-            if (online) {
-                statusDot.className = 'status-indicator status-online';
-                statusText.textContent = `Online • ${tripActive ? (tripDirection === 'to_school' ? 'To School' : 'From School') : 'Waiting'}`;
-            } else {
-                statusDot.className = 'status-indicator status-offline';
-                statusText.textContent = 'Offline';
-            }
-        }
+            // Privacy/Terms links
+            document.getElementById('showPrivacyPolicy').addEventListener('click', function(e) {
+                e.preventDefault();
+                showToast('Privacy policy will be displayed here', 'info');
+            });
 
-        function calculateDistanceFromParent(busCoords) {
-            // For demo purposes, calculate random distance
-            // In real app, this would use parent's location
-            const distance = Math.random() * 5 + 1;
-            return distance.toFixed(1) + ' km';
-        }
+            document.getElementById('parentTerms').addEventListener('click', function(e) {
+                e.preventDefault();
+                showToast('Terms of service will be displayed here', 'info');
+            });
 
-        function calculateETA(timestamp) {
-            const now = Date.now();
-            const arrival = new Date(timestamp + 15 * 60000); // Add 15 minutes
-            return arrival.getHours().toString().padStart(2, '0') + ':' + 
-                   arrival.getMinutes().toString().padStart(2, '0');
-        }
+            document.getElementById('adminDocs').addEventListener('click', function(e) {
+                e.preventDefault();
+                showToast('System documentation will be displayed here', 'info');
+            });
 
-        // ==================== DRIVER INTERFACE FUNCTIONS ====================
-        function initDriverInterface() {
-            initMap('driverMap');
-            setupDriverControls();
-            updateDashboard();
-            
-            // Update bus name
-            document.getElementById('driverBusName').textContent = appState.busNumber;
-            
-            // Show sample students
-            loadStudentList();
-            addBusStopsToMap();
-            
-            // Add initial notifications
-            addNotification('System', 'Welcome to SchoolBus Tracker Pro!', 'info');
-            addNotification('GPS', 'Location tracking activated', 'success');
-        }
+            // Register link
+            document.getElementById('registerLink').addEventListener('click', function(e) {
+                e.preventDefault();
+                showToast('Registration feature coming soon!', 'info');
+            });
 
-        function setupDriverControls() {
+            // ========== DRIVER INTERFACE BUTTONS ==========
             // Fullscreen button
-            document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
-            
+            document.getElementById('fullscreenBtn').addEventListener('click', function() {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        showToast('Error entering fullscreen: ' + err.message, 'error');
+                    });
+                    this.innerHTML = '<i class="fas fa-compress"></i>';
+                    showToast('Entered fullscreen mode', 'info');
+                } else {
+                    document.exitFullscreen();
+                    this.innerHTML = '<i class="fas fa-expand"></i>';
+                    showToast('Exited fullscreen mode', 'info');
+                }
+            });
+
+            // Notifications button
+            document.getElementById('notificationsBtn').addEventListener('click', function() {
+                showNotificationsModal();
+            });
+
+            // Chat button
+            document.getElementById('chatBtn').addEventListener('click', function() {
+                document.getElementById('chatPanel').classList.toggle('active');
+            });
+
+            // Attendance button
+            document.getElementById('attendanceBtn').addEventListener('click', function() {
+                document.getElementById('attendanceCard').classList.toggle('active');
+                updateAttendanceDashboard();
+            });
+
+            // Driver logout
+            document.getElementById('driverLogout').addEventListener('click', function() {
+                showToast('Driver logged out successfully', 'info');
+                showLoginScreen();
+                cleanupDriverInterface();
+            });
+
             // Map controls
-            document.getElementById('centerMap').addEventListener('click', centerOnBus);
-            document.getElementById('zoomIn').addEventListener('click', () => map.zoomIn());
-            document.getElementById('zoomOut').addEventListener('click', () => map.zoomOut());
-            document.getElementById('showStudents').addEventListener('click', showStudentManagement);
-            
-            // Trip control
-            document.getElementById('startTrip').addEventListener('click', toggleTrip);
-            
-            // Map themes
-            document.getElementById('mapThemesBtn').addEventListener('click', toggleMapThemeSelector);
+            document.getElementById('centerMap').addEventListener('click', function() {
+                if (appState.map && appState.currentPosition) {
+                    const { latitude, longitude } = appState.currentPosition.coords;
+                    appState.map.setView([latitude, longitude], 16);
+                    showToast('Centered on bus location', 'info');
+                } else {
+                    showToast('Bus location not available', 'warning');
+                }
+            });
+
+            document.getElementById('zoomIn').addEventListener('click', function() {
+                if (appState.map) {
+                    appState.map.zoomIn();
+                    showToast('Zoomed in', 'info');
+                }
+            });
+
+            document.getElementById('zoomOut').addEventListener('click', function() {
+                if (appState.map) {
+                    appState.map.zoomOut();
+                    showToast('Zoomed out', 'info');
+                }
+            });
+
+            // Show students button
+            document.getElementById('showStudents').addEventListener('click', function() {
+                document.getElementById('studentManagement').classList.add('active');
+                loadStudentList();
+            });
+
+            // Map themes button
+            document.getElementById('mapThemesBtn').addEventListener('click', function() {
+                const selector = document.getElementById('mapThemeSelector');
+                selector.style.display = selector.style.display === 'flex' ? 'none' : 'flex';
+            });
+
+            // Map theme buttons
             document.querySelectorAll('#mapThemeSelector .theme-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const theme = this.dataset.theme;
                     setMapTheme(theme);
-                    hideMapThemeSelector();
+                    document.querySelectorAll('#mapThemeSelector .theme-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    showToast(`Map theme changed to ${theme}`, 'info');
                 });
             });
-            
-            // Notifications
-            document.getElementById('notificationsBtn').addEventListener('click', showNotifications);
-            
-            // Logout
-            document.getElementById('driverLogout').addEventListener('click', logout);
-            
-            // Student management
-            document.getElementById('closeStudentManagement').addEventListener('click', hideStudentManagement);
-            document.getElementById('addStudentBtn').addEventListener('click', showAddStudentModal);
-            document.getElementById('importStudentsBtn').addEventListener('click', importStudents);
-            
-            // Add student modal
-            document.getElementById('addStudentForm').addEventListener('submit', handleAddStudent);
-            document.getElementById('cancelAddStudent').addEventListener('click', hideAddStudentModal);
-            
-            // Notification modal buttons
-            document.getElementById('clearNotifications').addEventListener('click', clearNotifications);
-            document.getElementById('closeNotifications').addEventListener('click', hideNotificationsModal);
-        }
 
-        // ==================== PARENT INTERFACE FUNCTIONS ====================
-        function initParentInterface() {
-            initMap('parentMap');
-            setupParentControls();
-            
-            // Update child info
-            const student = studentDatabase[appState.studentId];
-            if (student) {
-                updateChildInfo(student);
-            }
-            
-            // Update bus info
-            document.getElementById('parentBusName').textContent = appState.busNumber;
-            
-            // Add initial notifications
-            addNotification('System', 'Welcome to SchoolBus Tracker!', 'info');
-            addNotification('Tracking', 'Connected to bus tracking system', 'success');
-        }
+            // Trip control button
+            document.getElementById('startTrip').addEventListener('click', function() {
+                if (!appState.tripActive) {
+                    // Start trip
+                    appState.tripActive = true;
+                    appState.tripStartTime = Date.now();
+                    this.classList.add('active');
+                    this.innerHTML = '<i class="fas fa-pause"></i><span>End Trip</span>';
+                    document.getElementById('tripDirection').textContent = appState.currentTrip === 'to_school' ? 'To School' : 'From School';
+                    
+                    // Start timer
+                    startTripTimer();
+                    
+                    showToast('Trip started!', 'success');
+                    addNotification('Trip Started', `Bus ${appState.busNumber} has started the ${appState.currentTrip === 'to_school' ? 'morning' : 'afternoon'} trip`, 'warning');
+                } else {
+                    // End trip
+                    appState.tripActive = false;
+                    this.classList.remove('active');
+                    this.innerHTML = '<i class="fas fa-play"></i><span>Start Trip</span>';
+                    
+                    // Stop timer
+                    stopTripTimer();
+                    
+                    // Switch direction
+                    appState.currentTrip = appState.currentTrip === 'to_school' ? 'from_school' : 'to_school';
+                    document.getElementById('tripDirection').textContent = appState.currentTrip === 'to_school' ? 'To School' : 'From School';
+                    
+                    showToast('Trip ended. Switching direction.', 'info');
+                    addNotification('Trip Ended', `Bus ${appState.busNumber} has completed the trip`, 'info');
+                }
+            });
 
-        function setupParentControls() {
-            // Fullscreen button
-            document.getElementById('parentFullscreenBtn').addEventListener('click', toggleFullscreen);
-            
-            // Map controls
-            document.getElementById('parentCenterMap').addEventListener('click', centerOnBus);
-            document.getElementById('parentZoomIn').addEventListener('click', () => map.zoomIn());
-            document.getElementById('parentZoomOut').addEventListener('click', () => map.zoomOut());
-            document.getElementById('showRoute').addEventListener('click', toggleRoute);
-            document.getElementById('showStops').addEventListener('click', toggleStops);
-            
-            // Child actions
-            document.getElementById('markPickedBtn').addEventListener('click', () => markChildStatus('onbus'));
-            document.getElementById('markDroppedBtn').addEventListener('click', () => markChildStatus('dropped'));
-            
-            // Map themes
-            document.getElementById('parentMapThemesBtn').addEventListener('click', toggleParentMapThemeSelector);
+            // ========== PARENT INTERFACE BUTTONS ==========
+            // Parent fullscreen
+            document.getElementById('parentFullscreenBtn').addEventListener('click', function() {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        showToast('Error entering fullscreen: ' + err.message, 'error');
+                    });
+                    this.innerHTML = '<i class="fas fa-compress"></i>';
+                    showToast('Entered fullscreen mode', 'info');
+                } else {
+                    document.exitFullscreen();
+                    this.innerHTML = '<i class="fas fa-expand"></i>';
+                    showToast('Exited fullscreen mode', 'info');
+                }
+            });
+
+            // Parent notifications
+            document.getElementById('parentNotificationsBtn').addEventListener('click', function() {
+                showNotificationsModal();
+            });
+
+            // Parent chat
+            document.getElementById('parentChatBtn').addEventListener('click', function() {
+                document.getElementById('chatPanel').classList.toggle('active');
+            });
+
+            // Parent emergency
+            document.getElementById('parentEmergencyBtn').addEventListener('click', function() {
+                showEmergencyModal();
+            });
+
+            // Parent logout
+            document.getElementById('parentLogout').addEventListener('click', function() {
+                showToast('Parent logged out successfully', 'info');
+                showLoginScreen();
+                cleanupParentInterface();
+            });
+
+            // Parent map controls
+            document.getElementById('parentCenterMap').addEventListener('click', function() {
+                if (appState.map && appState.currentPosition) {
+                    const { latitude, longitude } = appState.currentPosition.coords;
+                    appState.map.setView([latitude, longitude], 16);
+                    showToast('Centered on bus location', 'info');
+                } else {
+                    showToast('Bus location not available', 'warning');
+                }
+            });
+
+            document.getElementById('parentZoomIn').addEventListener('click', function() {
+                if (appState.map) {
+                    appState.map.zoomIn();
+                    showToast('Zoomed in', 'info');
+                }
+            });
+
+            document.getElementById('parentZoomOut').addEventListener('click', function() {
+                if (appState.map) {
+                    appState.map.zoomOut();
+                    showToast('Zoomed out', 'info');
+                }
+            });
+
+            // Show route button
+            document.getElementById('showRoute').addEventListener('click', function() {
+                this.classList.toggle('active');
+                if (appState.routeLine) {
+                    if (this.classList.contains('active')) {
+                        appState.map.addLayer(appState.routeLine);
+                        showToast('Route shown', 'info');
+                    } else {
+                        appState.map.removeLayer(appState.routeLine);
+                        showToast('Route hidden', 'info');
+                    }
+                }
+            });
+
+            // Show stops button
+            document.getElementById('showStops').addEventListener('click', function() {
+                this.classList.toggle('active');
+                if (appState.stopMarkers.length > 0) {
+                    appState.stopMarkers.forEach(marker => {
+                        if (this.classList.contains('active')) {
+                            appState.map.addLayer(marker);
+                        } else {
+                            appState.map.removeLayer(marker);
+                        }
+                    });
+                    showToast(this.classList.contains('active') ? 'Stops shown' : 'Stops hidden', 'info');
+                }
+            });
+
+            // Parent map themes
+            document.getElementById('parentMapThemesBtn').addEventListener('click', function() {
+                const selector = document.getElementById('parentMapThemeSelector');
+                selector.style.display = selector.style.display === 'flex' ? 'none' : 'flex';
+            });
+
+            // Parent map theme buttons
             document.querySelectorAll('#parentMapThemeSelector .theme-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const theme = this.dataset.theme;
                     setMapTheme(theme);
-                    hideParentMapThemeSelector();
+                    document.querySelectorAll('#parentMapThemeSelector .theme-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    showToast(`Map theme changed to ${theme}`, 'info');
                 });
             });
-            
-            // Notifications
-            document.getElementById('parentNotificationsBtn').addEventListener('click', showNotifications);
-            
-            // Logout
-            document.getElementById('parentLogout').addEventListener('click', logout);
-        }
 
-        // ==================== MAP FUNCTIONS ====================
-        function initMap(mapId) {
-            const defaultCoords = [40.7128, -74.0060]; // New York City
-            
-            map = L.map(mapId, {
-                zoomControl: false,
-                dragging: true,
-                touchZoom: true,
-                scrollWheelZoom: false,
-                doubleClickZoom: true
-            }).setView(defaultCoords, 14);
-            
-            // Set initial map theme
-            setMapTheme(appState.mapTheme);
-            
-            // Create bus marker
-            busMarker = L.marker(defaultCoords, {
-                icon: L.divIcon({
-                    html: '<div style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, #1A56DB, #7E3AF2); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; border: 3px solid white; box-shadow: 0 0 20px rgba(26, 86, 219, 0.5);"><i class="fas fa-bus"></i></div>',
-                    className: 'bus-marker',
-                    iconSize: [50, 50],
-                    iconAnchor: [25, 25]
-                }),
-                zIndexOffset: 1000
-            }).addTo(map);
-            
-            // Initialize bus path
-            busPath = L.polyline([], {
-                color: '#1A56DB',
-                weight: 4,
-                opacity: 0.8,
-                lineJoin: 'round'
-            }).addTo(map);
-            
-            // Create route line
-            routeLine = L.polyline([], {
-                color: '#0E9F6E',
-                weight: 3,
-                opacity: 0.6,
-                dashArray: '10, 10'
+            // Child action buttons
+            document.getElementById('markPickedBtn').addEventListener('click', function() {
+                updateStudentStatus(appState.studentId, 'onbus');
+                showToast('Child marked as picked up', 'success');
             });
-            
-            // Add bus stops
-            addBusStopsToMap();
-        }
 
-        function setMapTheme(theme) {
-            if (map) {
-                // Remove existing tile layers
-                map.eachLayer(layer => {
-                    if (layer instanceof L.TileLayer) {
-                        map.removeLayer(layer);
-                    }
-                });
-                
-                // Add new tile layer
-                const themeConfig = MAP_THEMES[theme];
-                L.tileLayer(themeConfig.url, {
-                    attribution: themeConfig.attribution,
-                    maxZoom: 19,
-                    minZoom: 3
-                }).addTo(map);
-                
-                // Update state
-                appState.mapTheme = theme;
-                
-                // Update active theme button
-                document.querySelectorAll('.theme-btn').forEach(btn => {
-                    btn.classList.toggle('active', btn.dataset.theme === theme);
-                });
-            }
-        }
+            document.getElementById('markDroppedBtn').addEventListener('click', function() {
+                updateStudentStatus(appState.studentId, 'dropped');
+                showToast('Child marked as dropped off', 'success');
+            });
 
-        function addBusStopsToMap() {
-            // Clear existing stops
-            stopMarkers.forEach(marker => {
-                if (map.hasLayer(marker)) {
-                    map.removeLayer(marker);
+            // ========== CHAT PANEL BUTTONS ==========
+            // Close chat
+            document.getElementById('closeChat').addEventListener('click', function() {
+                document.getElementById('chatPanel').classList.remove('active');
+            });
+
+            // Quick message buttons
+            document.querySelectorAll('.quick-message-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const message = this.dataset.message;
+                    sendChatMessage(message);
+                    showToast('Quick message sent: ' + message, 'success');
+                });
+            });
+
+            // Send message button
+            document.getElementById('sendMessageBtn').addEventListener('click', function() {
+                const input = document.getElementById('chatInput');
+                const message = input.value.trim();
+                if (message) {
+                    sendChatMessage(message);
+                    input.value = '';
+                    showToast('Message sent', 'success');
                 }
             });
-            stopMarkers = [];
-            
-            // Add stops for each student
-            Object.values(studentDatabase).forEach(student => {
-                const stopMarker = L.marker(student.coordinates, {
-                    icon: L.divIcon({
-                        html: `<div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #0E9F6E, #10B981); border: 3px solid white; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px; box-shadow: 0 0 15px rgba(14, 159, 110, 0.5);">${student.avatar}</div>`,
-                        className: 'bus-stop-marker',
-                        iconSize: [32, 32],
-                        iconAnchor: [16, 16]
-                    })
-                }).addTo(map);
-                
-                // Add popup with student info
-                stopMarker.bindPopup(`
-                    <div style="padding: 10px;">
-                        <strong>${student.name}</strong><br>
-                        Grade: ${student.grade}<br>
-                        Status: <span style="color: ${getStatusColor(student.status)}">${student.status.toUpperCase()}</span><br>
-                        Location: ${student.location}<br>
-                        School: ${student.school}
-                    </div>
-                `);
-                
-                stopMarkers.push(stopMarker);
-                
-                // Add to route line
-                routeLine.addLatLng(student.coordinates);
+
+            // Audio message button
+            document.getElementById('audioMessageBtn').addEventListener('click', function() {
+                showToast('Audio recording feature coming soon!', 'info');
             });
-        }
 
-        function getStatusColor(status) {
-            switch(status) {
-                case 'waiting': return '#F59E0B';
-                case 'onbus': return '#0E9F6E';
-                case 'dropped': return '#7E3AF2';
-                default: return '#3B82F6';
-            }
-        }
-
-        function centerOnBus() {
-            if (currentPosition && busMarker) {
-                const { latitude, longitude } = currentPosition.coords;
-                map.setView([latitude, longitude], 16);
-            } else if (busMarker) {
-                const latLng = busMarker.getLatLng();
-                map.setView(latLng, 16);
-            }
-            showToast('Centered on bus', 'info');
-        }
-
-        function toggleRoute() {
-            const btn = document.getElementById('showRoute');
-            btn.classList.toggle('active');
-            
-            if (btn.classList.contains('active')) {
-                routeLine.addTo(map);
-                showToast('Route shown', 'info');
-            } else {
-                map.removeLayer(routeLine);
-                showToast('Route hidden', 'info');
-            }
-        }
-
-        function toggleStops() {
-            const btn = document.getElementById('showStops');
-            btn.classList.toggle('active');
-            
-            stopMarkers.forEach(marker => {
-                if (btn.classList.contains('active')) {
-                    map.addLayer(marker);
-                } else {
-                    map.removeLayer(marker);
+            // Enter key in chat input
+            document.getElementById('chatInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    document.getElementById('sendMessageBtn').click();
                 }
             });
-            
-            showToast(btn.classList.contains('active') ? 'Stops shown' : 'Stops hidden', 'info');
-        }
 
-        function toggleMapThemeSelector() {
-            const selector = document.getElementById('mapThemeSelector');
-            selector.style.display = selector.style.display === 'flex' ? 'none' : 'flex';
-        }
+            // ========== ATTENDANCE CARD ==========
+            // Already handled by attendanceBtn above
 
-        function hideMapThemeSelector() {
-            document.getElementById('mapThemeSelector').style.display = 'none';
-        }
+            // ========== ADMIN DASHBOARD BUTTONS ==========
+            // Close admin dashboard
+            document.getElementById('closeAdminDashboard').addEventListener('click', function() {
+                document.getElementById('adminDashboard').classList.remove('active');
+                showLoginScreen();
+            });
 
-        function toggleParentMapThemeSelector() {
-            const selector = document.getElementById('parentMapThemeSelector');
-            selector.style.display = selector.style.display === 'flex' ? 'none' : 'flex';
-        }
+            // ========== STUDENT MANAGEMENT BUTTONS ==========
+            // Close student management
+            document.getElementById('closeStudentManagement').addEventListener('click', function() {
+                document.getElementById('studentManagement').classList.remove('active');
+            });
 
-        function hideParentMapThemeSelector() {
-            document.getElementById('parentMapThemeSelector').style.display = 'none';
-        }
+            // Add student button
+            document.getElementById('addStudentBtn').addEventListener('click', function() {
+                document.getElementById('addStudentModal').classList.add('active');
+            });
 
-        // ==================== ERROR HANDLING ====================
-        function handlePositionError(error) {
-            let message = 'Unable to get location';
-            let type = 'error';
-            
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    message = 'Location permission denied. Please enable location services.';
-                    type = 'warning';
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    message = 'Location unavailable. Please check your GPS signal.';
-                    type = 'warning';
-                    break;
-                case error.TIMEOUT:
-                    message = 'Location request timeout. Trying again...';
-                    type = 'info';
-                    break;
-            }
-            
-            showToast(message, type);
-            
-            // Start demo updates for testing
-            startDemoLocationUpdates();
-        }
+            // Import CSV button
+            document.getElementById('importStudentsBtn').addEventListener('click', function() {
+                showToast('CSV import feature coming soon!', 'info');
+            });
 
-        function startDemoLocationUpdates() {
-            let demoLat = 40.7128;
-            let demoLng = -74.0060;
-            let demoIndex = 0;
-            
-            appState.locationUpdateInterval = setInterval(() => {
-                demoLat += 0.0001;
-                demoLng += 0.0001;
-                demoIndex++;
+            // ========== ADD STUDENT MODAL BUTTONS ==========
+            // Cancel add student
+            document.getElementById('cancelAddStudent').addEventListener('click', function() {
+                document.getElementById('addStudentModal').classList.remove('active');
+                document.getElementById('addStudentForm').reset();
+            });
+
+            // Add student form submit
+            document.getElementById('addStudentForm').addEventListener('submit', function(e) {
+                e.preventDefault();
                 
-                const demoPosition = {
-                    coords: {
-                        latitude: demoLat,
-                        longitude: demoLng,
-                        speed: 8 + Math.random() * 4,
-                        heading: (demoIndex * 10) % 360
-                    }
+                const newStudent = {
+                    id: document.getElementById('newStudentId').value,
+                    name: document.getElementById('newStudentName').value,
+                    grade: document.getElementById('newStudentGrade').value,
+                    contact: document.getElementById('newStudentContact').value,
+                    location: document.getElementById('newStudentLocation').value,
+                    avatar: document.getElementById('newStudentName').value.charAt(0).toUpperCase(),
+                    status: 'waiting',
+                    coordinates: [40.7128 + Math.random() * 0.01, -74.0060 + Math.random() * 0.01],
+                    school: 'Westwood Elementary',
+                    parentEmail: 'parent' + Math.floor(Math.random() * 1000) + '@email.com'
                 };
                 
-                if (appState.userRole === 'driver') {
-                    handleDriverPositionUpdate(demoPosition);
-                    publishDriverLocation(demoPosition);
-                } else {
-                    // For parent demo
-                    if (busMarker) {
-                        const newLatLng = [demoLat, demoLng];
-                        busMarker.setLatLng(newLatLng);
-                        
-                        if (busPath) {
-                            const currentPath = busPath.getLatLngs();
-                            currentPath.push(newLatLng);
-                            if (currentPath.length > 50) currentPath.shift();
-                            busPath.setLatLngs(currentPath);
-                        }
-                        
-                        updateParentDashboard({
-                            speed: 8 + Math.random() * 4,
-                            distance: (demoIndex * 0.1).toFixed(1) + ' km',
-                            eta: calculateETA(Date.now())
-                        });
+                // Add to database
+                appState.studentDatabase[newStudent.id] = newStudent;
+                appState.totalStudents++;
+                
+                // Update UI
+                loadStudentList();
+                updateDashboard();
+                
+                // Close modal
+                document.getElementById('addStudentModal').classList.remove('active');
+                document.getElementById('addStudentForm').reset();
+                
+                showToast(`Added student: ${newStudent.name}`, 'success');
+            });
+
+            // ========== NOTIFICATIONS MODAL BUTTONS ==========
+            // Clear notifications
+            document.getElementById('clearNotifications').addEventListener('click', function() {
+                appState.notifications = [];
+                updateNotificationBadge();
+                document.getElementById('notificationsList').innerHTML = '<div style="text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.6);">No notifications</div>';
+                showToast('All notifications cleared', 'success');
+            });
+
+            // Close notifications
+            document.getElementById('closeNotifications').addEventListener('click', function() {
+                document.getElementById('notificationsModal').classList.remove('active');
+            });
+
+            // ========== TWO-FACTOR MODAL BUTTONS ==========
+            // Cancel 2FA
+            document.getElementById('cancel2FA').addEventListener('click', function() {
+                document.getElementById('twoFactorModal').classList.remove('active');
+                clearInterval(appState.authTimerInterval);
+            });
+
+            // Verify 2FA
+            document.getElementById('verify2FA').addEventListener('click', function() {
+                const codeInputs = document.querySelectorAll('.auth-code-input');
+                const code = Array.from(codeInputs).map(input => input.value).join('');
+                
+                if (code === '123456') {
+                    document.getElementById('twoFactorModal').classList.remove('active');
+                    clearInterval(appState.authTimerInterval);
+                    showToast('Two-factor authentication successful!', 'success');
+                    // Proceed with login
+                    if (appState.userRole === 'admin') {
+                        document.getElementById('adminDashboard').classList.add('active');
+                        document.getElementById('loginScreen').classList.add('hidden');
+                        loadAdminData();
                     }
+                } else {
+                    showToast('Invalid verification code', 'error');
                 }
-            }, 2000);
+            });
+
+            // Resend code
+            document.getElementById('resendCode').addEventListener('click', function() {
+                showToast('New verification code sent to your email', 'info');
+                // Reset timer
+                startTwoFactorTimer();
+            });
+
+            // ========== EMERGENCY MODAL BUTTONS ==========
+            // Cancel emergency
+            document.getElementById('cancelEmergency').addEventListener('click', function() {
+                document.getElementById('emergencyModal').classList.remove('active');
+            });
+
+            // Confirm emergency
+            document.getElementById('confirmEmergency').addEventListener('click', function() {
+                document.getElementById('emergencyModal').classList.remove('active');
+                
+                const emergencyType = appState.userRole === 'driver' ? 'driver_emergency' : 'parent_emergency';
+                const details = {
+                    userRole: appState.userRole,
+                    busNumber: appState.busNumber,
+                    timestamp: Date.now()
+                };
+                
+                // Simulate emergency alert
+                showToast('🚨 EMERGENCY ALERT SENT! Help is on the way.', 'error');
+                addNotification('EMERGENCY', `Emergency ${emergencyType} reported. Authorities notified.`, 'error');
+                
+                // Add to notifications
+                addNotification('Emergency Alert', 'Emergency situation reported. Authorities have been notified.', 'error', [
+                    { label: 'View Details', type: 'view_details', primary: true },
+                    { label: 'Dismiss', type: 'dismiss' }
+                ]);
+                
+                // Update notification badge
+                updateNotificationBadge();
+            });
+
+            // ========== INSTALL PROMPT BUTTONS ==========
+            // Install button
+            document.getElementById('installBtn').addEventListener('click', function() {
+                showToast('App installation feature coming soon!', 'info');
+                document.getElementById('installPrompt').classList.remove('active');
+            });
+
+            // Cancel install
+            document.getElementById('installCancel').addEventListener('click', function() {
+                document.getElementById('installPrompt').classList.remove('active');
+            });
+
+            // ========== EMERGENCY BUTTON ==========
+            document.getElementById('emergencyBtn').addEventListener('click', function() {
+                showEmergencyModal();
+            });
+        }
+
+        function loadInitialData() {
+            // Add some initial notifications
+            addNotification('System', 'Welcome to SchoolBus Tracker Pro!', 'info');
+            addNotification('GPS', 'Location tracking activated', 'success');
+            addNotification('Safety', 'Emergency SOS button is active', 'warning');
             
-            showToast('Using demo location data', 'info');
+            // Update notification badge
+            updateNotificationBadge();
+            
+            // Show install prompt after delay
+            setTimeout(() => {
+                document.getElementById('installPrompt').classList.add('active');
+            }, 10000);
+        }
+
+        // ==================== NOTIFICATION FUNCTIONS ====================
+        function addNotification(title, message, type = 'info', actions = []) {
+            const notification = {
+                id: Date.now(),
+                title,
+                message,
+                type,
+                timestamp: Date.now(),
+                read: false,
+                actions: actions
+            };
+            
+            appState.notifications.unshift(notification);
+            
+            // Keep only last 50 notifications
+            if (appState.notifications.length > 50) {
+                appState.notifications.pop();
+            }
+            
+            updateNotificationBadge();
+            
+            return notification.id;
+        }
+
+        function updateNotificationBadge() {
+            const unreadCount = appState.notifications.filter(n => !n.read).length;
+            const badges = document.querySelectorAll('.notification-badge');
+            
+            badges.forEach(badge => {
+                if (unreadCount > 0) {
+                    badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            });
+        }
+
+        function showNotificationsModal() {
+            const modal = document.getElementById('notificationsModal');
+            const list = document.getElementById('notificationsList');
+            
+            if (appState.notifications.length === 0) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.6);">No notifications</div>';
+            } else {
+                list.innerHTML = appState.notifications.map(notification => `
+                    <div class="notification-item" data-notification-id="${notification.id}">
+                        <div class="notification-header">
+                            <div class="notification-title">${notification.title}</div>
+                            <div class="notification-time">${formatTime(notification.timestamp)}</div>
+                        </div>
+                        <div class="notification-message">${notification.message}</div>
+                        ${notification.actions && notification.actions.length > 0 ? `
+                            <div class="notification-actions">
+                                ${notification.actions.map(action => `
+                                    <button class="notification-btn ${action.primary ? 'primary' : ''}" 
+                                            onclick="handleNotificationAction('${notification.id}', '${action.type}')">
+                                        ${action.label}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            }
+            
+            modal.classList.add('active');
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+            if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+            return date.toLocaleDateString();
         }
 
         // ==================== TRIP FUNCTIONS ====================
-        function toggleTrip() {
-            const tripBtn = document.getElementById('startTrip');
-            
-            if (!appState.tripActive) {
-                // Start trip
-                appState.tripActive = true;
-                appState.tripStartTime = Date.now();
-                
-                tripBtn.classList.add('active');
-                tripBtn.innerHTML = '<i class="fas fa-pause"></i><span>End Trip</span>';
-                document.getElementById('tripDirection').textContent = appState.currentTrip === 'to_school' ? 'To School' : 'From School';
-                
-                // Start timer
-                startTripTimer();
-                
-                showToast('Trip started! Parents have been notified.', 'success');
-                addNotification('Trip Started', `Bus ${appState.busNumber} has started the ${appState.currentTrip === 'to_school' ? 'morning' : 'afternoon'} trip`, 'warning');
-                
-                // Publish trip status to Firebase
-                publishTripStatus();
-                
-            } else {
-                // End trip
-                appState.tripActive = false;
-                
-                tripBtn.classList.remove('active');
-                tripBtn.innerHTML = '<i class="fas fa-play"></i><span>Start Trip</span>';
-                
-                // Stop timer
-                stopTripTimer();
-                
-                // Switch trip direction
-                appState.currentTrip = appState.currentTrip === 'to_school' ? 'from_school' : 'to_school';
-                
-                showToast('Trip ended. Switching direction.', 'info');
-                addNotification('Trip Ended', `Bus ${appState.busNumber} has completed the trip`, 'info');
-                
-                // Publish trip status to Firebase
-                publishTripStatus();
-            }
-        }
-
-        function publishTripStatus() {
-            if (!appState.driverId || !appState.busNumber) return;
-            
-            const statusData = {
-                tripActive: appState.tripActive,
-                tripDirection: appState.currentTrip,
-                driverId: appState.driverId,
-                timestamp: Date.now(),
-                studentsOnBoard: Object.values(studentDatabase).filter(s => s.status === 'onbus').length,
-                totalStudents: Object.keys(studentDatabase).length
-            };
-            
-            try {
-                database.ref(`buses/${appState.busNumber}/tripStatus`).set(statusData);
-            } catch (error) {
-                console.error('Error publishing trip status:', error);
-            }
-        }
-
         function startTripTimer() {
-            if (tripTimerInterval) clearInterval(tripTimerInterval);
+            if (appState.tripTimerInterval) clearInterval(appState.tripTimerInterval);
             
-            tripTimerInterval = setInterval(() => {
+            appState.tripTimerInterval = setInterval(() => {
                 if (appState.tripStartTime) {
                     const elapsed = Date.now() - appState.tripStartTime;
                     const minutes = Math.floor(elapsed / 60000);
@@ -2613,9 +3446,9 @@
         }
 
         function stopTripTimer() {
-            if (tripTimerInterval) {
-                clearInterval(tripTimerInterval);
-                tripTimerInterval = null;
+            if (appState.tripTimerInterval) {
+                clearInterval(appState.tripTimerInterval);
+                appState.tripTimerInterval = null;
             }
             document.getElementById('tripDuration').textContent = '00:00';
         }
@@ -2625,7 +3458,7 @@
             const container = document.getElementById('studentListContainer');
             container.innerHTML = '';
             
-            Object.values(studentDatabase).forEach(student => {
+            Object.values(appState.studentDatabase).forEach(student => {
                 const studentEl = document.createElement('div');
                 studentEl.className = 'student-item';
                 studentEl.innerHTML = `
@@ -2657,218 +3490,57 @@
             });
         }
 
-        function showStudentManagement() {
-            loadStudentList();
-            document.getElementById('studentManagement').classList.add('active');
-        }
-
-        function hideStudentManagement() {
-            document.getElementById('studentManagement').classList.remove('active');
-        }
-
-        function showAddStudentModal() {
-            document.getElementById('addStudentModal').classList.add('active');
-        }
-
-        function hideAddStudentModal() {
-            document.getElementById('addStudentModal').classList.remove('active');
-            document.getElementById('addStudentForm').reset();
-        }
-
-        function handleAddStudent(e) {
-            e.preventDefault();
-            
-            const newStudent = {
-                id: document.getElementById('newStudentId').value,
-                name: document.getElementById('newStudentName').value,
-                grade: document.getElementById('newStudentGrade').value,
-                contact: document.getElementById('newStudentContact').value,
-                location: document.getElementById('newStudentLocation').value,
-                avatar: document.getElementById('newStudentName').value.charAt(0).toUpperCase(),
-                status: 'waiting',
-                coordinates: [40.7128 + Math.random() * 0.01, -74.0060 + Math.random() * 0.01],
-                school: 'Westwood Elementary'
-            };
-            
-            // Add to database
-            studentDatabase[newStudent.id] = newStudent;
-            
-            // Update UI
-            loadStudentList();
-            addBusStopsToMap();
-            updateDashboard();
-            
-            // Publish to Firebase
-            publishStudentUpdate(newStudent);
-            
-            // Close modal
-            hideAddStudentModal();
-            
-            showToast(`Added student: ${newStudent.name}`, 'success');
-            addNotification('Student Added', `New student ${newStudent.name} added to the roster`, 'info');
-        }
-
-        function publishStudentUpdate(student) {
-            if (!appState.busNumber) return;
-            
-            try {
-                database.ref(`buses/${appState.busNumber}/students/${student.id}`).set(student);
-            } catch (error) {
-                console.error('Error publishing student update:', error);
-            }
-        }
-
-        function importStudents() {
-            showToast('Import feature coming soon!', 'info');
-        }
-
         function updateStudentStatus(studentId, status) {
-            const student = studentDatabase[studentId];
+            const student = appState.studentDatabase[studentId];
             if (!student) return;
             
             const oldStatus = student.status;
             student.status = status;
             
+            // Update counts
+            if (status === 'onbus' && oldStatus !== 'onbus') {
+                appState.studentsOnBoard++;
+            } else if (oldStatus === 'onbus' && status !== 'onbus') {
+                appState.studentsOnBoard--;
+            }
+            
             // Update UI
             loadStudentList();
             updateDashboard();
             
-            // Publish status update to Firebase
-            publishStudentStatusUpdate(studentId, status);
+            // Update child info if this is the parent's child
+            if (appState.userRole === 'parent' && appState.studentId === studentId) {
+                updateChildInfo(student);
+            }
             
-            // Show toast and notification
+            // Show notification
             const statusText = status === 'onbus' ? 'picked up' : 'dropped off';
             showToast(`${student.name} marked as ${statusText}`, 'success');
             
             if (oldStatus !== status) {
                 addNotification('Student Status', `${student.name} has been ${statusText}`, 'info');
             }
-            
-            // If parent is viewing this student, update their view
-            if (appState.userRole === 'parent' && appState.studentId === studentId) {
-                updateChildInfo(student);
-            }
-        }
-
-        function publishStudentStatusUpdate(studentId, status) {
-            if (!appState.busNumber) return;
-            
-            const student = studentDatabase[studentId];
-            if (!student) return;
-            
-            const statusData = {
-                studentId: studentId,
-                studentName: student.name,
-                status: status,
-                timestamp: Date.now(),
-                location: student.location,
-                busNumber: appState.busNumber,
-                driverId: appState.driverId
-            };
-            
-            try {
-                database.ref(`buses/${appState.busNumber}/studentStatus/${studentId}`).set(statusData);
-                
-                // Also send alert
-                if (status === 'onbus' || status === 'dropped') {
-                    database.ref(`buses/${appState.busNumber}/alerts`).push().set({
-                        type: 'student_status',
-                        message: `${student.name} has been ${status === 'onbus' ? 'picked up' : 'dropped off'}`,
-                        timestamp: Date.now(),
-                        studentId: studentId,
-                        studentName: student.name,
-                        status: status
-                    });
-                }
-            } catch (error) {
-                console.error('Error publishing student status:', error);
-            }
         }
 
         function removeStudent(studentId) {
-            const student = studentDatabase[studentId];
+            const student = appState.studentDatabase[studentId];
             if (!student) return;
             
             if (confirm(`Remove ${student.name} from the roster?`)) {
-                delete studentDatabase[studentId];
+                delete appState.studentDatabase[studentId];
+                appState.totalStudents--;
+                if (student.status === 'onbus') {
+                    appState.studentsOnBoard--;
+                }
                 loadStudentList();
-                addBusStopsToMap();
                 updateDashboard();
                 showToast(`Removed student: ${student.name}`, 'success');
                 addNotification('Student Removed', `${student.name} has been removed from the roster`, 'warning');
-                
-                // Remove from Firebase
-                try {
-                    database.ref(`buses/${appState.busNumber}/students/${studentId}`).remove();
-                } catch (error) {
-                    console.error('Error removing student from Firebase:', error);
-                }
-            }
-        }
-
-        function markChildStatus(status) {
-            if (appState.userRole !== 'parent') return;
-            
-            updateStudentStatus(appState.studentId, status);
-        }
-
-        function checkNearbyStops(busCoords) {
-            Object.values(studentDatabase).forEach(student => {
-                if (!busCoords || !student.coordinates) return;
-                
-                const distance = map.distance(busCoords, student.coordinates);
-                
-                // Auto-pickup within 200 meters when trip is active
-                if (distance < 200 && student.status === 'waiting' && appState.tripActive) {
-                    updateStudentStatus(student.id, 'onbus');
-                    showToast(`Auto-picked up: ${student.name}`, 'success');
-                }
-            });
-        }
-
-        // ==================== DASHBOARD FUNCTIONS ====================
-        function updateDashboard(speed = 0) {
-            const studentsOnBoard = Object.values(studentDatabase).filter(s => s.status === 'onbus').length;
-            const totalStudents = Object.keys(studentDatabase).length;
-            
-            // Update speed
-            document.getElementById('currentSpeed').textContent = 
-                Math.round((speed || 0) * 3.6) + ' km/h';
-            
-            // Update student count
-            document.getElementById('studentsCount').textContent = 
-                `${studentsOnBoard}/${totalStudents}`;
-            
-            // Update next stop
-            const nextStop = getNextStop();
-            document.getElementById('nextStopName').textContent = nextStop ? nextStop.location : '--';
-            
-            // Update counts
-            appState.studentsOnBoard = studentsOnBoard;
-            appState.totalStudents = totalStudents;
-        }
-
-        function updateParentDashboard(data = {}) {
-            // Update speed
-            if (data.speed !== undefined) {
-                document.getElementById('parentSpeed').textContent = 
-                    Math.round(data.speed * 3.6) + ' km/h';
-            }
-            
-            // Update ETA
-            if (data.eta) {
-                document.getElementById('eta').textContent = data.eta;
-            }
-            
-            // Update distance
-            if (data.distance) {
-                document.getElementById('distanceAway').textContent = data.distance;
             }
         }
 
         function updateChildInfo(student) {
             document.getElementById('childFullName').textContent = student.name;
-            document.getElementById('childSchool').textContent = `${student.school} • ${student.grade}`;
             document.getElementById('childAvatar').textContent = student.avatar;
             document.getElementById('childLocation').textContent = 
                 student.status === 'onbus' ? 'On the bus' : `Waiting at ${student.location}`;
@@ -2878,299 +3550,421 @@
             statusBadge.textContent = student.status.toUpperCase();
         }
 
-        function getNextStop() {
-            const waitingStudents = Object.values(studentDatabase)
-                .filter(s => s.status === 'waiting');
+        // ==================== DASHBOARD FUNCTIONS ====================
+        function updateDashboard() {
+            // Update student count
+            document.getElementById('studentsCount').textContent = 
+                `${appState.studentsOnBoard}/${appState.totalStudents}`;
+        }
+
+        function updateAttendanceDashboard() {
+            const total = appState.totalStudents;
+            let present = 0, absent = 0, late = 0;
             
-            if (waitingStudents.length === 0) return null;
+            Object.values(appState.studentDatabase).forEach(student => {
+                switch(student.status) {
+                    case 'onbus':
+                    case 'dropped':
+                        present++;
+                        break;
+                    case 'waiting':
+                        absent++;
+                        break;
+                }
+            });
             
-            // Simple nearest stop calculation
-            if (currentPosition) {
-                const busCoords = [currentPosition.coords.latitude, currentPosition.coords.longitude];
-                let nearest = waitingStudents[0];
-                let minDistance = Infinity;
-                
-                waitingStudents.forEach(student => {
-                    const distance = map.distance(busCoords, student.coordinates);
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        nearest = student;
+            // Update UI
+            document.getElementById('totalStudents').textContent = total;
+            document.getElementById('presentStudents').textContent = present;
+            document.getElementById('absentStudents').textContent = absent;
+            document.getElementById('lateStudents').textContent = late;
+        }
+
+        // ==================== MAP FUNCTIONS ====================
+        function initDriverInterface() {
+            initMap('driverMap');
+            updateDashboard();
+            
+            // Set bus name
+            document.getElementById('driverBusName').textContent = appState.busNumber;
+            
+            // Load student list
+            loadStudentList();
+            
+            // Start simulated location updates
+            startSimulatedLocationUpdates();
+        }
+
+        function initParentInterface() {
+            initMap('parentMap');
+            
+            // Set bus name
+            document.getElementById('parentBusName').textContent = appState.busNumber;
+            
+            // Update child info
+            const student = appState.studentDatabase[appState.studentId];
+            if (student) {
+                updateChildInfo(student);
+            }
+            
+            // Start simulated location updates
+            startSimulatedLocationUpdates();
+        }
+
+        function initMap(mapId) {
+            const defaultCoords = [40.7128, -74.0060]; // New York City
+            
+            appState.map = L.map(mapId, {
+                zoomControl: false,
+                dragging: true,
+                touchZoom: true,
+                scrollWheelZoom: false,
+                doubleClickZoom: true
+            }).setView(defaultCoords, 14);
+            
+            // Set initial map theme
+            setMapTheme(appState.mapTheme);
+            
+            // Create bus marker
+            appState.busMarker = L.marker(defaultCoords, {
+                icon: L.divIcon({
+                    html: '<div style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, #1A56DB, #7E3AF2); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; border: 3px solid white; box-shadow: 0 0 20px rgba(26, 86, 219, 0.5);"><i class="fas fa-bus"></i></div>',
+                    className: 'bus-marker',
+                    iconSize: [50, 50],
+                    iconAnchor: [25, 25]
+                }),
+                zIndexOffset: 1000
+            }).addTo(appState.map);
+            
+            // Initialize bus path
+            appState.busPath = L.polyline([], {
+                color: '#1A56DB',
+                weight: 4,
+                opacity: 0.8,
+                lineJoin: 'round'
+            }).addTo(appState.map);
+            
+            // Create route line
+            appState.routeLine = L.polyline([], {
+                color: '#0E9F6E',
+                weight: 3,
+                opacity: 0.6,
+                dashArray: '10, 10'
+            });
+            
+            // Add bus stops
+            addBusStopsToMap();
+        }
+
+        function setMapTheme(theme) {
+            if (appState.map) {
+                // Remove existing tile layers
+                appState.map.eachLayer(layer => {
+                    if (layer instanceof L.TileLayer) {
+                        appState.map.removeLayer(layer);
                     }
                 });
                 
-                return nearest;
+                // Add new tile layer
+                const themeConfig = MAP_THEMES[theme];
+                L.tileLayer(themeConfig.url, {
+                    attribution: themeConfig.attribution,
+                    maxZoom: 19,
+                    minZoom: 3
+                }).addTo(appState.map);
+                
+                appState.mapTheme = theme;
             }
-            
-            return waitingStudents[0];
         }
 
-        // ==================== NOTIFICATION FUNCTIONS ====================
-        function showNotifications() {
-            const modal = document.getElementById('notificationsModal');
-            const list = document.getElementById('notificationsList');
+        function addBusStopsToMap() {
+            // Clear existing stops
+            appState.stopMarkers.forEach(marker => {
+                if (appState.map.hasLayer(marker)) {
+                    appState.map.removeLayer(marker);
+                }
+            });
+            appState.stopMarkers = [];
             
-            if (appState.notifications.length === 0) {
-                list.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.6);">No notifications</div>';
-            } else {
-                list.innerHTML = appState.notifications.map(notification => `
-                    <div class="notification-item" data-notification-id="${notification.id}">
-                        <div class="notification-header">
-                            <div class="notification-title">${notification.title}</div>
-                            <div class="notification-time">${formatTime(notification.timestamp)}</div>
-                        </div>
-                        <div class="notification-message">${notification.message}</div>
-                        ${notification.actions ? `
-                            <div class="notification-actions">
-                                ${notification.actions.map(action => `
-                                    <button class="notification-btn ${action.primary ? 'primary' : ''}" 
-                                            onclick="handleNotificationAction('${notification.id}', '${action.type}')">
-                                        ${action.label}
-                                    </button>
-                                `).join('')}
-                            </div>
-                        ` : ''}
+            // Add stops for each student
+            Object.values(appState.studentDatabase).forEach(student => {
+                const stopMarker = L.marker(student.coordinates, {
+                    icon: L.divIcon({
+                        html: `<div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #0E9F6E, #10B981); border: 3px solid white; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px; box-shadow: 0 0 15px rgba(14, 159, 110, 0.5);">${student.avatar}</div>`,
+                        className: 'bus-stop-marker',
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16]
+                    })
+                }).addTo(appState.map);
+                
+                // Add popup with student info
+                stopMarker.bindPopup(`
+                    <div style="padding: 10px;">
+                        <strong>${student.name}</strong><br>
+                        Grade: ${student.grade}<br>
+                        Status: <span style="color: ${getStatusColor(student.status)}">${student.status.toUpperCase()}</span><br>
+                        Location: ${student.location}<br>
+                        School: ${student.school}
                     </div>
-                `).join('');
-            }
-            
-            modal.classList.add('active');
+                `);
+                
+                appState.stopMarkers.push(stopMarker);
+                
+                // Add to route line
+                appState.routeLine.addLatLng(student.coordinates);
+            });
         }
 
-        function hideNotificationsModal() {
-            document.getElementById('notificationsModal').classList.remove('active');
+        function getStatusColor(status) {
+            switch(status) {
+                case 'waiting': return '#F59E0B';
+                case 'onbus': return '#0E9F6E';
+                case 'dropped': return '#7E3AF2';
+                default: return '#3B82F6';
+            }
         }
 
-        function addNotification(title, message, type = 'info', actions = []) {
-            const notification = {
-                id: Date.now(),
-                title,
-                message,
-                type,
-                timestamp: Date.now(),
-                read: false,
-                actions: actions
-            };
+        function startSimulatedLocationUpdates() {
+            let demoLat = 40.7128;
+            let demoLng = -74.0060;
+            let demoIndex = 0;
             
-            appState.notifications.unshift(notification);
-            
-            // Keep only last 50 notifications
-            if (appState.notifications.length > 50) {
-                appState.notifications.pop();
-            }
-            
-            // Update notification badge
-            updateNotificationBadge();
-            
-            // Show toast for important notifications
-            if (type === 'warning' || type === 'error') {
-                showToast(`${title}: ${message}`, type);
-            }
-            
-            return notification.id;
+            appState.locationUpdateInterval = setInterval(() => {
+                demoLat += 0.0001;
+                demoLng += 0.0001;
+                demoIndex++;
+                
+                appState.currentPosition = {
+                    coords: {
+                        latitude: demoLat,
+                        longitude: demoLng,
+                        speed: 8 + Math.random() * 4,
+                        heading: (demoIndex * 10) % 360
+                    }
+                };
+                
+                // Update bus marker on map
+                if (appState.busMarker && appState.map) {
+                    const newLatLng = [demoLat, demoLng];
+                    appState.busMarker.setLatLng(newLatLng);
+                    
+                    // Update bus path
+                    if (appState.busPath) {
+                        const currentPath = appState.busPath.getLatLngs();
+                        currentPath.push(newLatLng);
+                        if (currentPath.length > 100) currentPath.shift();
+                        appState.busPath.setLatLngs(currentPath);
+                    }
+                    
+                    // Update speed display
+                    const speedKmh = Math.round((8 + Math.random() * 4) * 3.6);
+                    document.getElementById('currentSpeed').textContent = speedKmh + ' km/h';
+                    document.getElementById('parentSpeed').textContent = speedKmh + ' km/h';
+                    
+                    // Update distance
+                    const distance = (demoIndex * 0.1).toFixed(1);
+                    document.getElementById('distanceAway').textContent = distance + ' km';
+                    
+                    // Check for nearby stops
+                    checkNearbyStops(newLatLng);
+                }
+                
+            }, 2000);
         }
 
-        function handleNotificationAction(notificationId, actionType) {
+        function checkNearbyStops(busCoords) {
+            Object.values(appState.studentDatabase).forEach(student => {
+                if (!busCoords || !student.coordinates) return;
+                
+                // Simple distance calculation
+                const latDiff = busCoords[0] - student.coordinates[0];
+                const lngDiff = busCoords[1] - student.coordinates[1];
+                const distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111000; // Convert to meters
+                
+                // Auto-pickup within 200 meters when trip is active
+                if (distance < 0.002 && student.status === 'waiting' && appState.tripActive) {
+                    updateStudentStatus(student.id, 'onbus');
+                    showToast(`Auto-picked up: ${student.name}`, 'success');
+                }
+            });
+        }
+
+        // ==================== CHAT FUNCTIONS ====================
+        function sendChatMessage(text) {
+            const messages = document.getElementById('chatMessages');
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message sent';
+            messageDiv.innerHTML = `
+                <div class="message-sender">You (${appState.userRole})</div>
+                <div>${text}</div>
+                <div class="message-time">${time}</div>
+            `;
+            
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+            
+            // Simulate reply after delay
+            setTimeout(() => {
+                const replies = [
+                    "Message received. Thank you.",
+                    "Noted. Will update accordingly.",
+                    "Thank you for the update.",
+                    "Acknowledged. Safe travels!"
+                ];
+                const reply = replies[Math.floor(Math.random() * replies.length)];
+                const replyTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                const replyDiv = document.createElement('div');
+                replyDiv.className = 'message received';
+                replyDiv.innerHTML = `
+                    <div class="message-sender">School Dispatch</div>
+                    <div>${reply}</div>
+                    <div class="message-time">${replyTime}</div>
+                `;
+                
+                messages.appendChild(replyDiv);
+                messages.scrollTop = messages.scrollHeight;
+            }, 1000 + Math.random() * 2000);
+        }
+
+        // ==================== ADMIN FUNCTIONS ====================
+        function loadAdminData() {
+            const activeSessions = document.getElementById('activeSessions');
+            const adminAlerts = document.getElementById('adminAlerts');
+            const dbStatus = document.getElementById('databaseStatus');
+            
+            // Simulate active sessions
+            const sessions = [
+                { user: 'driver@school.edu', role: 'driver', lastActive: '2 minutes ago' },
+                { user: 'parent1@email.com', role: 'parent', lastActive: '5 minutes ago' },
+                { user: 'parent2@email.com', role: 'parent', lastActive: '10 minutes ago' }
+            ];
+            
+            activeSessions.innerHTML = sessions.map(session => `
+                <div class="notification-item">
+                    <div class="notification-header">
+                        <div class="notification-title">${session.user}</div>
+                        <div class="notification-time">${session.role}</div>
+                    </div>
+                    <div class="notification-message">
+                        Last active: ${session.lastActive}
+                    </div>
+                </div>
+            `).join('');
+            
+            // Simulate alerts
+            const alerts = [
+                { title: 'Bus Departure', message: 'BUS-001 departed from school', time: '15 minutes ago' },
+                { title: 'Student Pickup', message: 'Emma Johnson picked up at Maple Street', time: '20 minutes ago' },
+                { title: 'System Update', message: 'GPS tracking system updated', time: '1 hour ago' }
+            ];
+            
+            adminAlerts.innerHTML = alerts.map(alert => `
+                <div class="notification-item">
+                    <div class="notification-header">
+                        <div class="notification-title">${alert.title}</div>
+                        <div class="notification-time">${alert.time}</div>
+                    </div>
+                    <div class="notification-message">${alert.message}</div>
+                </div>
+            `).join('');
+            
+            // Update database status
+            dbStatus.innerHTML = `
+                <div style="color: var(--success); font-weight: 600;">
+                    <i class="fas fa-check-circle"></i> Connected
+                </div>
+                <div style="font-size: 14px; margin-top: 8px; color: rgba(255,255,255,0.7);">
+                    Last sync: ${new Date().toLocaleTimeString()}
+                </div>
+            `;
+        }
+
+        // ==================== TWO-FACTOR TIMER ====================
+        function startTwoFactorTimer() {
+            let timeLeft = 300; // 5 minutes
+            const timerEl = document.getElementById('authTimer');
+            
+            if (appState.authTimerInterval) clearInterval(appState.authTimerInterval);
+            
+            appState.authTimerInterval = setInterval(() => {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timerEl.textContent = `Code expires in: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(appState.authTimerInterval);
+                    showToast('Verification code expired', 'error');
+                    document.getElementById('twoFactorModal').classList.remove('active');
+                }
+            }, 1000);
+        }
+
+        // ==================== EMERGENCY MODAL ====================
+        function showEmergencyModal() {
+            document.getElementById('emergencyModal').classList.add('active');
+        }
+
+        // ==================== CLEANUP FUNCTIONS ====================
+        function cleanupDriverInterface() {
+            if (appState.locationUpdateInterval) {
+                clearInterval(appState.locationUpdateInterval);
+            }
+            if (appState.tripTimerInterval) {
+                clearInterval(appState.tripTimerInterval);
+            }
+            if (appState.map) {
+                appState.map.remove();
+                appState.map = null;
+            }
+        }
+
+        function cleanupParentInterface() {
+            if (appState.locationUpdateInterval) {
+                clearInterval(appState.locationUpdateInterval);
+            }
+            if (appState.map) {
+                appState.map.remove();
+                appState.map = null;
+            }
+        }
+
+        // ==================== GLOBAL FUNCTIONS ====================
+        window.updateStudentStatus = updateStudentStatus;
+        window.removeStudent = removeStudent;
+        window.handleNotificationAction = function(notificationId, actionType) {
             const notification = appState.notifications.find(n => n.id == notificationId);
             if (!notification) return;
             
             switch(actionType) {
                 case 'mark_read':
                     notification.read = true;
+                    updateNotificationBadge();
                     showToast('Marked as read', 'success');
                     break;
                     
                 case 'view_details':
-                    // Handle viewing details
                     showToast('Showing details...', 'info');
                     break;
                     
                 case 'dismiss':
-                    // Remove notification
                     appState.notifications = appState.notifications.filter(n => n.id != notificationId);
+                    updateNotificationBadge();
                     showToast('Notification dismissed', 'info');
-                    break;
-                    
-                case 'respond':
-                    // Handle response action
-                    if (notification.title.includes('Parent')) {
-                        showToast('Sending response to parent...', 'success');
-                    }
                     break;
             }
             
             // Update notifications display
-            showNotifications();
-            updateNotificationBadge();
-        }
+            showNotificationsModal();
+        };
 
-        function clearNotifications() {
-            appState.notifications = [];
-            updateNotificationBadge();
-            hideNotificationsModal();
-            showToast('All notifications cleared', 'success');
-        }
-
-        function updateNotificationBadge() {
-            const unreadCount = appState.notifications.filter(n => !n.read).length;
-            const badges = document.querySelectorAll('.notification-badge');
-            
-            badges.forEach(badge => {
-                if (unreadCount > 0) {
-                    badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
-                    badge.style.display = 'flex';
-                } else {
-                    badge.style.display = 'none';
-                }
-            });
-        }
-
-        // ==================== UTILITY FUNCTIONS ====================
-        function formatTime(timestamp) {
-            const date = new Date(timestamp);
-            const now = new Date();
-            const diff = now - date;
-            
-            if (diff < 60000) return 'Just now';
-            if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-            if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-            return date.toLocaleDateString();
-        }
-
-        function updateClock() {
-            const now = new Date();
-            const timeStr = now.getHours().toString().padStart(2, '0') + ':' + 
-                           now.getMinutes().toString().padStart(2, '0');
-            
-            document.querySelectorAll('#currentTime, #parentTime').forEach(el => {
-                if (el) el.textContent = timeStr;
-            });
-        }
-
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            
-            const icons = {
-                success: 'check-circle',
-                error: 'exclamation-circle',
-                warning: 'exclamation-triangle',
-                info: 'info-circle'
-            };
-            
-            toast.className = `toast toast-${type}`;
-            toast.innerHTML = `
-                <i class="fas fa-${icons[type] || 'info-circle'} toast-icon"></i>
-                <div class="toast-message">${message}</div>
-                <button class="toast-close">&times;</button>
-            `;
-            
-            container.appendChild(toast);
-            
-            // Show animation
-            setTimeout(() => toast.classList.add('show'), 10);
-            
-            // Close button
-            toast.querySelector('.toast-close').onclick = () => hideToast(toast);
-            
-            // Auto-hide after 5 seconds
-            setTimeout(() => hideToast(toast), 5000);
-        }
-
-        function hideToast(toast) {
-            if (toast && toast.parentNode) {
-                toast.classList.add('hiding');
-                setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.remove();
-                    }
-                }, 300);
-            }
-        }
-
-        function logout() {
-            // Exit fullscreen if active
-            if (appState.isFullscreen) {
-                toggleFullscreen();
-            }
-            
-            // Cleanup intervals
-            if (watchId) {
-                navigator.geolocation.clearWatch(watchId);
-            }
-            if (driverLocationInterval) {
-                clearInterval(driverLocationInterval);
-            }
-            if (tripTimerInterval) {
-                clearInterval(tripTimerInterval);
-            }
-            if (appState.locationUpdateInterval) {
-                clearInterval(appState.locationUpdateInterval);
-            }
-            
-            // Remove Firebase listeners
-            if (appState.firebaseListener) {
-                database.ref(`buses/${appState.busNumber}/location`).off('value', appState.firebaseListener);
-            }
-            
-            // Update Firebase status
-            if (appState.userRole === 'driver' && appState.busNumber) {
-                try {
-                    database.ref(`buses/${appState.busNumber}/status`).set({
-                        online: false,
-                        lastUpdate: Date.now(),
-                        driver: appState.driverId
-                    });
-                } catch (error) {
-                    console.error('Error updating logout status:', error);
-                }
-            }
-            
-            // Reset state
-            appState.tripActive = false;
-            appState.currentLocation = null;
-            appState.isFullscreen = false;
-            
-            // Clear session
-            localStorage.removeItem('schoolbus_session');
-            
-            // Reset UI
-            document.getElementById('loginScreen').classList.remove('hidden');
-            document.querySelectorAll('.interface').forEach(el => el.classList.remove('active'));
-            document.getElementById('studentManagement').classList.remove('active');
-            document.getElementById('addStudentModal').classList.remove('active');
-            document.getElementById('notificationsModal').classList.remove('active');
-            
-            // Hide theme selectors
-            hideMapThemeSelector();
-            hideParentMapThemeSelector();
-            
-            // Reset map
-            if (map) {
-                map.remove();
-                map = null;
-                busMarker = null;
-                busPath = null;
-                stopMarkers = [];
-                routeLine = null;
-            }
-            
-            // Reset window flag
-            window.mapCentered = false;
-            
-            showToast('Logged out successfully', 'info');
-        }
-
-        function showInterface(interfaceType) {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.querySelectorAll('.interface').forEach(el => el.classList.remove('active'));
-            document.getElementById(`${interfaceType}Interface`).classList.add('active');
-        }
-
-        // Make functions available globally for onclick handlers
-        window.updateStudentStatus = updateStudentStatus;
-        window.removeStudent = removeStudent;
-        window.markChildStatus = markChildStatus;
-        window.handleNotificationAction = handleNotificationAction;
+        // Show initial toast
+        setTimeout(() => {
+            showToast('Welcome to SchoolBus Tracker Pro! All buttons are now functional.', 'success');
+        }, 1000);
     </script>
 </body>
 </html>
